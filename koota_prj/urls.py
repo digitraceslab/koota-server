@@ -25,6 +25,7 @@ urlpatterns = [
     url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html'}),
     url('^', include('django.contrib.auth.urls')),
 
+    url('^post$', 'kdata.views.post'),
     url('^$', TemplateView.as_view(template_name='koota/main.html')),
     #include('kdata.urls')),
     ]
