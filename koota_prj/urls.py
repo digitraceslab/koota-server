@@ -14,9 +14,17 @@ Including another URLconf
     2. Import the include() function: from django.conf.urls import url, include
     3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.contrib import admin
+from django.views.generic import TemplateView
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-]
+
+    url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html'}),
+    url('^', include('django.contrib.auth.urls')),
+
+    url('^$', TemplateView.as_view(template_name='koota/main.html')),
+    #include('kdata.urls')),
+    ]

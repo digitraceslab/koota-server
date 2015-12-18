@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>{{title}}</title>
+  </head>
+
+  <div style="border:1px solid black;">
+  {% if user.is_authenticated %}
+  <p>Logged in as {{ user.username }}. <a href="{% url 'logout'%}?next=/">Logout</a></p>
+  {% else %}
+  <p><a href="{% url 'login' %}">Login</a></p>
+  {% endif %}
+  </div>
+
+
+  <body>
+  {% block body %}
+  {% endblock %}
+  </body>
+
+</html>
