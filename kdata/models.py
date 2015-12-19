@@ -12,8 +12,11 @@ class Data(models.Model):
     ip = models.GenericIPAddressField()
     data = models.TextField(blank=True)
 
-class UserDevice(models.Model):
+class Device(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
-    type = models.CharField(max_length=32)
+    name = models.CharField(max_length=64,
+                            help_text='Give your device a name')
+    type = models.CharField(max_length=32,
+                            help_text='What type of device is this')
     device_id = models.CharField(max_length=64)
     active = models.BooleanField(default=True)

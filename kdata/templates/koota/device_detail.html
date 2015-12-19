@@ -1,0 +1,19 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+Device detail
+
+Name: {{ object.name }}<p>
+
+
+{{ object.device_id }}<p>
+
+{{ object.type }}<p>
+
+
+Scan QR code to configure device:<p>
+<img src="{% url 'device-qr' id=object.device_id %}">
+
+
+{% endblock %}

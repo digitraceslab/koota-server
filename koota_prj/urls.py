@@ -19,13 +19,24 @@ from django.contrib import admin
 from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 
+from kdata import views as kviews
+
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
     url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html'}),
     url('^', include('django.contrib.auth.urls')),
 
-    url('^post$', 'kdata.views.post'),
+    url('^post$', kviews.post),
+    url('^devices/$', kviews.DeviceListView.as_view(), name='device-list'),
+    url('^devices/(?P<id>[0-9a-fA-F]*)/$', kviews.DeviceDetail.as_view(),
+        name='device-detail'),
+    url('^devices/(?P<id>[0-9a-fA-F]*)/qr.png$', kviews.device_qrcode,
+        name='device-qr'),
+    url('^devices/create/$', kviews.DeviceCreate.as_view(),
+        name='device-create'),
+
+
     url('^$', TemplateView.as_view(template_name='koota/main.html')),
     #include('kdata.urls')),
     ]
