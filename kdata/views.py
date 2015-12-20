@@ -2,8 +2,7 @@ from django.shortcuts import render
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
-
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
 import json
 from . import models
@@ -36,7 +35,48 @@ def post(request):
     return HttpResponse(json.dumps(dict(ok=True)),
                         content_type="application/json")
 
+#
+# User management
+#
+from django import forms
+from django.contrib.auth.models import User
+import django.contrib.auth as auth
+class RegisterForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+    password2 = forms.CharField(widget=forms.PasswordInput, label='Confirm password')
+    email = forms.EmailField()
+    def clean(self):
+        if self.cleaned_data['password'] != self.cleaned_data['password2']:
+            raise forms.ValidationError("Passwords don't match")
+        # TODO: test for username alreay existing
+        if User.objects.filter(username=self.cleaned_data['username']).exists():
+            raise forms.ValidationError("Username already taken")
 
+#from django.views.generic.edit import FormView
+class RegisterView(FormView):
+    template_name = 'koota/register.html'
+    form_class = RegisterForm
+    success_url = '/'
+
+    def form_valid(self, form):
+        # This method is called when valid form data has been POSTed.
+        # It should return an HttpResponse.
+
+        user = User.objects.create_user(form.cleaned_data['username'],
+                                        form.cleaned_data['email'],
+                                        form.cleaned_data['password'])
+        user.save()
+        # Log the user in
+        user = auth.authenticate(username=form.cleaned_data['username'],
+                                                password=form.cleaned_data['password'])
+        auth.login(self.request, user)
+        return super(RegisterView, self).form_valid(form)
+
+
+#
+# Device management
+#
 class DeviceListView(ListView):
     template_name = 'koota/device_list.html'
     model = models.Device
@@ -46,7 +86,7 @@ class DeviceListView(ListView):
         if self.request.user.is_superuser:
             queryset = self.model.objects.all()
         else:
-            queryset = self.model.objects.filter(user=self.request.usel)
+            queryset = self.model.objects.filter(user=self.request.user)
         return queryset
 
 class DeviceDetail(DetailView):
