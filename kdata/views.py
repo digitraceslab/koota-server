@@ -59,10 +59,10 @@ def device_qrcode(request, id):
             'config=http://localhost:8000/config',
             'device_id=%s'%device.device_id,
             'device_type=%s'%device.type, ]
-    qr = qrcode.make('; '.join(data), border=2, box_size=3)
-    #import IPython ; IPython.embed()
+    img = qrcode.make('; '.join(data), border=4, box_size=3,
+                     error_correction=qrcode.constants.ERROR_CORRECT_L)
     cimage = io.BytesIO()
-    qr.save(cimage)
+    img.save(cimage)
     cimage.seek(0)
     return HttpResponse(cimage.getvalue(), content_type='image/png')
 

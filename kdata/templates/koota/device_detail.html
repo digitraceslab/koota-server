@@ -2,17 +2,15 @@
 
 {% block body %}
 
-Device detail
-
 Name: {{ object.name }}<p>
 
 
-{{ object.device_id }}<p>
+Device id: {{ object.device_id }}<p>
 
-{{ object.type }}<p>
+Device type: {{ object.type }}<p>
 
 
-Scan QR code to configure device:<p>
+QR code for configuration:<p>
 <img src="{% url 'device-qr' id=object.device_id %}">
 
 
