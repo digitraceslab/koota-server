@@ -5,12 +5,17 @@
 Device list
 
 <table>
+  <tr>
+    <th>Name</th>
+    <th>type</th>
+    <th>User</th>
+  </tr>
   {% for device in object_list %}
   <tr>
     <td>{{device.name}}</td>
     <td>{{device.type}}</td>
+    <td>{{device.user}}</td>
     <td><a href="{% url 'device-detail' id=device.device_id%}">Details/configure</a</td>
-    <td></td>
   </tr>
   {% endfor %}
 </table>

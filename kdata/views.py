@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 
@@ -42,14 +42,23 @@ class DeviceListView(ListView):
     model = models.Device
     allow_empty = True
 
-    #def get_queryset(self):
-    #    return self.model.objects.filter(user=self.request.usel)
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            queryset = self.model.objects.all()
+        else:
+            queryset = self.model.objects.filter(user=self.request.usel)
+        return queryset
 
 class DeviceDetail(DetailView):
     template_name = 'koota/device_detail.html'
     model = models.Device
     def get_object(self):
-        return self.model.objects.get(device_id=self.kwargs['id'])
+        obj = self.model.objects.get(device_id=self.kwargs['id'])
+        if self.request.user.is_superuser:
+            return obj
+        if obj.user != self.request.user:
+            raise Http404
+        return obj
 
 import qrcode
 import io
