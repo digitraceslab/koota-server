@@ -102,13 +102,15 @@ class DeviceDetail(DetailView):
 
 import qrcode
 import io
+import urllib2
 def device_qrcode(request, id):
     device = models.Device.objects.get(device_id=id)
-    data = ['post=http://localhost:8000/post',
-            'config=http://localhost:8000/config',
-            'device_id=%s'%device.device_id,
-            'device_type=%s'%device.type, ]
-    img = qrcode.make('; '.join(data), border=4, box_size=3,
+    data = [('post', 'http://localhost:8000/post'),
+            ('config', 'http://localhost:8000/config'),
+            ('device_id', device.device_id),
+            ('device_type', device.type), ]
+    uri = 'koota:?'+'&'.join('%s=%s'%(k, urllib2.quote(v)) for k,v in data)
+    img = qrcode.make(uri, border=4, box_size=2,
                      error_correction=qrcode.constants.ERROR_CORRECT_L)
     cimage = io.BytesIO()
     img.save(cimage)
