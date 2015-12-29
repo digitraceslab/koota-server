@@ -4,9 +4,12 @@ from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 
 from kdata import views as kviews
+from kdata import devices
 
 urlpatterns = [
     url(r'^post$', kviews.post),
+    url(r'^post/purple$', kviews.post, dict(device_class=devices.PurpleRobot),
+        name='post-purple'),
     url(r'^devices/$', kviews.DeviceListView.as_view(), name='device-list'),
     url(r'^devices/(?P<id>[0-9a-fA-F]*)/$', kviews.DeviceDetail.as_view(),
         name='device-detail'),

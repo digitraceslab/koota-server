@@ -6,32 +6,49 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, F
 
 import json
 from . import models
+from . import devices
 
 # Create your views here.
 
 
 @csrf_exempt
-def post(request):
+def post(request, device_class=None):
     #import IPython ; IPython.embed()
-    if request.method == "POST":
-        print request.META
-        if 'HTTP_DEVICE_ID' in request.META:
-            device_id = request.META['HTTP_DEVICE_ID']
-        elif 'device_id' in request.POST:
-            device_id = request.POST['device_id']
-        elif 'device_id' in request.GET:
-            device_id = request.GET['device_id']
-        else:
-            raise ValueError('No device ID')
+    if request.method != "POST":
+        return HttpResponse("invalid HTTP method")
+    # Custom device code, if available.
+    results = { }
+    if device_type is not None:
+        results = device_class.post(request)
 
-        if 'data' in request.POST:
-            json_data = request.POST['data']
-        else:
-            json_data = request.body
+    #print request.META
+    if 'device_id' in results:
+        device_id = results['device_id']
+    elif 'HTTP_DEVICE_ID' in request.META:
+        device_id = request.META['HTTP_DEVICE_ID']
+    elif 'device_id' in request.POST:
+        device_id = request.POST['device_id']
+    elif 'device_id' in request.GET:
+        device_id = request.GET['device_id']
+    else:
+        raise ValueError('No device ID')
 
-        row = models.Data(device_id=device_id, ip=request.META['REMOTE_ADDR'], data=json_data)
-        row.save()
+    # Find the data to store
+    if 'data' in results:
+        json_data = results['data']
+    elif 'data' in request.POST:
+        json_data = request.POST['data']
+    else:
+        json_data = request.body
 
+    # Store data in DB.  (Uses django models for now, but should
+    # be made more efficient later).
+    row = models.Data(device_id=device_id, ip=request.META['REMOTE_ADDR'], data=json_data)
+    row.save()
+
+    # HTTP response
+    if 'response' in results:
+        return results['response']
     return HttpResponse(json.dumps(dict(ok=True)),
                         content_type="application/json")
 
