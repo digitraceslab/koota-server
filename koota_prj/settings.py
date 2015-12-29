@@ -33,7 +33,7 @@ import __main__
 if hasattr(__main__, '__file__') and __main__.__file__.endswith('manage.py'):
     DEBUG = True
 
-ALLOWED_HOSTS = ['koota.zgib.net']
+ALLOWED_HOSTS = ['koota.zgib.net', 'data.koota.zgib.net']
 
 
 # Application definition
