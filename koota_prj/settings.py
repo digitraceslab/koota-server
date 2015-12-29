@@ -20,12 +20,21 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'tk%jm^r%t+bssa1w3$(64g9a$3z*s2)!z1pg_vzp^u)ptf=g3e'
+#SECRET_KEY = 'tk%jm^r%t+bssa1w3$(64g9a$3z*s2)!z1pg_vzp^u)ptf=g3e'
+try:
+    # dd if=/dev/random of=koota_prj/secret_key.txt bs=1 count=128
+    SECRET_KEY = open(os.path.join(os.path.dirname(__file__), 'secret_key.txt')).read()
+except IOError:
+    import random, string
+    SECRET_KEY = ''.join(random.choice(string.printable) for _ in range(30))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+import __main__
+print __main__.__file__
+if __main__.__file__.endswith('manage.py'):
+    DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['koota.zgib.net']
 
 
 # Application definition
