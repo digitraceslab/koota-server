@@ -28,22 +28,39 @@ class PurpleRobot(object):
     @classmethod
     def configure(cls, device):
         """Initial device configuration"""
+        from django.conf import settings
         raw_instructions = textwrap.dedent("""\
         Please go to settings and set these properties:<p>
 
         <ul>
-        <li>Post endpoint: https://data.koota.zgib.net{post}</li>
+        <li>Probes configuration: Enable probes: on; go through and manually disable every probe, then turn on these:
+        <ul><li> Hardware sensor probes: Location (frequency: 30 min), Step counter. Device Info&Config. Battery probe, Screen Probe, Device in Use.  External device probes: Wifi Probe (sampling frequency: every 5 min)</li></ul>
+        </li>
+        <li>Post endpoint: </li>
         <li>User ID: {device.device_id}</li>
+        <li>General data upload settings
+            <ul>
+            <li>Accept all SSL certificates: true</li>
+            <li>HTTP upload endpoint: https://{post_domain}{post}</li>
+            <li>Only use wifi connection: true</li>
+            <li></li>
+            <li></li>
+            </ul>
+        </li>
+        <li>JSON uploader settings/Enable JSON uploader: on</li>
+        
         </ul>
 
         """.format(
             post=str(cls.post_url),
             device=device,
+            post_domain=settings.POST_DOMAIN,
             ))
         return dict(post=cls.post_url,
                     config=cls.config,
                     qr=False,
-                    raw_instructions=raw_instructions)
+                    raw_instructions=raw_instructions,
+                    )
     @classmethod
     def config(cls, request):
         """/config url data"""
