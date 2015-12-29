@@ -9,7 +9,7 @@
 <li>Name: {{ object.name }}</li>
 <li>Device id: {{ object.device_id }}</li>
 <li>Device type: {{ object.get_type_display }}</li>
-<li>User: {{ object.user }}</li>
+{% if user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
 </ul>
 {{ context }}
 
