@@ -142,7 +142,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/srv/koota/log.txt',
+            'filename': os.path.join(BASE_DIR, 'log.txt'),
         },
     },
     'loggers': {
