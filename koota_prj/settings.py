@@ -30,8 +30,7 @@ except IOError:
 
 # SECURITY WARNING: don't run with debug turned on in production!
 import __main__
-print __main__.__file__
-if __main__.__file__.endswith('manage.py'):
+if hasattr(__main__, '__file__') and __main__.__file__.endswith('manage.py'):
     DEBUG = True
 
 ALLOWED_HOSTS = ['koota.zgib.net']
@@ -133,3 +132,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/srv/koota/log.txt',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}
