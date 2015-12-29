@@ -4,17 +4,26 @@
 
 <a href="{% url 'device-list' %}">Return to list</a><p>
 
-Name: {{ object.name }}<p>
+<h2>Basic information</h2>
+<ul>
+<li>Name: {{ object.name }}</li>
+<li>Device id: {{ object.device_id }}</li>
+<li>Device type: {{ object.get_type_display }}</li>
+<li>User: {{ object.user }}</li>
+</ul>
+{{ context }}
 
-Device id: {{ object.device_id }}<p>
+{% if raw_instructions %}
+<h2>Configuration instructions</h2>
+{{ raw_instructions|safe }}
+{% endif %}
 
-Device type: {{ object.type }}<p>
 
-User: {{ object.user }}<p>
-
-
-QR code for configuration:<p>
+{% if qr != False %}
+<h2>Configuration QR code</h2>
+Scan this with the device<p>
 <img src="{% url 'device-qr' id=object.device_id %}">
+{% endif %}
 
 
 {% endblock %}

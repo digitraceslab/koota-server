@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 
+from . import devices
 # Create your models here.
 
 class Data(models.Model):
@@ -17,6 +18,7 @@ class Device(models.Model):
     name = models.CharField(max_length=64,
                             help_text='Give your device a name')
     type = models.CharField(max_length=32,
-                            help_text='What type of device is this')
+                            help_text='What type of device is this',
+                            choices=devices.device_choices)
     device_id = models.CharField(max_length=64)
     active = models.BooleanField(default=True)

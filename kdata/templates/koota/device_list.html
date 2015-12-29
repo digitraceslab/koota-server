@@ -13,7 +13,7 @@ Device list
   {% for device in object_list %}
   <tr>
     <td>{{device.name}}</td>
-    <td>{{device.type}}</td>
+    <td>{{device.get_type_display}}</td>
     <td>{{device.user}}</td>
     <td><a href="{% url 'device-detail' id=device.device_id%}">Details/configure</a</td>
   </tr>

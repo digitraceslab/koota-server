@@ -110,18 +110,28 @@ class DeviceDetail(DetailView):
     template_name = 'koota/device_detail.html'
     model = models.Device
     def get_object(self):
+        """Get device model object, testing permissions"""
         obj = self.model.objects.get(device_id=self.kwargs['id'])
         if self.request.user.is_superuser:
             return obj
         if obj.user != self.request.user:
             raise Http404
         return obj
+    def get_context_data(self, **kwargs):
+        """Override template context data with special instructions from the DeviceType object."""
+        context = super(DeviceDetail, self).get_context_data(**kwargs)
+        try:
+            context.update(devices.get_class(self.object.type).configure(device=self.object))
+        except devices.NoDeviceTypeError:
+            pass
+        return context
 
 import qrcode
 import io
 import urllib2
 def device_qrcode(request, id):
     device = models.Device.objects.get(device_id=id)
+    #device_class = devices.get_class(self.object.type).qr_data(device=device)
     data = [('post', 'http://localhost:8000/post'),
             ('config', 'http://localhost:8000/config'),
             ('device_id', device.device_id),

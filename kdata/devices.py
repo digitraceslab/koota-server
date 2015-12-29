@@ -1,17 +1,53 @@
 import hashlib
+import textwrap
+from django.core.urlresolvers import reverse_lazy
+
+class NoDeviceTypeError(Exception):
+    pass
+
+device_choices = [
+    ('Android', 'Android'),
+    ('PurpleRobot', 'Purple Robot (Android)'),
+    ('Ios', 'IOS'),
+    #('', ''),
+    #('', ''),
+    #('', ''),
+    ]
+
+def get_class(name):
+    """Get a device class by (string) name"""
+    if name not in globals():
+        raise NoDeviceTypeError()
+    return globals()[name]
+
 
 
 class PurpleRobot(object):
-    post = reverse_lazy('post-purple')
-    config = reverse_lazy('config-purple')
+    post_url = reverse_lazy('post-purple')
+    config_url = reverse_lazy('config-purple')
     @classmethod
-    def configure(cls):
+    def configure(cls, device):
         """Initial device configuration"""
-        return dict(post=self.post,
-                    config=self.config)
+        raw_instructions = textwrap.dedent("""\
+        Please go to settings and set these properties:<p>
+
+        <ul>
+        <li>Post endpoint: https://data.koota.zgib.net{post}</li>
+        <li>User ID: {device.device_id}</li>
+        </ul>
+
+        """.format(
+            post=str(cls.post_url),
+            device=device,
+            ))
+        return dict(post=cls.post_url,
+                    config=cls.config,
+                    qr=False,
+                    raw_instructions=raw_instructions)
     @classmethod
-    def config(cls):
+    def config(cls, request):
         """/config url data"""
+        device_id = request.GET['user_id']
         pass
     @classmethod
     def post(cls, request):
