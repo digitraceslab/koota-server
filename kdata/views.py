@@ -129,11 +129,13 @@ class DeviceDetail(DetailView):
 import qrcode
 import io
 import urllib2
+from django.conf import settings
 def device_qrcode(request, id):
     device = models.Device.objects.get(device_id=id)
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
-    data = [('post', 'http://localhost:8000/post'),
-            ('config', 'http://localhost:8000/config'),
+    url_base = "{0}://{1}".format(request.scheme, settings.POST_DOMAIN)
+    data = [('post', url_base+reverse('post')),
+            ('config', url_base+'/config'),
             ('device_id', device.device_id),
             ('device_type', device.type), ]
     uri = 'koota:?'+'&'.join('%s=%s'%(k, urllib2.quote(v)) for k,v in data)

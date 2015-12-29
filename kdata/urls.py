@@ -7,7 +7,7 @@ from kdata import views as kviews
 from kdata import devices
 
 urlpatterns = [
-    url(r'^post$', kviews.post),
+    url(r'^post$', kviews.post, name='post'),
     url(r'^post/purple$', kviews.post, dict(device_class=devices.PurpleRobot),
         name='post-purple'),
     url(r'^devices/$', kviews.DeviceListView.as_view(), name='device-list'),
