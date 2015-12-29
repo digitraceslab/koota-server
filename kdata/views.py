@@ -18,11 +18,11 @@ def post(request, device_class=None):
         return HttpResponse("invalid HTTP method")
     # Custom device code, if available.
     results = { }
-    if device_type is not None:
+    if device_class is not None:
         results = device_class.post(request)
 
-    #print request.META
-    if 'device_id' in results:
+    # Find device_id.  Try different things until found.
+    if 'device_id' in results:  # results from custom device code
         device_id = results['device_id']
     elif 'HTTP_DEVICE_ID' in request.META:
         device_id = request.META['HTTP_DEVICE_ID']
@@ -34,7 +34,7 @@ def post(request, device_class=None):
         raise ValueError('No device ID')
 
     # Find the data to store
-    if 'data' in results:
+    if 'data' in results:  # results from custom device code
         json_data = results['data']
     elif 'data' in request.POST:
         json_data = request.POST['data']
