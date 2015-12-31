@@ -1,12 +1,13 @@
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
 import json
 from . import models
 from . import devices
+from . import util
 
 # Create your views here.
 
@@ -26,12 +27,22 @@ def post(request, device_class=None):
         device_id = results['device_id']
     elif 'HTTP_DEVICE_ID' in request.META:
         device_id = request.META['HTTP_DEVICE_ID']
-    elif 'device_id' in request.POST:
-        device_id = request.POST['device_id']
     elif 'device_id' in request.GET:
         device_id = request.GET['device_id']
+    elif 'device_id' in request.POST:
+        device_id = request.POST['device_id']
     else:
-        raise ValueError('No device ID')
+        return JsonResponse(dict(ok=False, error="No device_id provided"),
+                            status=400, reason="No device_id provided")
+    # Return an error if device checkdigits do not work out.  Since
+    # the server may not have a complete list of all registered
+    # devices, we need some way early-reject invalid device IDs.
+    # Purpose is to protect against user misentering it, but not
+    # attacks.
+    if not util.check_checkdigits(device_id):
+        return JsonResponse(dict(ok=False, error='Invalid device_id checkdigits',
+                                 device_id=device_id),
+                            status=400, reason="Invalid device_id checkdigits")
 
     # Find the data to store
     if 'data' in results:  # results from custom device code
@@ -49,8 +60,7 @@ def post(request, device_class=None):
     # HTTP response
     if 'response' in results:
         return results['response']
-    return HttpResponse(json.dumps(dict(ok=True)),
-                        content_type="application/json")
+    return JsonResponse(dict(ok=True))
 
 #
 # User management
@@ -159,7 +169,8 @@ class DeviceCreate(CreateView):
             form.instance.user = user
         # random device ID
         import random, string
-        id_ = ''.join(random.choice(string.hexdigits[:16]) for _ in range(16))
+        id_ = ''.join(random.choice(string.hexdigits[:14]) for _ in range(16))
+        id_ = util.add_checkdigits(id_)
         form.instance.device_id = id_
         return super(DeviceCreate, self).form_valid(form)
     def get_success_url(self):
