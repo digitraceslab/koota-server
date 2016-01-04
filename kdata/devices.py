@@ -11,7 +11,7 @@ device_choices = [
     ('Android', 'Android'),
     ('PurpleRobot', 'Purple Robot (Android)'),
     ('Ios', 'IOS'),
-    #('', ''),
+    ('MurataBSN', 'Murata Bed Sensor'),
     #('', ''),
     #('', ''),
     ]
@@ -22,9 +22,13 @@ def get_class(name):
         raise NoDeviceTypeError()
     return globals()[name]
 
+class _Device(object):
+    @classmethod
+    def configure(cls, device):
+        return { }
 
 
-class PurpleRobot(object):
+class PurpleRobot(_Device):
     post_url = reverse_lazy('post-purple')
     config_url = reverse_lazy('config-purple')
     @classmethod
@@ -108,3 +112,15 @@ class PurpleRobot(object):
                     # other way.
                     #device_id=device_id,
                     response=response)
+
+
+from defusedxml.ElementTree import fromstring as xml_fromstring
+class MurataBSN(_Device):
+    @classmethod
+    def post(cls, request):
+        doc = xml_fromstring(request.body)
+        node = doc[0][0]
+        device_id = node.attrib['id']
+
+        return dict(device_id=device_id,
+                    )
