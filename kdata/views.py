@@ -16,7 +16,8 @@ from . import util
 def post(request, device_class=None):
     #import IPython ; IPython.embed()
     if request.method != "POST":
-        return HttpResponse("invalid HTTP method")
+        return JsonResponse(dict(ok=False, message="invalid HTTP method"),
+                            status=403)
     # Custom device code, if available.
     results = { }
     if device_class is not None:
