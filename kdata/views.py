@@ -62,6 +62,14 @@ def post(request, device_class=None):
         return results['response']
     return JsonResponse(dict(ok=True))
 
+@csrf_exempt
+def config(request, device_class=None):
+    """Config dict data.
+
+    This is a dummy URL that has no content, but at least will not 404.
+    """
+    return JsonResponse(dict())
+
 #
 # User management
 #

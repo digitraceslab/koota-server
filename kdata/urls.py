@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'^post$', kviews.post, name='post'),
     url(r'^post/purple$', kviews.post, dict(device_class=devices.PurpleRobot),
         name='post-purple'),
+    url(r'^config$', kviews.config, name='config'),
     url(r'^devices/$', kviews.DeviceListView.as_view(), name='device-list'),
     url(r'^devices/(?P<id>[0-9a-fA-F]*)/$', kviews.DeviceDetail.as_view(),
         name='device-detail'),
