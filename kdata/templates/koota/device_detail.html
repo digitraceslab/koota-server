@@ -13,6 +13,15 @@
 </ul>
 {{ context }}
 
+<h2>Statistics</h2>
+<ul>
+<li>Number of data points: {{data_number}}</li>
+<li>Earliest data point at: {{data_earliest}}</li>
+<li>Latest data point at: {{data_latest}}</li>
+<li>Latest data: {{data_latest_data}}</li>
+<li></li>
+</ul>
+
 {% if raw_instructions %}
 <h2>Configuration instructions</h2>
 {{ raw_instructions|safe }}

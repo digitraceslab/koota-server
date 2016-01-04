@@ -134,6 +134,12 @@ class DeviceDetail(DetailView):
             context.update(devices.get_class(self.object.type).configure(device=self.object))
         except devices.NoDeviceTypeError:
             pass
+        device_data = models.Data.objects.filter(device_id=self.kwargs['id'])
+        context['data_number'] = device_data.count()
+        if context['data_number'] > 0:
+            context['data_earliest'] = device_data.order_by('ts').first().ts
+            context['data_latest'] = device_data.order_by('-ts').first().ts
+            context['data_latest_data'] = device_data.order_by('-ts').first().data
         return context
 
 import qrcode
