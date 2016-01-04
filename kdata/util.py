@@ -107,5 +107,16 @@ def test_luhn():
         assert len(num)<4 or num[2]==num[3] or not luhn(num_swapped, check=True), \
             ('swap2', num, luhn(num), swap2(num), luhn(swap2(num)), )
 
+        num_replaced = replace1(num+luhn(num))
+        assert not luhn(num_replaced, check=True), \
+            ('swap2', num, luhn(num), replace1(num), luhn(replace1(num)), )
+
 def swap2(num):
     return num[:2]+num[3:4]+num[2:3]+num[4:]
+def replace1(num):
+    import random, string
+    pos = random.randint(0, len(num)-1)
+    while True:
+        x = random.choice(string.hexdigits[:16])
+        if x != num[pos]: break
+    return num[:pos] + x + num[pos+1:]
