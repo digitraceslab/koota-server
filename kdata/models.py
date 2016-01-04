@@ -8,6 +8,10 @@ from . import devices
 # Create your models here.
 
 class Data(models.Model):
+    class Meta:
+        index_together = [
+            ["device_id", "ts"],
+            ]
     device_id = models.CharField(max_length=64)
     ts = models.DateTimeField(auto_now_add=True)
     ip = models.GenericIPAddressField()
@@ -20,5 +24,5 @@ class Device(models.Model):
     type = models.CharField(max_length=32,
                             help_text='What type of device is this',
                             choices=devices.device_choices)
-    device_id = models.CharField(max_length=64)
+    device_id = models.CharField(max_length=64, primary_key=True)
     active = models.BooleanField(default=True)
