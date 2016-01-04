@@ -1,6 +1,8 @@
 import hashlib
+import json
 import textwrap
 from django.core.urlresolvers import reverse_lazy
+from django.http import JsonResponse
 
 class NoDeviceTypeError(Exception):
     pass
@@ -88,21 +90,16 @@ class PurpleRobot(object):
             return HttpResponseBadRequest("Checksum mismatch",
                                     content_type="text/plain")
         #
-        store_data = { }
         device_id = UserHash
         data = json.loads(Payload)
-
-        store_data['REMOTE_ADDR'] = request.META['REMOTE_ADDR']
-
-        data_collection.insert_one(store_data)
 
         # Construct HTTP response that will allow PR to recoginze success.
         status = 'success'
         payload = '{ }'
         checksum = hashlib.md5(status + payload).hexdigest()
-        response = HttpResponse(json.dumps(dict(Status='success',
-                                                Payload=payload,
-                                                Checksum=checksum)),
+        response = JsonResponse(dict(Status='success',
+                                     Payload=payload,
+                                     Checksum=checksum),
                                 content_type="application/json")
 
         return dict(data=data,
