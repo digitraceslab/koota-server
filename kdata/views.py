@@ -80,7 +80,9 @@ def config(request, device_class=None):
 
     This is a dummy URL that has no content, but at least will not 404.
     """
-    return JsonResponse(dict())
+    from django.conf import settings
+    cert_der = open(settings.KOOTA_SSL_KEY).read().encode('base64')
+    return JsonResponse(dict(cert_der=cert_der))
 
 #
 # User management
@@ -173,7 +175,9 @@ def device_qrcode(request, id):
     data = [('post', url_base+reverse('post')),
             ('config', url_base+'/config'),
             ('device_id', device.device_id),
-            ('device_type', device.type), ]
+            ('device_type', device.type),
+            ('cert_der_sha256', settings.KOOTA_SSL_KEY_SHA256)
+             ]
     uri = 'koota:?'+'&'.join('%s=%s'%(k, urllib2.quote(v)) for k,v in data)
     img = qrcode.make(uri, border=4, box_size=2,
                      error_correction=qrcode.constants.ERROR_CORRECT_L)
