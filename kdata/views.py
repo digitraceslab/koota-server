@@ -184,7 +184,7 @@ class DeviceCreate(CreateView):
             form.instance.user = user
         # random device ID
         import random, string
-        id_ = ''.join(random.choice(string.hexdigits[:14]) for _ in range(16))
+        id_ = ''.join(random.choice(string.hexdigits[:16]) for _ in range(14))
         id_ = util.add_checkdigits(id_)
         form.instance.device_id = id_
         return super(DeviceCreate, self).form_valid(form)
