@@ -3,6 +3,8 @@ import json
 import textwrap
 from django.core.urlresolvers import reverse_lazy
 from django.http import JsonResponse
+import logging
+log = logging.getLogger(__name__)
 
 class NoDeviceTypeError(Exception):
     pass

@@ -9,6 +9,9 @@ from . import models
 from . import devices
 from . import util
 
+import logging
+log = logging.getLogger(__name__)
+
 # Create your views here.
 
 
@@ -35,6 +38,13 @@ def post(request, device_class=None):
     else:
         return JsonResponse(dict(ok=False, error="No device_id provided"),
                             status=400, reason="No device_id provided")
+    try:
+        int(device_id, 16)
+    except:
+        logging.info("Invalid device_id: %r"%device_id)
+        return JsonResponse(dict(ok=False, error="Invalid device_id",
+                                 device_id=device_id),
+                            status=400, reason="Invalid device_id")
     # Return an error if device checkdigits do not work out.  Since
     # the server may not have a complete list of all registered
     # devices, we need some way early-reject invalid device IDs.
@@ -57,6 +67,7 @@ def post(request, device_class=None):
     # be made more efficient later).
     row = models.Data(device_id=device_id, ip=request.META['REMOTE_ADDR'], data=json_data)
     row.save()
+    logging.info("Saved data from device_id=%r"%device_id)
 
     # HTTP response
     if 'response' in results:
