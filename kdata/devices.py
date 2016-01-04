@@ -33,22 +33,25 @@ class PurpleRobot(object):
         Please go to settings and set these properties:<p>
 
         <ul>
-        <li>Probes configuration: Enable probes: on; go through and manually disable every probe, then turn on these:
-        <ul><li> Hardware sensor probes: Location (frequency: 30 min), Step counter. Device Info&Config. Battery probe, Screen Probe, Device in Use.  External device probes: Wifi Probe (sampling frequency: every 5 min)</li></ul>
+        <li>Probes configuration: Enable probes: on, then go through and manually disable every probe, then turn on these:
+        <ul><li> Hardware sensor probes: Location (frequency: 30 min), Step counter. </li>
+            <li>Device Info&Config: Battery probe, Screen Probe, Device in Use.</li>
+            <li>External device probes: Wifi Probe (sampling frequency: every 5 min)</li>
+           </li></ul>
         </li>
-        <li>Post endpoint: </li>
-        <li>User ID: {device.device_id}</li>
+        <!-- <li>User ID: {device.device_id}</li> -->
+        <li>User ID: anything, not used</li>
         <li>General data upload settings
             <ul>
             <li>Accept all SSL certificates: true</li>
-            <li>HTTP upload endpoint: https://{post_domain}{post}</li>
+            <li>HTTP upload endpoint: https://{post_domain}{post}?device_id={device.device_id}</li>
             <li>Only use wifi connection: true</li>
-            <li></li>
-            <li></li>
             </ul>
         </li>
-        <li>JSON uploader settings/Enable JSON uploader: on</li>
-        
+        <li>JSON uploader settings ==> Enable JSON uploader: on</li>
+        <li>User identifier: something random, it is not used</li>
+        <li>Configuration URL: blank</li>
+        <li>Refresh interval: Never</li>
         </ul>
 
         """.format(
@@ -103,5 +106,8 @@ class PurpleRobot(object):
                                 content_type="application/json")
 
         return dict(data=data,
-                    device_id=device_id,
+                    # UserHash is hashed device_id and thus is not
+                    # useful to us.  This info must be found some
+                    # other way.
+                    #device_id=device_id,
                     response=response)
