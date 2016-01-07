@@ -143,7 +143,7 @@ class DeviceDetail(DetailView):
     model = models.Device
     def get_object(self):
         """Get device model object, testing permissions"""
-        obj = self.model.objects.get(device_id=self.kwargs['id'])
+        obj = self.model.objects.get(device_id=self.kwargs['device_id'])
         if self.request.user.is_superuser:
             return obj
         if obj.user != self.request.user:
@@ -156,7 +156,7 @@ class DeviceDetail(DetailView):
             context.update(devices.get_class(self.object.type).configure(device=self.object))
         except devices.NoDeviceTypeError:
             pass
-        device_data = models.Data.objects.filter(device_id=self.kwargs['id'])
+        device_data = models.Data.objects.filter(device_id=self.kwargs['device_id'])
         context['data_number'] = device_data.count()
         if context['data_number'] > 0:
             context['data_earliest'] = device_data.order_by('ts').first().ts
@@ -168,8 +168,8 @@ import qrcode
 import io
 import urllib2
 from django.conf import settings
-def device_qrcode(request, id):
-    device = models.Device.objects.get(device_id=id)
+def device_qrcode(request, device_id):
+    device = models.Device.objects.get(device_id=device_id)
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     url_base = "{0}://{1}".format(request.scheme, settings.POST_DOMAIN)
     data = [('post', url_base+reverse('post')),
@@ -207,4 +207,4 @@ class DeviceCreate(CreateView):
         self.object.save()
         self.object.refresh_from_db()
         print 'id'*5, self.object.device_id
-        return reverse('device-detail', kwargs=dict(id=self.object.device_id))
+        return reverse('device-detail', kwargs=dict(device_id=self.object.device_id))
