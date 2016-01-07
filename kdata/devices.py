@@ -21,7 +21,8 @@ device_choices = [
 def get_class(name):
     """Get a device class by (string) name"""
     if name not in globals():
-        raise NoDeviceTypeError()
+        return _Device
+        #raise NoDeviceTypeError()
     return globals()[name]
 
 class _Device(object):
@@ -45,14 +46,15 @@ class PurpleRobot(_Device):
         <ul><li> Hardware sensor probes: Location (frequency: 30 min), Step counter. </li>
             <li>Device Info&Config: Battery probe, Screen Probe, Device in Use.</li>
             <li>External device probes: Wifi Probe (sampling frequency: every 5 min)</li>
-           </li></ul>
+            <li>You may experiment with any other probes you would like, but consider battery usage.</li>
+            </ul>
         </li>
         <!-- <li>User ID: {device.device_id}</li> -->
         <li>User ID: anything, not used</li>
         <li>General data upload settings
             <ul>
-            <li>Accept all SSL certificates: true</li>
-            <li>HTTP upload endpoint: https://{post_domain}{post}?device_id={device.device_id}</li>
+            <li>Accept all SSL certificates: false</li>
+            <li>HTTP upload endpoint: https://{post_domain}{post}/{device.device_id}</li>
             <li>Only use wifi connection: true</li>
             </ul>
         </li>

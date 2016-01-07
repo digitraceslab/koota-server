@@ -31,7 +31,7 @@
 {% if qr != False %}
 <h2>Configuration QR code</h2>
 Scan this with the device<p>
-<img src="{% url 'device-qr' id=object.device_id %}">
+<img src="{% url 'device-qr' device_id=object.device_id %}">
 {% endif %}
 
 
