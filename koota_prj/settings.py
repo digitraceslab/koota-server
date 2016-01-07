@@ -161,7 +161,7 @@ LOGGING = {
         },
         '': {
             'handlers': ['file'],
-            'level': 'WARNING',
+            'level': 'INFO',
             'propagate': True,
         },
     },

@@ -70,7 +70,7 @@ def post(request, device_id=None, device_class=None):
     # be made more efficient later).
     row = models.Data(device_id=device_id, ip=request.META['REMOTE_ADDR'], data=json_data)
     row.save()
-    logging.info("Saved data from device_id=%r"%device_id)
+    logging.debug("Saved data from device_id=%r"%device_id)
 
     # HTTP response
     if 'response' in results:
