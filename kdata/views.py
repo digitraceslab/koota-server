@@ -16,18 +16,20 @@ log = logging.getLogger(__name__)
 
 
 @csrf_exempt
-def post(request, device_class=None):
+def post(request, device_id=None, device_class=None):
     #import IPython ; IPython.embed()
     if request.method != "POST":
-        return JsonResponse(dict(ok=False, message="invalid HTTP method"),
-                            status=403)
+        return JsonResponse(dict(ok=False, message="invalid HTTP method (must POST)"),
+                            status=405)
     # Custom device code, if available.
     results = { }
     if device_class is not None:
         results = device_class.post(request)
 
     # Find device_id.  Try different things until found.
-    if 'device_id' in results:  # results from custom device code
+    if device_id is not None:
+        pass
+    elif 'device_id' in results:  # results from custom device code
         device_id = results['device_id']
     elif 'HTTP_DEVICE_ID' in request.META:
         device_id = request.META['HTTP_DEVICE_ID']
@@ -41,7 +43,7 @@ def post(request, device_class=None):
     try:
         int(device_id, 16)
     except:
-        logging.info("Invalid device_id: %r"%device_id)
+        logging.warning("Invalid device_id: %r"%device_id)
         return JsonResponse(dict(ok=False, error="Invalid device_id",
                                  device_id=device_id),
                             status=400, reason="Invalid device_id")
@@ -51,6 +53,7 @@ def post(request, device_class=None):
     # Purpose is to protect against user misentering it, but not
     # attacks.
     if not util.check_checkdigits(device_id):
+        logging.warning("Invalid device_id checkdigits: %r"%device_id)
         return JsonResponse(dict(ok=False, error='Invalid device_id checkdigits',
                                  device_id=device_id),
                             status=400, reason="Invalid device_id checkdigits")

@@ -7,9 +7,9 @@ from kdata import views as kviews
 from kdata import devices
 
 urlpatterns = [
-    url(r'^post$', kviews.post, name='post'),
-    url(r'^post/purple$', kviews.post, dict(device_class=devices.PurpleRobot),
+    url(r'^post/purple/?(?P<device_id>\w+)?$', kviews.post, dict(device_class=devices.PurpleRobot),
         name='post-purple'),
+    url(r'^post/?(?P<device_id>[A-Fa-f0-9]+)?$', kviews.post, name='post'),
     # the Murata bed sensor has a hard-coded POST URL.
     url(r'^data/push/$', kviews.post, dict(device_class=devices.MurataBSN),
         name='post-MurataBSN'),
