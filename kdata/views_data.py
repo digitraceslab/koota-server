@@ -61,6 +61,7 @@ def device_data(request, device_id, converter, format):
     converter = c['converter'] = \
         [ x for x in device_class.converters if x.name() == converter ][0]
 
+    # Fetch all relevant data
     queryset = models.Data.objects.filter(device_id=device_id, ).order_by('ts').defer('data')
     data = queryset
 
@@ -69,7 +70,7 @@ def device_data(request, device_id, converter, format):
         page_number = request.GET.get('page', None)
         if page_number == 'last':
             pass
-        if page_number:
+        elif page_number:
             page_number = int(page_number)
         else:
             page_number = 1
@@ -77,15 +78,18 @@ def device_data(request, device_id, converter, format):
         page_obj = c['page_obj'] = paginator.page(page_number)
         data = page_obj.object_list
 
+    # For web view, convert to pretty time, others use raw unixtime.
     if not format:
         time_converter = lambda ts: datetime.fromtimestamp(ts)
     else:
         time_converter = lambda ts: ts
 
+    # Make our table object by passing raw data through the converter.
     table = c['table'] = \
       converter().convert(((x.ts, x.data) for x in data.iterator()),
                           time=time_converter)
 
+    # Convert to custom formats if it was requested.
     context['download_formats'] = ['csv']
     if format == 'csv':
         import csv
@@ -95,17 +99,19 @@ def device_data(request, device_id, converter, format):
             fo = cStringIO.StringIO()
             csv_writer = csv.writer(fo)
             csv_writer.writerow(converter.header)
-            for _ in range(1000):
-                row = next(rows)
-                #print row
-                csv_writer.writerow(row)
-            fo.seek(0)
-            data = fo.read()
-            fo.seek(0)
-            fo.truncate()
-            yield data
+            while True:
+                for _ in range(1000):
+                    row = next(rows)
+                    #print row
+                    csv_writer.writerow(row)
+                fo.seek(0)
+                data = fo.read()
+                fo.seek(0)
+                fo.truncate()
+                yield data
         return StreamingHttpResponse(csv_iter(), content_type='text/plain')
 
+    # Done, return
     return TemplateResponse(request, 'koota/device_data.html', context)
 
 
