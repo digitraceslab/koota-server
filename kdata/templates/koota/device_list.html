@@ -15,7 +15,8 @@ Device list
     <td>{{device.name}}</td>
     <td>{{device.get_type_display}}</td>
     <td>{{device.user}}</td>
-    <td><a href="{% url 'device-detail' device_id=device.device_id%}">Details/configure</a</td>
+    <td><a href="{% url 'device' device_id=device.device_id%}">Info</a</td>
+    <td><a href="{% url 'device-config' device_id=device.device_id%}">Configure</a</td>
   </tr>
   {% endfor %}
 </table>

@@ -12,15 +12,23 @@
 {% if user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
 </ul>
 
-<h2>Statistics</h2>
+<h2>Data</h2>
 <ul>
 <li>Number of data points: {{data_number}}</li>
 <li>Earliest data point at: {{data_earliest}}</li>
 <li>Latest data point at: {{data_latest}}</li>
-<li>Latest data: {{data_latest_data}}</li>
 </ul>
 
+{% if raw_instructions %}
+<h2>Configuration instructions</h2>
+{{ raw_instructions|safe }}
+{% endif %}
 
-<h2>Available analyzes</h2>
+
+{% if qr != False %}
+<h2>Configuration QR code</h2>
+Scan this with the device<p>
+<img src="{% url 'device-qr' device_id=object.device_id %}">
+{% endif %}
 
 {% endblock %}

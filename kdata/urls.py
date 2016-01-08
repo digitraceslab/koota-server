@@ -4,6 +4,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 
 from kdata import views as kviews
+from kdata import views_data
 from kdata import devices
 
 urlpatterns = [
@@ -15,10 +16,12 @@ urlpatterns = [
         name='post-MurataBSN'),
     url(r'^config$', kviews.config, name='config'),
     url(r'^devices/$', kviews.DeviceListView.as_view(), name='device-list'),
-    url(r'^devices/(?P<device_id>[0-9a-fA-F]*)/$', kviews.DeviceDetail.as_view(),
-        name='device-detail'),
+    url(r'^devices/(?P<device_id>[0-9a-fA-F]*)/config$', kviews.DeviceConfig.as_view(),
+        name='device-config'),
     url(r'^devices/(?P<device_id>[0-9a-fA-F]*)/qr.png$', kviews.device_qrcode,
         name='device-qr'),
+    url(r'^devices/(?P<device_id>[0-9a-fA-F]*)/$', views_data.DeviceDetail.as_view(),
+        name='device'),
     url(r'^devices/create/$', kviews.DeviceCreate.as_view(),
         name='device-create'),
 

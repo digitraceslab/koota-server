@@ -135,14 +135,15 @@ class DeviceListView(ListView):
     allow_empty = True
 
     def get_queryset(self):
+        # fixme: return "not possible" if not logged in
         if self.request.user.is_superuser:
             queryset = self.model.objects.all()
         else:
             queryset = self.model.objects.filter(user=self.request.user)
         return queryset
 
-class DeviceDetail(DetailView):
-    template_name = 'koota/device_detail.html'
+class DeviceConfig(DetailView):
+    template_name = 'koota/device_config.html'
     model = models.Device
     def get_object(self):
         """Get device model object, testing permissions"""
@@ -154,9 +155,10 @@ class DeviceDetail(DetailView):
         return obj
     def get_context_data(self, **kwargs):
         """Override template context data with special instructions from the DeviceType object."""
-        context = super(DeviceDetail, self).get_context_data(**kwargs)
+        context = super(DeviceConfig, self).get_context_data(**kwargs)
+        device_class = context['device_class'] = devices.get_class(self.object.type)
         try:
-            context.update(devices.get_class(self.object.type).configure(device=self.object))
+            context.update(device_class.configure(device=self.object))
         except devices.NoDeviceTypeError:
             pass
         device_data = models.Data.objects.filter(device_id=self.kwargs['device_id'])
@@ -209,5 +211,5 @@ class DeviceCreate(CreateView):
     def get_success_url(self):
         self.object.save()
         self.object.refresh_from_db()
-        print 'id'*5, self.object.device_id
-        return reverse('device-detail', kwargs=dict(device_id=self.object.device_id))
+        #print 'id'*5, self.object.device_id
+        return reverse('device-config', kwargs=dict(device_id=self.object.device_id))

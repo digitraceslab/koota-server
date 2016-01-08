@@ -1,4 +1,28 @@
 
+from . import models
+
+def get_device(request, *args, **kwargs):
+    raise NotImplemented
+
+def has_device_perm(request, device):
+    """Test for user having permissions to access device.
+    """
+    if isinstance(device, (str,unicode)):
+        device = models.Device.objects.get(device_id=device)
+    if request.user.is_superuser:
+        return True
+    if device.user == request.user:
+        return True
+    return False
+
+def check_device_permissions(func):
+    raise NotImplemented
+    def _decorated(request, *args, **kwargs):
+        if not has_device_perm(request, kwargs['device_id']):
+            return Http404
+        return func(request, *args, **kwargs)
+    return _decorated
+
 def luhn1(num, check=False):
     """Luhn algorithm mod 16"""
     factor = 2
