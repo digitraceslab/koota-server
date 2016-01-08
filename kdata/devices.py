@@ -6,6 +6,8 @@ from django.http import JsonResponse
 import logging
 log = logging.getLogger(__name__)
 
+from . import converter
+
 class NoDeviceTypeError(Exception):
     pass
 
@@ -26,6 +28,7 @@ def get_class(name):
     return globals()[name]
 
 class _Device(object):
+    converters = [converter.Raw]
     @classmethod
     def configure(cls, device):
         return { }
@@ -34,6 +37,9 @@ class _Device(object):
 class PurpleRobot(_Device):
     post_url = reverse_lazy('post-purple')
     config_url = reverse_lazy('config-purple')
+    converters = [converter.Raw,
+                  converter.PRProbes,
+                  converter.PRBattery]
     @classmethod
     def configure(cls, device):
         """Initial device configuration"""
@@ -120,6 +126,9 @@ class PurpleRobot(_Device):
 
 from defusedxml.ElementTree import fromstring as xml_fromstring
 class MurataBSN(_Device):
+    converters = [converter.Raw,
+                  converter.MurataBSN,
+                 ]
     @classmethod
     def post(cls, request):
         doc = xml_fromstring(request.body)
