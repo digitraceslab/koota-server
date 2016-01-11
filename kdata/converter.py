@@ -43,7 +43,7 @@ class MurataBSN(_Converter):
                 if not row: continue
                 unixtime = timegm(ts.timetuple()) + int(row[0])
                 #yield [unixtime, time.strftime('%H:%M:%S', time.localtime(unixtime))]+ row[1:]
-                yield [unixtime, ]+ row[1:]
+                yield [time(unixtime), ]+ row[1:]
 
 
 class PRProbes(_Converter):
@@ -65,9 +65,7 @@ class PRProbes(_Converter):
                 yield (time(probe['TIMESTAMP']),
                        probe['PROBE'].split('.')[-1],
                        dumps(probe))
-                       
 
-            
 class PRBattery(_Converter):
     header = ['time', 'level', 'plugged']
     def convert(self, queryset, time=lambda x:x):
@@ -88,4 +86,24 @@ class PRBattery(_Converter):
                     yield (time(probe['TIMESTAMP']),
                            int(probe['level']),
                            int(probe['plugged']),
+                          )
+class PRScreen(_Converter):
+    header = ['time', 'onoff']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            if isinstance(data, buffer):
+                log.info(data)
+                continue
+            try:
+                data = loads(data)
+            except ValueError: #ValueError:
+                import ast
+                try:
+                    data = ast.literal_eval(data)
+                except:
+                    log.critical(type(data), data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.ScreenProbe':
+                    yield (time(probe['TIMESTAMP']),
+                           int(probe['SCREEN_ACTIVE']),
                           )

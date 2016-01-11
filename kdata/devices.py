@@ -39,7 +39,9 @@ class PurpleRobot(_Device):
     config_url = reverse_lazy('config-purple')
     converters = [converter.Raw,
                   converter.PRProbes,
-                  converter.PRBattery]
+                  converter.PRScreen,
+                  converter.PRBattery,
+                  ]
     @classmethod
     def configure(cls, device):
         """Initial device configuration"""
