@@ -1,4 +1,5 @@
-<html>
+<!doctype html>
+<html lang="en">
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
     <title>{{title}}</title>
@@ -6,10 +7,13 @@
 
   <div style="border:1px solid black;">
   {% if user.is_authenticated %}
-  <p>Logged in as {{ user.username }}. <a href="{% url 'logout'%}?next=/">Logout</a></p>
+  Logged in as {{ user.username }}. <a href="{% url 'logout'%}?next=/">Logout</a><br>
   {% else %}
-  <p><a href="{% url 'login' %}">Login</a> <a href="{% url 'register-user' %}">Register</a></p>
+  <a href="{% url 'login2' %}">Login</a> <a href="{% url 'register-user' %}">Register</a><br>
   {% endif %}
+  {% for breadcrumb in request.breadcrumbs %}
+  {% if not forloop.last %}<a href="{{ breadcrumb.1 }}">{{ breadcrumb.0 }}</a> &raquo; {%else%} {{ breadcrumb.0 }} {% endif %}
+  {% endfor %}<p>
   </div>
 
 

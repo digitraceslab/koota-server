@@ -2,8 +2,6 @@
 
 {% block body %}
 
-<a href="{% url 'device-list' %}">Return to list</a><p>
-
 <h2>Raw data</h2>
 
 Download as: {% for format in download_formats %}<a href="{{request.path_info}}.{{format}}">{{format}}</a> {% endfor %}

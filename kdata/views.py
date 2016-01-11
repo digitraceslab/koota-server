@@ -134,6 +134,11 @@ class DeviceListView(ListView):
     model = models.Device
     allow_empty = True
 
+    def dispatch(self, request, *args, **kwargs):
+        """Handle anonymous users by redirecting to main"""
+        if request.user.is_anonymous():
+            return HttpResponseRedirect(reverse('main'))
+        return super(DeviceListView, self).dispatch(request, *args, **kwargs)
     def get_queryset(self):
         # fixme: return "not possible" if not logged in
         if self.request.user.is_superuser:

@@ -24,10 +24,10 @@ from kdata import views as kviews
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
-    url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html'}),
+    url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html'}, name='login2'),
     url(r'^register/$', kviews.RegisterView.as_view(), name='register-user'),
     url(r'^', include('django.contrib.auth.urls')),
 
-    url(r'^$', TemplateView.as_view(template_name='koota/main.html')),
+    url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     url(r'^', include('kdata.urls')),
     ]

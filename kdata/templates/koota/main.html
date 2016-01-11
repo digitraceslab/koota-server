@@ -2,6 +2,8 @@
 
 {% block body %}
 
+{% if not request.user.is_anonymous %}
 <a href="{% url 'device-list' %}">Device list</a>
+{% endif %}
 
 {% endblock%}
