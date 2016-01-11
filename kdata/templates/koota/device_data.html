@@ -1,0 +1,33 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+<a href="{% url 'device-list' %}">Return to list</a><p>
+
+<h2>Raw data</h2>
+
+Download as: {% for format in download_formats %}<a href="{{request.path_info}}.{{format}}">{{format}}</a> {% endfor %}
+<p>
+
+{% if page_obj.has_previous %}
+<a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+{% endif %}
+{%if page_obj.has_next%}
+<a href="?page={{ page_obj.next_page_number }}">Next</a>
+{% endif %}
+
+<table>
+  <tr>{% for name in converter.header %}
+    <th>{{ name }}</th>{% endfor %}
+  </tr>
+{% for row in table %}
+  <tr>{% for item in row %}
+    <td>{{ item }}</td>{% endfor %}
+  </tr>
+{% endfor %}
+</table>
+
+  
+
+
+{% endblock %}
