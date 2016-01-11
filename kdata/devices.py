@@ -107,7 +107,8 @@ class PurpleRobot(_Device):
                                     content_type="text/plain")
         #
         device_id = UserHash
-        data = json.loads(Payload)
+        #data = json.loads(Payload)
+        data = Payload
 
         # Construct HTTP response that will allow PR to recoginze success.
         status = 'success'
