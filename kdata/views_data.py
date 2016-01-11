@@ -68,13 +68,13 @@ def device_data(request, device_id, converter, format):
     # Paginate, if needed
     if converter.per_page is not None and not format:
         page_number = request.GET.get('page', None)
+        paginator = Paginator(queryset, converter.per_page)
         if page_number == 'last':
-            pass
+            page_number = paginator.num_pages
         elif page_number:
             page_number = int(page_number)
         else:
             page_number = 1
-        paginator = Paginator(queryset, converter.per_page)
         page_obj = c['page_obj'] = paginator.page(page_number)
         data = page_obj.object_list
 
