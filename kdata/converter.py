@@ -1,5 +1,6 @@
 
 from calendar import timegm
+import collections
 import csv
 from datetime import datetime
 from json import loads, dumps
@@ -77,3 +78,14 @@ class PRScreen(_Converter):
                     yield (time(probe['TIMESTAMP']),
                            int(probe['SCREEN_ACTIVE']),
                           )
+class PRDataSize(_Converter):
+    per_page = None
+    header = ['time', 'onoff']
+    def convert(self, queryset, time=lambda x:x):
+        sizes = collections.defaultdict(int)
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                sizes[probe['PROBE']] += len(dumps(probe))
+        for probe, size in sorted(sizes.iteritems(), key=lambda x: x[1], reverse=True):
+            yield probe, size

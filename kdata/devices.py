@@ -41,6 +41,7 @@ class PurpleRobot(_Device):
                   converter.PRProbes,
                   converter.PRScreen,
                   converter.PRBattery,
+                  converter.PRDataSize,
                   ]
     @classmethod
     def configure(cls, device):
