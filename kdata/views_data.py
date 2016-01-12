@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
 import json
+import time
 from . import models
 from . import devices
 from . import util
@@ -109,7 +110,11 @@ def device_data(request, device_id, converter, format):
                 fo.seek(0)
                 fo.truncate()
                 yield data
-        return StreamingHttpResponse(csv_iter(), content_type='text/plain')
+        response = StreamingHttpResponse(csv_iter(), content_type='text/plain')
+        filename = '%s-%s-%s.%s'%(device_id[:6], device.type, time.strftime('%Y-%d-%d_%H:%M'), format)
+        response['Content-Disposition'] = 'filename="foo.xls"'
+        return response
+
 
     # Done, return
     return TemplateResponse(request, 'koota/device_data.html', context)
