@@ -47,6 +47,10 @@ class PurpleRobot(_Device):
         """Initial device configuration"""
         from django.conf import settings
         raw_instructions = textwrap.dedent("""\
+        <p>See the new instructions at <a href="https://github.com/CxAalto/koota-server/wiki/PurpleRobot">the wiki page</a>.  Your POST URL is <tt>https://{post_domain}{post}/{device.device_id}</tt></p>
+
+        <p>Not updated instructions below:</p>
+
         Please go to settings and set these properties:<p>
 
         <ul>
@@ -132,6 +136,9 @@ class MurataBSN(_Device):
     converters = [converter.Raw,
                   converter.MurataBSN,
                  ]
+    raw_instructions = textwrap.dedent("""\
+    See <a href="https://github.com/CxAalto/koota-server/wiki/MurataBSN">the wiki page</a>.
+    """)
     @classmethod
     def post(cls, request):
         doc = xml_fromstring(request.body)
@@ -140,3 +147,9 @@ class MurataBSN(_Device):
 
         return dict(device_id=device_id,
                     )
+    @classmethod
+    def configure(cls, device):
+        return dict(qr=False,
+                    raw_instructions=cls.raw_instructions,
+                    )
+

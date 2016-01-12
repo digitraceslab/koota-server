@@ -3,7 +3,13 @@
 {% block body %}
 
 {% if not request.user.is_anonymous %}
-<a href="{% url 'device-list' %}">Device list</a>
+<p><a href="{% url 'device-list' %}">Device list</a></p>
 {% endif %}
+
+<p><a href="https://github.com/CxAalto/koota-server/wiki/UserGuide">User Guide</a> (and general wiki)</p>
+
+<p><a href="https://github.com/CxAalto/koota-server">Code</a></p>
+
+<p><a href="https://github.com/CxAalto/koota-server/issues">Issue tracker</a></p>
 
 {% endblock%}
