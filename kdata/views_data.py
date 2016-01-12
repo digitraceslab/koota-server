@@ -57,7 +57,7 @@ def device_data(request, device_id, converter, format):
     # Get devices and other data
     device = models.Device.objects.get(device_id=device_id)
     if not util.has_device_perm(request, device):
-        raise Http404
+        return HttpResponse(status=403, reason='Not authorized')
     device_class = c['device_class'] = devices.get_class(device.type)
     converter = c['converter'] = \
         [ x for x in device_class.converters if x.name() == converter ][0]
