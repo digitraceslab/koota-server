@@ -50,17 +50,7 @@ class PRProbes(_Converter):
     header = ['time', 'probe', 'data']
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
-            if isinstance(data, buffer):
-                log.info(('buffer: ', ts, data))
-                continue
-            try:
-                data = loads(data)
-            except ValueError: #ValueError:
-                import ast
-                try:
-                    data = ast.literal_eval(data)
-                except:
-                    log.critical(type(data), data)
+            data = loads(data)
             for probe in data:
                 yield (time(probe['TIMESTAMP']),
                        probe['PROBE'].split('.')[-1],
@@ -70,17 +60,7 @@ class PRBattery(_Converter):
     header = ['time', 'level', 'plugged']
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
-            if isinstance(data, buffer):
-                log.info(data)
-                continue
-            try:
-                data = loads(data)
-            except ValueError: #ValueError:
-                import ast
-                try:
-                    data = ast.literal_eval(data)
-                except:
-                    log.critical(type(data), data)
+            data = loads(data)
             for probe in data:
                 if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.BatteryProbe':
                     yield (time(probe['TIMESTAMP']),
@@ -91,17 +71,7 @@ class PRScreen(_Converter):
     header = ['time', 'onoff']
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
-            if isinstance(data, buffer):
-                log.info(data)
-                continue
-            try:
-                data = loads(data)
-            except ValueError: #ValueError:
-                import ast
-                try:
-                    data = ast.literal_eval(data)
-                except:
-                    log.critical(type(data), data)
+            data = loads(data)
             for probe in data:
                 if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.ScreenProbe':
                     yield (time(probe['TIMESTAMP']),
