@@ -2,15 +2,18 @@ from django.core.urlresolvers import reverse
 from . import views as kviews
 from . import models
 
+import logging
+log = logging.getLogger(__name__)
 
 class KdataMiddleware(object):
     def process_view(self, request, view_func, args, kwargs):
 
-        if 'device_id' in kwargs:
+        if kwargs.get('device_id', None):
             request.breadcrumbs = breadcrumbs = [ ]
 
             device_id = kwargs['device_id']
             breadcrumbs.append(('All Devices', reverse('device-list')))
+
             device = models.Device.objects.get(device_id=device_id)
             breadcrumbs.append((device.name, reverse('device', kwargs={'device_id':device_id})))
             #import IPython ; IPython.embed()
