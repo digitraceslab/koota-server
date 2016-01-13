@@ -41,6 +41,10 @@ class PurpleRobot(_Device):
                   converter.PRProbes,
                   converter.PRScreen,
                   converter.PRBattery,
+                  converter.PRWifi,
+                  converter.PRBluetooth,
+                  converter.PRStepCounter,
+                  converter.PRDeviceInUse,
                   converter.PRDataSize,
                   ]
     @classmethod

@@ -78,6 +78,67 @@ class PRScreen(_Converter):
                     yield (time(probe['TIMESTAMP']),
                            int(probe['SCREEN_ACTIVE']),
                           )
+class PRWifi(_Converter):
+    header = ['time', 'essid', 'current', 'strength']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.WifiAccessPointsProbe':
+                    ts = time(probe['TIMESTAMP'])
+                    current = probe['CURRENT_BSSID']
+                    yield (ts,
+                           loads(probe['CURRENT_SSID']),
+                           #probe['CURRENT_BSSID'],
+                           1,
+                           probe['CURRENT_RSSI'],
+                           )
+                    for ap_info in probe['ACCESS_POINTS']:
+                        yield (ts,
+                               ap_info['SSID'],
+                               #ap_indo['BSSID']
+                               0,
+                               ap_info['LEVEL'],
+                               )
+class PRBluetooth(_Converter):
+    header = ['time', 'bluetooth_name', 'bluetooth_address']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.BluetoothDevicesProbe':
+                    ts = time(probe['TIMESTAMP'])
+                    for dev_info in probe['DEVICES']:
+                        # available keys:
+                        # {"BLUETOOTH_NAME":"2a1327a019948590cccc3ff20fe3dbdb",
+                        #  "BOND_STATE":"Not Paired",
+                        #  "DEVICE MAJOR CLASS":"0x00000100 Computer",
+                        #  "BLUETOOTH_ADDRESS":"6841398ddc6f2cee644a3bcf39b894d2",
+                        #  "DEVICE MINOR CLASS":"0x0000010c Laptop"}
+                        yield (ts,
+                               dev_info.get('BLUETOOTH_NAME', ''),
+                               dev_info.get('BLUETOOTH_ADDRESS', ''),
+                               )
+class PRStepCounter(_Converter):
+    header = ['time', 'step_count']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.StepCounterProbe':
+                    yield (time(probe['TIMESTAMP']),
+                           probe['STEP_COUNT'],
+                           )
+class PRDeviceInUse(_Converter):
+    header = ['time', 'packet_ts', 'in_use']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.features.DeviceInUseFeature':
+                    yield (time(probe['TIMESTAMP']),
+                           int(probe['DEVICE_ACTIVE']))
+
 class PRDataSize(_Converter):
     per_page = None
     header = ['time', 'onoff']
