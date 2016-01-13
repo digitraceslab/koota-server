@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
 import json
+from json import dumps, loads
 import time
 from . import models
 from . import devices
@@ -91,7 +92,7 @@ def device_data(request, device_id, converter, format):
                           time=time_converter)
 
     # Convert to custom formats if it was requested.
-    context['download_formats'] = ['csv']
+    context['download_formats'] = ['csv', 'json']
     if format == 'csv':
         import csv
         import cStringIO
@@ -117,8 +118,25 @@ def device_data(request, device_id, converter, format):
                 fo.truncate()
                 yield data
         response = StreamingHttpResponse(csv_iter(), content_type='text/plain')
-        filename = '%s-%s-%s.%s'%(device_id[:6], device.type, time.strftime('%Y-%d-%d_%H:%M'), format)
-        response['Content-Disposition'] = 'filename="foo.xls"'
+        #filename = '%s-%s-%s.%s'%(device_id[:6], device.type, time.strftime('%Y-%d-%d_%H:%M'), format)
+        #response['Content-Disposition'] = 'filename="foo.xls"'
+        return response
+    elif format == 'json':
+        def json_iter():
+            rows = iter(table)
+            yield '[\n'
+            yield dumps(next(rows))  # first one (hope there is no StopIteration now)
+            while True:
+                try:
+                    row = next(rows)  # raises StopIteration if data exhausted
+                    yield ',\n'  # finalize the one from before, IF we have a next row
+                    yield dumps(row)
+                except StopIteration:
+                    break
+            yield '\n]'
+        response = StreamingHttpResponse(json_iter(), content_type='text/plain')
+        #filename = '%s-%s-%s.%s'%(device_id[:6], device.type, time.strftime('%Y-%d-%d_%H:%M'), format)
+        #response['Content-Disposition'] = 'filename="foo.xls"'
         return response
 
 
