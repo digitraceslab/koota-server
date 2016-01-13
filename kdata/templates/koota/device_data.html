@@ -27,6 +27,12 @@ Download as: {% for format in download_formats %}<a href="{{request.path_info}}.
 </table>
 
   
+{% if page_obj.has_previous %}
+<a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+{% endif %}
+{%if page_obj.has_next%}
+<a href="?page={{ page_obj.next_page_number }}">Next</a>
+{% endif %}
 
 
 {% endblock %}

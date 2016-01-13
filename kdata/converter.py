@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 class _Converter(object):
-    per_page = 10
+    per_page = 25
     header = [ ]
     @classmethod
     def name(cls):

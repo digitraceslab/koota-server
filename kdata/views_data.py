@@ -70,7 +70,7 @@ def device_data(request, device_id, converter, format):
     # Paginate, if needed
     if converter.per_page is not None and not format:
         page_number = request.GET.get('page', None)
-        paginator = Paginator(queryset, converter.per_page)
+        paginator = Paginator(queryset, min(request.GET.get('perpage', converter.per_page), 100))
         if page_number == 'last':
             page_number = paginator.num_pages
         elif page_number:
@@ -81,8 +81,8 @@ def device_data(request, device_id, converter, format):
         data = page_obj.object_list
 
     # For web view, convert to pretty time, others use raw unixtime.
-    if not format:
-        time_converter = lambda ts: datetime.fromtimestamp(ts)
+    if not format or request.GET.get('textdate', False):
+        time_converter = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%m %H:%M:%S')
     else:
         time_converter = lambda ts: ts
 
