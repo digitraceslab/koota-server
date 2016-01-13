@@ -56,7 +56,7 @@ def device_data(request, device_id, converter, format):
     """List data from one device+converter on a """
     context = c = { }
     # Get devices and other data
-    device = models.Device.objects.get(device_id=device_id)
+    device = c['device'] = models.Device.objects.get(device_id=device_id)
     if not util.has_device_perm(request, device):
         return HttpResponse(status=403, reason='Not authorized')
     device_class = c['device_class'] = devices.get_class(device.type)

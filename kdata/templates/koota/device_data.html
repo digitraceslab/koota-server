@@ -1,8 +1,9 @@
 {% extends "koota/base.html" %}
+{% block title %} {{ converter.name }} on {{device.name}} {% endblock %}
 
 {% block body %}
 
-<h2>Raw data</h2>
+<h2>{{ converter.name }} on {{device.name}}</h2>
 
 Download as: {% for format in download_formats %}<a href="{{request.path_info}}.{{format}}">{{format}}</a> {% endfor %}
 <p>
