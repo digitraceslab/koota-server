@@ -101,10 +101,16 @@ def device_data(request, device_id, converter, format):
             csv_writer = csv.writer(fo)
             csv_writer.writerow(converter.header)
             while True:
-                for _ in range(1000):
+                try:
+                  for _ in range(1000):
                     row = next(rows)
                     #print row
                     csv_writer.writerow(row)
+                except StopIteration:
+                    fo.seek(0)
+                    yield fo.read()
+                    del fo
+                    break
                 fo.seek(0)
                 data = fo.read()
                 fo.seek(0)
