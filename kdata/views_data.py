@@ -82,7 +82,7 @@ def device_data(request, device_id, converter, format):
 
     # For web view, convert to pretty time, others use raw unixtime.
     if not format or request.GET.get('textdate', False):
-        time_converter = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%m %H:%M:%S')
+        time_converter = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     else:
         time_converter = lambda ts: ts
 
