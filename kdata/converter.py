@@ -139,6 +139,7 @@ class PRDeviceInUse(_Converter):
                     yield (time(probe['TIMESTAMP']),
                            int(probe['DEVICE_ACTIVE']))
 
+from six import iteritems
 class PRDataSize(_Converter):
     per_page = None
     header = ['time', 'onoff']
@@ -148,5 +149,5 @@ class PRDataSize(_Converter):
             data = loads(data)
             for probe in data:
                 sizes[probe['PROBE']] += len(dumps(probe))
-        for probe, size in sorted(sizes.iteritems(), key=lambda x: x[1], reverse=True):
+        for probe, size in sorted(iteritems(sizes), key=lambda x: x[1], reverse=True):
             yield probe, size

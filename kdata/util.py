@@ -1,3 +1,4 @@
+import six
 
 from . import models
 
@@ -7,7 +8,7 @@ def get_device(request, *args, **kwargs):
 def has_device_perm(request, device):
     """Test for user having permissions to access device.
     """
-    if isinstance(device, (str,unicode)):
+    if isinstance(device, six.string_types):
         device = models.Device.objects.get(device_id=device)
     if request.user.is_superuser:
         return True

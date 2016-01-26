@@ -176,7 +176,7 @@ class DeviceConfig(DetailView):
 
 import qrcode
 import io
-import urllib2
+from six.moves.urllib.parse import quote as url_quote
 from django.conf import settings
 def device_qrcode(request, device_id):
     device = models.Device.objects.get(device_id=device_id)
@@ -188,7 +188,7 @@ def device_qrcode(request, device_id):
             ('device_type', device.type),
             ('cert_der_sha256', settings.KOOTA_SSL_KEY_SHA256)
              ]
-    uri = 'koota:?'+'&'.join('%s=%s'%(k, urllib2.quote(v)) for k,v in data)
+    uri = 'koota:?'+'&'.join('%s=%s'%(k, url_quote(v)) for k,v in data)
     img = qrcode.make(uri, border=4, box_size=2,
                      error_correction=qrcode.constants.ERROR_CORRECT_L)
     cimage = io.BytesIO()

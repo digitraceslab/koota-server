@@ -95,10 +95,10 @@ def device_data(request, device_id, converter, format):
     context['download_formats'] = ['csv', 'json']
     if format == 'csv':
         import csv
-        import cStringIO
+        from six import StringIO as IO
         def csv_iter():
             rows = iter(table)
-            fo = cStringIO.StringIO()
+            fo = IO()
             csv_writer = csv.writer(fo)
             csv_writer.writerow(converter.header)
             while True:
@@ -109,11 +109,11 @@ def device_data(request, device_id, converter, format):
                     csv_writer.writerow(row)
                 except StopIteration:
                     fo.seek(0)
-                    yield fo.read()
+                    yield fo.read().encode('utf-8')
                     del fo
                     break
                 fo.seek(0)
-                data = fo.read()
+                data = fo.read().encode('utf-8')
                 fo.seek(0)
                 fo.truncate()
                 yield data

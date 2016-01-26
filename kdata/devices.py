@@ -122,7 +122,7 @@ class PurpleRobot(_Device):
         # Construct HTTP response that will allow PR to recoginze success.
         status = 'success'
         payload = '{ }'
-        checksum = hashlib.md5(status + payload).hexdigest()
+        checksum = hashlib.md5((status + payload).encode('utf8')).hexdigest()
         response = JsonResponse(dict(Status='success',
                                      Payload=payload,
                                      Checksum=checksum),
