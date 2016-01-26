@@ -13,14 +13,18 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 import os
 
 # Local settings
-POST_DOMAIN = 'data.koota.zgib.net'
+POST_DOMAIN = 'data.koota.cs.aalto.fi'
+POST_DOMAIN_SS = 'ss1.koota.cs.aalto.fi'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-KOOTA_SSL_KEY = os.path.join(BASE_DIR, 'koota.zgib.net.der')
+KOOTA_SSL_CERT_DER = os.path.join(BASE_DIR, 'static', 'ss1.koota.cs.aalto.fi.crt.der')
+KOOTA_SSL_CERT_PEM = os.path.join(BASE_DIR, 'static', 'ss1.koota.cs.aalto.fi.pem')
 import hashlib
-KOOTA_SSL_KEY_SHA256 = hashlib.sha256(open(KOOTA_SSL_KEY).read()).hexdigest()
+KOOTA_SSL_CERT_DER_SHA256 = hashlib.sha256(open(KOOTA_SSL_CERT_DER,'rb').read()).hexdigest()
+KOOTA_SSL_CERT_PEM_SHA256 = hashlib.sha256(open(KOOTA_SSL_CERT_PEM,'rb').read()).hexdigest()
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
