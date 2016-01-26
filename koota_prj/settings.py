@@ -43,9 +43,20 @@ import __main__
 if hasattr(__main__, '__file__') and __main__.__file__.endswith('manage.py'):
     DEBUG = True
 
-ALLOWED_HOSTS = ['koota.zgib.net',
-                 'data.koota.zgib.net',
-                 'nossl.koota.zgib.net']
+ALLOWED_HOSTS = [
+    # aalto hosts
+    'data.koota.cs.aalto.fi',
+    'koota.cs.aalto.fi',
+    'nossl.koota.cs.aalto.fi',
+    'ss1.koota.cs.aalto.fi',
+    # Raw hostname
+    'koota.cs.hut.fi',
+    # Legacy hostnames
+    'data.koota.zgib.net',
+    'koota.zgib.net',
+    'nossl.koota.zgib.net',
+    'ss1.koota.zgib.net',
+]
 
 
 # Application definition
@@ -96,10 +107,12 @@ WSGI_APPLICATION = 'koota_prj.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
+# Needs LD_LIBRARY_PATH=/opt/pgsql/lib/amd64/
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'koota',
+        'USER': 'koota',
     },
     'data': {
         'ENGINE': 'django.db.backends.sqlite3',
