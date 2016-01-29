@@ -33,6 +33,11 @@ class _Device(object):
     def configure(cls, device):
         return { }
 
+class Ios(_Device):
+    converters = [converter.Raw,
+                  converter.IosLocation]
+    pass
+
 
 class PurpleRobot(_Device):
     post_url = reverse_lazy('post-purple')

@@ -151,3 +151,19 @@ class PRDataSize(_Converter):
                 sizes[probe['PROBE']] += len(dumps(probe))
         for probe, size in sorted(iteritems(sizes), key=lambda x: x[1], reverse=True):
             yield probe, size
+
+class IosLocation(_Converter):
+    header = ['time', 'lat', 'lon', 'alt', 'speed']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for row in data:
+                try:
+                    yield (time(row['timestamp']),
+                       float(row['lat']),
+                       float(row['lon']),
+                       float(row['alt']),
+                       float(row['speed']),
+                       )
+                except:
+                    pass
