@@ -22,8 +22,8 @@ class Raw(_Converter):
     header = ['time', 'data']
 
     def convert(self, queryset, time=lambda x:x):
-        for ts, data in queryset:
-            yield ts, data
+        for dt, data in queryset:
+            yield time(timegm(dt.utctimetuple())), data
 
 class MurataBSN(_Converter):
     header = ['unixtime', 'hr', 'rr', 'sv', 'hrv', 'ss', 'status', 'bbt0', 'bbt1', 'bbt2']

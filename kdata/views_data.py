@@ -125,14 +125,14 @@ def device_data(request, device_id, converter, format):
         def json_iter():
             rows = iter(table)
             yield '[\n'
-            yield dumps(next(rows))  # first one (hope there is no StopIteration now)
-            while True:
-                try:
+            try:
+                yield dumps(next(rows))  # first one (hope there is no StopIteration now)
+                while True:
                     row = next(rows)  # raises StopIteration if data exhausted
                     yield ',\n'  # finalize the one from before, IF we have a next row
                     yield dumps(row)
-                except StopIteration:
-                    break
+            except StopIteration:
+                pass
             yield '\n]'
         response = StreamingHttpResponse(json_iter(), content_type='text/plain')
         #filename = '%s-%s-%s.%s'%(device_id[:6], device.type, time.strftime('%Y-%d-%d_%H:%M'), format)
