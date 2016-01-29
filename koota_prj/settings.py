@@ -56,6 +56,7 @@ ALLOWED_HOSTS = [
     'koota.zgib.net',
     'nossl.koota.zgib.net',
     'ss1.koota.zgib.net',
+    'dev.koota.zgib.net',
 ]
 
 
