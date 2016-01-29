@@ -28,5 +28,5 @@ urlpatterns = [
         views_data.device_data,
         name='device-data'),
 
-    url(r'^$', TemplateView.as_view(template_name='koota/main.html')),
+    url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]

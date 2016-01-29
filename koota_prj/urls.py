@@ -28,6 +28,5 @@ urlpatterns = [
     url(r'^register/$', kviews.RegisterView.as_view(), name='register-user'),
     url(r'^', include('django.contrib.auth.urls')),
 
-    url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     url(r'^', include('kdata.urls')),
     ]
