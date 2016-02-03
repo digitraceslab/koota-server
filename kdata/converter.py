@@ -142,7 +142,7 @@ class PRDeviceInUse(_Converter):
 from six import iteritems
 class PRDataSize(_Converter):
     per_page = None
-    header = ['time', 'onoff']
+    header = ['probe', 'bytes']
     def convert(self, queryset, time=lambda x:x):
         sizes = collections.defaultdict(int)
         for ts, data in queryset:
