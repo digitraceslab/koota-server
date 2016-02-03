@@ -5,7 +5,7 @@
 
 <h2>{{ converter.name }} on {{device.name}}</h2>
 
-Download as (all data, not just current page):<br>
+Download as (all pages subject to filter):<br>
 {% for ext, format in download_formats %}<a href="{{request.path_info}}.{{ext}}?{{query_params_nopage}}">{{format}}</a> {% endfor %}<p>
 
 <form method="get">
