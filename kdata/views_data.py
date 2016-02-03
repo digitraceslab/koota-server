@@ -52,6 +52,37 @@ class DeviceDetail(DetailView):
 
         return context
 
+
+class IntegerOrLastField(forms.IntegerField):
+    """An integer field that also accepts the value 'last'.
+
+    This is used as an input field for pagination, accepting a value
+    that goes to the last page.
+    """
+    def to_python(self, value):
+        if value == 'last': return value
+        return super(forms.IntegerField, self).to_python(value)
+class DataListForm(forms.Form):
+    """Form to query and page through submitted data."""
+    page = IntegerOrLastField(label='page', required=False, widget=forms.HiddenInput)
+    start = forms.DateTimeField(label="Start time", required=False,
+                                widget=forms.TextInput(attrs=dict(size=20)))
+    end = forms.DateTimeField(label="End time", required=False,
+                                widget=forms.TextInput(attrs=dict(size=20)))
+    reversed = forms.BooleanField(label='reversed', initial=False, required=False)
+def replace_page(request, n):
+    """Manipulate query parameters: replace &page= with a new value.
+
+    This is used for pagination while preserving the rest of the query
+    parameters.
+
+    """
+    dict_ = request.GET.copy()
+    dict_['page'] = n
+    for key in list(dict_):
+        if not dict_[key]:  del dict_[key]
+    return dict_.urlencode()
+
 def device_data(request, device_id, converter, format):
     """List data from one device+converter on a """
     context = c = { }
@@ -62,15 +93,27 @@ def device_data(request, device_id, converter, format):
     device_class = c['device_class'] = devices.get_class(device.type)
     converter = c['converter'] = \
         [ x for x in device_class.converters if x.name() == converter ][0]
+    c['query_params_nopage'] = replace_page(request, '')
 
     # Fetch all relevant data
     queryset = models.Data.objects.filter(device_id=device_id, ).order_by('ts').defer('data')
+
+    # Process the form and apply options
+    form = c['select_form'] = DataListForm(request.GET)
+    if form.is_valid():
+        if form.cleaned_data['start']:
+            queryset = queryset.filter(ts__gte=form.cleaned_data['start'])
+        if form.cleaned_data['end']:
+            queryset = queryset.filter(ts__lte=form.cleaned_data['end'])
+        if form.cleaned_data['reversed']:
+            queryset = queryset.reverse()
     data = queryset
 
     # Paginate, if needed
     if converter.per_page is not None and not format:
-        page_number = request.GET.get('page', None)
-        paginator = Paginator(queryset, min(request.GET.get('perpage', converter.per_page), 100))
+        page_number = c['page_number'] = request.GET.get('page', None)
+        paginator = Paginator(queryset, min(int(request.GET.get('perpage', converter.per_page)), 100))
+        c['pages_total'] = paginator.num_pages
         if page_number == 'last':
             page_number = paginator.num_pages
         elif page_number:
@@ -78,10 +121,26 @@ def device_data(request, device_id, converter, format):
         else:
             page_number = 1
         page_obj = c['page_obj'] = paginator.page(page_number)
+        # Set our URLs for pagination.  Need to do this here because
+        # you can't embed tags within filter arguments, at least so I
+        # see.
+        if page_number > 1:   c['page_first'] = replace_page(request, 1)
+        if page_obj.has_previous(): c['page_prev']  = replace_page(request, page_number-1)
+        if page_obj.has_next(): c['page_next']  = replace_page(request, page_number+1)
+        if page_number < paginator.num_pages:
+                              c['page_last']  = replace_page(request, 'last')
         data = page_obj.object_list
 
     # For web view, convert to pretty time, others use raw unixtime.
     if not format or request.GET.get('textdate', False):
+        #from django.utils import timezone as timezone
+        # There is no way to get the browser's timezone automatically
+        # (not sent in the request), so we can't use
+        # django.utils.timezone to make things automatic.  If we had
+        # the proper timezone, we would use the activate() function in
+        # there and possible also localtime() there, and we would
+        # convert to the user's tz.  Of course, maybe it's better to
+        # not do this with django, but just manually do it here.
         time_converter = lambda ts: datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     else:
         time_converter = lambda ts: ts
@@ -92,8 +151,12 @@ def device_data(request, device_id, converter, format):
                           time=time_converter)
 
     # Convert to custom formats if it was requested.
-    context['download_formats'] = ['csv', 'json']
-    if format == 'csv':
+    context['download_formats'] = [('csv2',  'csv (download)'),
+                                   ('json2', 'json (download)'),
+                                   ('csv',   'csv (in browser)'),
+                                   ('json',  'json (in browser)'),
+                                  ]
+    if format and format.startswith('csv'):
         import csv
         from six import StringIO as IO
         def csv_iter():
@@ -118,10 +181,17 @@ def device_data(request, device_id, converter, format):
                 fo.truncate()
                 yield data
         response = StreamingHttpResponse(csv_iter(), content_type='text/plain')
-        #filename = '%s-%s-%s.%s'%(device_id[:6], device.type, time.strftime('%Y-%d-%d_%H:%M'), format)
-        #response['Content-Disposition'] = 'filename="foo.xls"'
+        # Force download for the '2' options.
+        if format.endswith('2'):
+            filename = '%s_%s_%s_%s-%s.%s'%(device_id[:6],
+                                            device.type,
+                                            converter.name(),
+                                            form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
+                                            form.cleaned_data['end'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['end'] else '',
+                                            format)
+            response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
-    elif format == 'json':
+    elif format and format.startswith('json'):
         def json_iter():
             rows = iter(table)
             yield '[\n'

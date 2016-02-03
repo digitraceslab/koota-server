@@ -5,15 +5,21 @@
 
 <h2>{{ converter.name }} on {{device.name}}</h2>
 
-Download as: {% for format in download_formats %}<a href="{{request.path_info}}.{{format}}">{{format}}</a> {% endfor %}
+Download as (all data, not just current page):<br>
+{% for ext, format in download_formats %}<a href="{{request.path_info}}.{{ext}}?{{query_params_nopage}}">{{format}}</a> {% endfor %}<p>
+
+<form method="get">
+    {{ select_form }}
+    <input type="submit" value="Submit" />
+</form>(Datetime format YYYY-MM-DD [HH:MM[:SS]].  Beware, reversing does not reverse values within data packets.)
 <p>
 
-{% if page_obj.has_previous %}
-<a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-{% endif %}
-{%if page_obj.has_next%}
-<a href="?page={{ page_obj.next_page_number }}">Next</a>
-{% endif %}
+
+{%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
+{%if page_prev %}<a href="?{{page_prev }}">Prev</a>{%endif%}
+[{{page_number}}/{{pages_total}}]
+{%if page_next %}<a href="?{{page_next }}">Next</a>{%endif%}
+{%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}
 
 <table>
   <tr>{% for name in converter.header %}
@@ -27,12 +33,11 @@ Download as: {% for format in download_formats %}<a href="{{request.path_info}}.
 </table>
 
   
-{% if page_obj.has_previous %}
-<a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-{% endif %}
-{%if page_obj.has_next%}
-<a href="?page={{ page_obj.next_page_number }}">Next</a>
-{% endif %}
+{%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
+{%if page_prev %}<a href="?{{page_prev }}">Prev</a>{%endif%}
+[{{page_number}}/{{pages_total}}]
+{%if page_next %}<a href="?{{page_next }}">Next</a>{%endif%}
+{%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}
 
 
 {% endblock %}

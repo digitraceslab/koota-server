@@ -15,7 +15,6 @@
 <li>Number of data points: {{data_number}}</li>
 <li>Earliest data point at: {{data_earliest}}</li>
 <li>Latest data point at: {{data_latest}}</li>
-<li>Latest data: {{data_latest_data}}</li>
 </ul>
 
 
@@ -26,5 +25,13 @@
   <li><a href="{% url 'device-data' device_id=object.device_id converter=converter.name %}">{{converter.name}}</a></li>
   {% endfor %}
 </ul>
+
+<h2>Latest data point</h2>
+
+<p>This is the latest data packet.  It is probably not that useful by itself.</p>
+
+{{data_latest_data}}
+
+
 
 {% endblock %}
