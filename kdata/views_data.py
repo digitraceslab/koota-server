@@ -163,7 +163,7 @@ def device_data(request, device_id, converter, format):
             rows = iter(table)
             fo = IO()
             csv_writer = csv.writer(fo)
-            csv_writer.writerow(converter.header)
+            csv_writer.writerow(converter.header2())
             while True:
                 try:
                   for _ in range(1000):

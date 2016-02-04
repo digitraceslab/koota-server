@@ -22,7 +22,9 @@
 
 <ul>
   {% for converter in device_class.converters %}
-  <li><a href="{% url 'device-data' device_id=object.device_id converter=converter.name %}">{{converter.name}}</a></li>
+  <li><a href="{% url 'device-data' device_id=object.device_id converter=converter.name %}">{{converter.name}}</a>
+      {{converter.desc}}
+  </li>
   {% endfor %}
 </ul>
 

@@ -50,6 +50,10 @@ class PurpleRobot(_Device):
                   converter.PRBluetooth,
                   converter.PRStepCounter,
                   converter.PRDeviceInUse,
+                  converter.PRLocation,
+                  converter.PRAccelerometer,
+                  converter.PRAccelerometerBasicStatistics,
+                  converter.PRAccelerometerFrequency,
                   converter.PRDataSize,
                   ]
     @classmethod
