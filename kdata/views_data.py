@@ -188,7 +188,7 @@ def device_data(request, device_id, converter, format):
                                             converter.name(),
                                             form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
                                             form.cleaned_data['end'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['end'] else '',
-                                            format)
+                                            'csv')
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
     elif format and format.startswith('json'):
