@@ -217,9 +217,16 @@ class DeviceCreate(CreateView):
             form.instance.user = user
         # random device ID
         import random, string
-        id_ = ''.join(random.choice(string.hexdigits[:16]) for _ in range(14))
-        id_ = util.add_checkdigits(id_)
+        # Loop until we find an ID which does not exist.
+        while True:
+            id_ = ''.join(random.choice(string.hexdigits[:16]) for _ in range(14))
+            id_ = util.add_checkdigits(id_)
+            try:
+                self.model.get_by_id(id_[:6])
+            except self.model.DoesNotExist:
+                break
         form.instance.device_id = id_
+        form.instance._public_id = id_[:6]
         return super(DeviceCreate, self).form_valid(form)
     def get_success_url(self):
         self.object.save()
