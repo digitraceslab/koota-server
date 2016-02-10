@@ -61,13 +61,14 @@ class MurataBSN(_Converter):
 
 
 class PRProbes(_Converter):
-    header = ['time', 'probe', 'data']
+    header = ['time', 'packet_time', 'probe', 'data']
     desc = "Purple Robot raw JSON data, divided into each probe"
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
                 yield (time(probe['TIMESTAMP']),
+                       time(timegm(ts.utctimetuple())),
                        probe['PROBE'].split('.')[-1],
                        dumps(probe))
 
