@@ -61,7 +61,7 @@ class PurpleRobot(_Device):
         """Initial device configuration"""
         from django.conf import settings
         raw_instructions = textwrap.dedent("""\
-        <p>See the new instructions at <a href="https://github.com/CxAalto/koota-server/wiki/PurpleRobot">the wiki page</a>.  Your POST URL is <tt>https://{post_domain}{post}/{device.device_id}</tt></p>
+        <p>See the new instructions at <a href="https://github.com/CxAalto/koota-server/wiki/PurpleRobot">the wiki page</a>.  Your POST URL is <tt>https://{post_domain}{post}/{device.secret_id}</tt></p>
 
         <p>Not updated instructions below:</p>
 
@@ -80,7 +80,7 @@ class PurpleRobot(_Device):
         <li>General data upload settings
             <ul>
             <li>Accept all SSL certificates: false</li>
-            <li>HTTP upload endpoint: https://{post_domain}{post}/{device.device_id}</li>
+            <li>HTTP upload endpoint: https://{post_domain}{post}/{device.secret_id}</li>
             <li>Only use wifi connection: true</li>
             </ul>
         </li>
@@ -152,6 +152,7 @@ class MurataBSN(_Device):
                  ]
     raw_instructions = textwrap.dedent("""\
     See <a href="https://github.com/CxAalto/koota-server/wiki/MurataBSN">the wiki page</a>.
+    The <tt>device_id<tt> to use for the node name is <tt>{device.secret_id}</tt>.
     """)
     @classmethod
     def post(cls, request):
@@ -164,6 +165,6 @@ class MurataBSN(_Device):
     @classmethod
     def configure(cls, device):
         return dict(qr=False,
-                    raw_instructions=cls.raw_instructions,
+                    raw_instructions=cls.raw_instructions.format(device=device),
                     )
 

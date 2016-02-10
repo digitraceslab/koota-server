@@ -7,7 +7,8 @@
 <h2>Basic information</h2>
 <ul>
 <li>Name: {{ object.name }}</li>
-<li>Device id: {{ object.device_id }}</li>
+<li>Device public id: {{ object.public_id }}</li>
+<li>Device secret id (used for configuration): <b>{{ object.secret_id }}</b></li>
 <li>Device type: {{ object.get_type_display }}</li>
 {% if user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
 </ul>
@@ -28,7 +29,7 @@
 {% if qr != False %}
 <h2>Configuration QR code</h2>
 Scan this with the device<p>
-<img src="{% url 'device-qr' device_id=object.device_id %}">
+<img src="{% url 'device-qr' public_id=object.public_id %}">
 {% endif %}
 
 {% endblock %}

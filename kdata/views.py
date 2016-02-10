@@ -156,7 +156,7 @@ class DeviceConfig(DetailView):
     model = models.Device
     def get_object(self):
         """Get device model object, testing permissions"""
-        obj = self.model.objects.get(device_id=self.kwargs['device_id'])
+        obj = self.model.get_by_id(self.kwargs['public_id'])
         if self.request.user.is_superuser:
             return obj
         if obj.user != self.request.user:
@@ -170,7 +170,7 @@ class DeviceConfig(DetailView):
             context.update(device_class.configure(device=self.object))
         except devices.NoDeviceTypeError:
             pass
-        device_data = models.Data.objects.filter(device_id=self.kwargs['device_id'])
+        device_data = models.Data.objects.filter(device_id=self.object.device_id)
         context['data_number'] = device_data.count()
         if context['data_number'] > 0:
             context['data_earliest'] = device_data.order_by('ts').first().ts
@@ -182,13 +182,15 @@ import qrcode
 import io
 from six.moves.urllib.parse import quote as url_quote
 from django.conf import settings
-def device_qrcode(request, device_id):
-    device = models.Device.objects.get(device_id=device_id)
+def device_qrcode(request, public_id):
+    device = models.Device.get_by_id(public_id)
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     url_base = "{0}://{1}".format(request.scheme, settings.POST_DOMAIN)
     data = [('post', url_base+reverse('post')),
             ('config', url_base+'/config'),
             ('device_id', device.device_id),
+            ('public_id', device.public_id),
+            ('secret_id', device.secret_id),
             ('device_type', device.type),
             ('selfsigned_post', 'https://'+settings.POST_DOMAIN_SS+reverse('post')),
             ('selfsigned_cert_der_sha256', settings.KOOTA_SSL_CERT_DER_SHA256),
@@ -223,4 +225,4 @@ class DeviceCreate(CreateView):
         self.object.save()
         self.object.refresh_from_db()
         #print 'id'*5, self.object.device_id
-        return reverse('device-config', kwargs=dict(device_id=self.object.device_id))
+        return reverse('device-config', kwargs=dict(public_id=self.object.public_id))

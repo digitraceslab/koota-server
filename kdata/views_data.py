@@ -31,7 +31,7 @@ class DeviceDetail(DetailView):
     model = models.Device
     def get_object(self):
         """Get device model object, testing permissions"""
-        device = self.model.objects.get(device_id=self.kwargs['device_id'])
+        device = self.model.get_by_id(public_id=self.kwargs['public_id'])
         if not util.has_device_perm(self.request, device):
             raise Http404
         return device
@@ -43,7 +43,7 @@ class DeviceDetail(DetailView):
             context.update(device_class.configure(device=self.object))
         except devices.NoDeviceTypeError:
             pass
-        device_data = models.Data.objects.filter(device_id=self.kwargs['device_id'])
+        device_data = models.Data.objects.filter(device_id=self.object.device_id)
         context['data_number'] = device_data.count()
         if context['data_number'] > 0:
             context['data_earliest'] = device_data.order_by('ts').first().ts
@@ -83,11 +83,11 @@ def replace_page(request, n):
         if not dict_[key]:  del dict_[key]
     return dict_.urlencode()
 
-def device_data(request, device_id, converter, format):
+def device_data(request, public_id, converter, format):
     """List data from one device+converter on a """
     context = c = { }
     # Get devices and other data
-    device = c['device'] = models.Device.objects.get(device_id=device_id)
+    device = c['device'] = models.Device.get_by_id(public_id=public_id)
     if not util.has_device_perm(request, device):
         return HttpResponse(status=403, reason='Not authorized')
     device_class = c['device_class'] = devices.get_class(device.type)
@@ -96,7 +96,7 @@ def device_data(request, device_id, converter, format):
     c['query_params_nopage'] = replace_page(request, '')
 
     # Fetch all relevant data
-    queryset = models.Data.objects.filter(device_id=device_id, ).order_by('ts').defer('data')
+    queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts').defer('data')
 
     # Process the form and apply options
     form = c['select_form'] = DataListForm(request.GET)
@@ -183,7 +183,7 @@ def device_data(request, device_id, converter, format):
         response = StreamingHttpResponse(csv_iter(), content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
-            filename = '%s_%s_%s_%s-%s.%s'%(device_id[:6],
+            filename = '%s_%s_%s_%s-%s.%s'%(device.public_id,
                                             device.type,
                                             converter.name(),
                                             form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
@@ -214,10 +214,10 @@ def device_data(request, device_id, converter, format):
     return TemplateResponse(request, 'koota/device_data.html', context)
 
 
-def download_data(request, device_id):
-    #if not util.has_device_perm(request, device_id):
+def download_data(request, public_id):
+    #if not util.has_device_perm(request, public_id):
     #    raise Http404
-    objects = models.Data.objects.filter(device_id=device_id, ).order_by('ts')
+    objects = models.Data.objects.filter(public_id=public_id, ).order_by('ts')
     def streamer():
         yield '{ "data": [ \n'
         for obj in objects:

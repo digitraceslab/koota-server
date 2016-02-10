@@ -5,7 +5,7 @@
 <h2>Basic information</h2>
 <ul>
 <li>Name: {{ object.name }}</li>
-<li>Device id: {{ object.device_id }}</li>
+<li>Device public id: {{ object.public_id }}</li>
 <li>Device type: {{ object.get_type_display }}</li>
 {% if user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
 </ul>
@@ -22,7 +22,7 @@
 
 <ul>
   {% for converter in device_class.converters %}
-  <li><a href="{% url 'device-data' device_id=object.device_id converter=converter.name %}">{{converter.name}}</a>
+  <li><a href="{% url 'device-data' public_id=object.public_id converter=converter.name %}">{{converter.name}}</a>
       {{converter.desc}}
   </li>
   {% endfor %}

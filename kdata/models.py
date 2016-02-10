@@ -26,3 +26,12 @@ class Device(models.Model):
                             choices=devices.device_choices)
     device_id = models.CharField(max_length=64, primary_key=True)
     active = models.BooleanField(default=True)
+    @property
+    def public_id(self):
+        return self.device_id[:6]
+    @property
+    def secret_id(self):
+        return self.device_id
+    @classmethod
+    def get_by_id(cls, public_id):
+        return cls.objects.get(device_id__startswith=public_id)
