@@ -205,8 +205,15 @@ def device_data(request, public_id, converter, format):
                 pass
             yield '\n]'
         response = StreamingHttpResponse(json_iter(), content_type='text/plain')
-        #filename = '%s-%s-%s.%s'%(device_id[:6], device.type, time.strftime('%Y-%d-%d_%H:%M'), format)
-        #response['Content-Disposition'] = 'filename="foo.xls"'
+        # Force download for the '2' options.
+        if format.endswith('2'):
+            filename = '%s_%s_%s_%s-%s.%s'%(device.public_id,
+                                            device.type,
+                                            converter.name(),
+                                            form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
+                                            form.cleaned_data['end'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['end'] else '',
+                                            'json')
+            response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
 
 
