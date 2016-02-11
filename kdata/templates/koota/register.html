@@ -1,6 +1,22 @@
 {% extends "koota/base.html" %}
 
 {% block body %}
+
+By registering with this service, you agree with
+the <a href="https://github.com/CxAalto/koota-server/wiki/PrivacyPolicy">privacy policy</a>.
+In particular, you understand that:
+
+<ul>
+  <li>Use of this service is voluntary.</li>
+  <li>We store all data sent to the collection system.</li>
+  <li>The data stored may contain detailed records of human behavior,
+  and if shared sensitive information may be irferable from this.</li>
+  <li>You consent to this data collection.</li>
+  <li>Data may be provided for research <b>after</b> a separate
+  research agreement is made.</li>
+</ul>
+<p>
+
 <form action="" method="post">{% csrf_token %}
   {{ form.as_p }}
   <input type="submit" value="Register" />
