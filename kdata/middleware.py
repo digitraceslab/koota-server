@@ -21,3 +21,6 @@ class KdataMiddleware(object):
                 breadcrumbs.append((kwargs['converter'], reverse('device-data',
                                                                  kwargs=dict(public_id=public_id,
                                                                              converter=kwargs['converter']))))
+        if getattr(view_func, 'view_class', None) == kviews.DeviceListView:
+            request.breadcrumbs = breadcrumbs = [ ]
+            breadcrumbs.append(('All Devices', reverse('device-list')))
