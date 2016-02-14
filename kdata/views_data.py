@@ -67,9 +67,11 @@ class DataListForm(forms.Form):
     """Form to query and page through submitted data."""
     page = IntegerOrLastField(label='page', required=False, widget=forms.HiddenInput)
     start = forms.DateTimeField(label="Start time", required=False,
-                                widget=forms.TextInput(attrs=dict(size=20)))
+                                widget=forms.TextInput(attrs=dict(size=20)),
+                                error_messages={'invalid':'Enter a valid start date/time, YYYY-MM-DD [HH:MM[:SS]].'})
     end = forms.DateTimeField(label="End time", required=False,
-                                widget=forms.TextInput(attrs=dict(size=20)))
+                                widget=forms.TextInput(attrs=dict(size=20)),
+                                error_messages={'invalid':'Enter a valid end date/time, YYYY-MM-DD [HH:MM[:SS]].'})
     reversed = forms.BooleanField(label='reversed', initial=False, required=False)
 def replace_page(request, n):
     """Manipulate query parameters: replace &page= with a new value.
@@ -108,6 +110,10 @@ def device_data(request, public_id, converter, format):
             queryset = queryset.filter(ts__lte=form.cleaned_data['end'])
         if form.cleaned_data['reversed']:
             queryset = queryset.reverse()
+    else:
+        # Bad data, return early and make the user fix the form
+        return TemplateResponse(request, 'koota/device_data.html', context)
+
     data = queryset
 
     # Paginate, if needed
