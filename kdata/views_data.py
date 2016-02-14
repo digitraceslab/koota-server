@@ -236,16 +236,3 @@ def device_data(request, public_id, converter, format):
     # Done, return
     return TemplateResponse(request, 'koota/device_data.html', context)
 
-
-def download_data(request, public_id):
-    #if not util.has_device_perm(request, public_id):
-    #    raise Http404
-    objects = models.Data.objects.filter(public_id=public_id, ).order_by('ts')
-    def streamer():
-        yield '{ "data": [ \n'
-        for obj in objects:
-            yield json.dumps(obj.data)
-            yield ', \n'
-        yield ']}'
-    return StreamingHttpResponse(streamer())
-    #return HttpResponse(''.join(streamer()))
