@@ -61,9 +61,11 @@ class PurpleRobot(_Device):
         """Initial device configuration"""
         from django.conf import settings
         raw_instructions = textwrap.dedent("""\
-        <p>See the new instructions at <a href="https://github.com/CxAalto/koota-server/wiki/PurpleRobot">the wiki page</a>.  Your POST URL is <tt>https://{post_domain}{post}/{device.secret_id}</tt></p>
 
-        <p>Not updated instructions below:</p>
+        <p>See the new instructions at <a href="https://github.com/CxAalto/koota-server/wiki/PurpleRobot">the wiki page</a>.
+        Your <tt>device_secret_id</tt> is <tt>{device.secret_id}</tt> and thus your HTTP upload endpoint is <tt>https://{post_domain}{post}/{device.secret_id}</tt> .
+
+        <!--<p>Old instructions are below (see the wiki page instead):</p>
 
         Please go to settings and set these properties:<p>
 
@@ -75,7 +77,7 @@ class PurpleRobot(_Device):
             <li>You may experiment with any other probes you would like, but consider battery usage.</li>
             </ul>
         </li>
-        <!-- <li>User ID: {device.device_id}</li> -->
+        <!-- <li>User ID: {device.device_id}</li> - ->
         <li>User ID: anything, not used</li>
         <li>General data upload settings
             <ul>
@@ -88,7 +90,7 @@ class PurpleRobot(_Device):
         <li>User identifier: something random, it is not used</li>
         <li>Configuration URL: blank</li>
         <li>Refresh interval: Never</li>
-        </ul>
+        </ul>-->
 
         """.format(
             post=str(cls.post_url),
