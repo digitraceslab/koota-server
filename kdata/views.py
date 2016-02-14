@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
@@ -157,10 +158,8 @@ class DeviceConfig(DetailView):
     def get_object(self):
         """Get device model object, testing permissions"""
         obj = self.model.get_by_id(self.kwargs['public_id'])
-        if self.request.user.is_superuser:
-            return obj
-        if obj.user != self.request.user:
-            raise Http404
+        if not util.has_device_perm(self.request, obj):
+            raise PermissionDenied("No permission for device")
         return obj
     def get_context_data(self, **kwargs):
         """Override template context data with special instructions from the DeviceType object."""
@@ -184,6 +183,8 @@ from six.moves.urllib.parse import quote as url_quote
 from django.conf import settings
 def device_qrcode(request, public_id):
     device = models.Device.get_by_id(public_id)
+    if not util.has_device_perm(self.request, device):
+        raise PermissionDenied("No permission for device")
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     url_base = "{0}://{1}".format(request.scheme, settings.POST_DOMAIN)
     data = [('post', url_base+reverse('post')),

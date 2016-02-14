@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.shortcuts import render
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import InvalidPage, Paginator
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
@@ -33,7 +34,7 @@ class DeviceDetail(DetailView):
         """Get device model object, testing permissions"""
         device = self.model.get_by_id(public_id=self.kwargs['public_id'])
         if not util.has_device_perm(self.request, device):
-            raise Http404
+            raise PermissionDenied("No permission for device")
         return device
     def get_context_data(self, **kwargs):
         """Override template context data with special instructions from the DeviceType object."""
@@ -89,7 +90,7 @@ def device_data(request, public_id, converter, format):
     # Get devices and other data
     device = c['device'] = models.Device.get_by_id(public_id=public_id)
     if not util.has_device_perm(request, device):
-        return HttpResponse(status=403, reason='Not authorized')
+        raise PermissionDenied("No permission for device")
     device_class = c['device_class'] = devices.get_class(device.type)
     converter = c['converter'] = \
         [ x for x in device_class.converters if x.name() == converter ][0]
