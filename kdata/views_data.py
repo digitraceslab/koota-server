@@ -94,7 +94,7 @@ def device_data(request, public_id, converter, format):
     if not util.has_device_perm(request, device):
         raise PermissionDenied("No permission for device")
     device_class = c['device_class'] = devices.get_class(device.type)
-    converter = c['converter'] = \
+    converter_class = c['converter_class'] = \
         [ x for x in device_class.converters if x.name() == converter ][0]
     c['query_params_nopage'] = replace_page(request, '')
 
@@ -117,9 +117,9 @@ def device_data(request, public_id, converter, format):
     data = queryset
 
     # Paginate, if needed
-    if converter.per_page is not None and not format:
+    if converter_class.per_page is not None and not format:
         page_number = c['page_number'] = request.GET.get('page', None)
-        paginator = Paginator(queryset, min(int(request.GET.get('perpage', converter.per_page)), 100))
+        paginator = Paginator(queryset, min(int(request.GET.get('perpage', converter_class.per_page)), 100))
         c['pages_total'] = paginator.num_pages
         if page_number == 'last':
             page_number = paginator.num_pages
@@ -153,9 +153,11 @@ def device_data(request, public_id, converter, format):
         time_converter = lambda ts: ts
 
     # Make our table object by passing raw data through the converter.
+    converter = c['converter'] \
+                = converter_class(((x.ts, x.data) for x in data.iterator()),
+                                  time=time_converter)
     table = c['table'] = \
-      converter().convert(((x.ts, x.data) for x in data.iterator()),
-                          time=time_converter)
+      converter.run()
 
     # Convert to custom formats if it was requested.
     context['download_formats'] = [('csv2',  'csv (download)'),
@@ -196,6 +198,10 @@ def device_data(request, public_id, converter, format):
                 fo.seek(0)
                 fo.truncate()
                 yield data
+            if converter.errors:
+                yield 'The following errors were found at unspecified points in processing:\n'
+                for error in converter.errors:
+                    yield str(error)+'\n'
         response = StreamingHttpResponse(csv_iter(), content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
@@ -212,6 +218,10 @@ def device_data(request, public_id, converter, format):
                     yield dumps(next(rows))+'\n'
             except StopIteration:
                 pass
+            if converter.errors:
+                yield 'The following errors were found at unspecified points in processing:\n'
+                for error in converter.errors:
+                    yield str(error)+'\n'
         response = StreamingHttpResponse(json_iter(), content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
@@ -230,7 +240,11 @@ def device_data(request, public_id, converter, format):
                     yield dumps(row)
             except StopIteration:
                 pass
-            yield '\n]'
+            yield '\n]\n'
+            if converter.errors:
+                yield 'The following errors were found at unspecified points in processing:\n'
+                for error in converter.errors:
+                    yield str(error)+'\n'
         response = StreamingHttpResponse(json_iter(), content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):

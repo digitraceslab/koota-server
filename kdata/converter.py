@@ -27,7 +27,32 @@ class _Converter(object):
         if hasattr(cls, 'header') and cls.header:
             return cls.header
         return ['time'] + [x[0] for x in cls.fields]
+    def __init__(self, rows=None, time=lambda x: x):
+        # Warning: during template rendering this is used in a variable as "_Converter.name"
+        pass
+        self.rows = rows
+        self.time = time
+        self.errors = [ ]
+        self.errors_dict = collections.defaultdict(int)
+    def run(self):
+        """Run through the conversion.
 
+        If any errors are raised during conversion, do not fail.
+        Instead, log those errors and continue.  This is a wrapper
+        around the direct "convert" statements.  When this method is
+        being used, the converter class must be instantiated with the
+        rows/time arguments that .convert() takes.
+        """
+        while True:
+            try:
+                for x in self.convert(self.rows, self.time):
+                    yield x
+                break
+            except Exception as e:
+                print(e)
+                self.errors.append(e)
+                self.errors_dict[str(e)] += 1
+                #self.errors_emit_error(e)
 
 class Raw(_Converter):
     header = ['time', 'data']
