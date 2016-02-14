@@ -7,9 +7,10 @@ log = logging.getLogger(__name__)
 
 class KdataMiddleware(object):
     def process_view(self, request, view_func, args, kwargs):
+        request.breadcrumbs = breadcrumbs = [ ]
+        breadcrumbs.append(('Koota', reverse('main')))
 
         if kwargs.get('public_id', None):
-            request.breadcrumbs = breadcrumbs = [ ]
 
             public_id = kwargs['public_id']
             breadcrumbs.append(('All Devices', reverse('device-list')))
@@ -22,5 +23,4 @@ class KdataMiddleware(object):
                                                                  kwargs=dict(public_id=public_id,
                                                                              converter=kwargs['converter']))))
         if getattr(view_func, 'view_class', None) == kviews.DeviceListView:
-            request.breadcrumbs = breadcrumbs = [ ]
             breadcrumbs.append(('All Devices', reverse('device-list')))
