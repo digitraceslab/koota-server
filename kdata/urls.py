@@ -25,7 +25,7 @@ urlpatterns = [
         name='device-qr'),
     url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/$', views_data.DeviceDetail.as_view(),
         name='device'),
-    url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/(?P<converter>\w+)\.?(?P<format>\w+)?',
+    url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?',
         views_data.device_data,
         name='device-data'),
 

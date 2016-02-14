@@ -152,10 +152,19 @@ def device_data(request, public_id, converter, format):
 
     # Convert to custom formats if it was requested.
     context['download_formats'] = [('csv2',  'csv (download)'),
-                                   ('json2', 'json (download)'),
                                    ('csv',   'csv (in browser)'),
-                                   ('json',  'json (in browser)'),
+                                   ('json2', 'json (dl)'),
+                                   ('json',  'json (browser)'),
+                                   ('json-lines2', 'json, in lines (dl)'),
+                                   ('json-lines',  'json, in lines (browser)'),
                                   ]
+    filename_base = '%s_%s_%s_%s-%s'%(
+        device.public_id,
+        device.type,
+        converter.name(),
+        form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
+        form.cleaned_data['end'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['end'] else ''
+    )
     if format and format.startswith('csv'):
         import csv
         from six import StringIO as IO
@@ -183,12 +192,23 @@ def device_data(request, public_id, converter, format):
         response = StreamingHttpResponse(csv_iter(), content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
-            filename = '%s_%s_%s_%s-%s.%s'%(device.public_id,
-                                            device.type,
-                                            converter.name(),
-                                            form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
-                                            form.cleaned_data['end'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['end'] else '',
-                                            'csv')
+            filename = filename_base+'.csv'
+            response['Content-Disposition'] = 'attachment; filename="%s"'%filename
+        return response
+    # A JSON format where there is one object on every line
+    elif format and format.startswith('json-lines'):
+        print('x'*50)
+        def json_iter():
+            rows = iter(table)
+            try:
+                while True:
+                    yield dumps(next(rows))+'\n'
+            except StopIteration:
+                pass
+        response = StreamingHttpResponse(json_iter(), content_type='text/plain')
+        # Force download for the '2' options.
+        if format.endswith('2'):
+            filename = filename_base+'.json-lines'
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
     elif format and format.startswith('json'):
@@ -207,12 +227,7 @@ def device_data(request, public_id, converter, format):
         response = StreamingHttpResponse(json_iter(), content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
-            filename = '%s_%s_%s_%s-%s.%s'%(device.public_id,
-                                            device.type,
-                                            converter.name(),
-                                            form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
-                                            form.cleaned_data['end'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['end'] else '',
-                                            'json')
+            filename = filename_base+'.json'
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
 
