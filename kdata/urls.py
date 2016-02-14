@@ -5,6 +5,7 @@ from django.contrib.auth import views as auth_views
 
 from kdata import views as kviews
 from kdata import views_data
+from kdata import views_admin
 from kdata import devices
 
 urlpatterns = [
@@ -27,6 +28,8 @@ urlpatterns = [
     url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/(?P<converter>\w+)\.?(?P<format>\w+)?',
         views_data.device_data,
         name='device-data'),
+
+    url(r'^stats/', views_admin.stats),
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]
