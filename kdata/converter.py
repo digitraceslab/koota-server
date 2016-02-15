@@ -1,4 +1,80 @@
+"""Various converters for raw data.
 
+This module provides for postprocessing of raw data.  Basically, it
+provides classes that take an iterator of raw data ((datetime, str)
+tuples), and returns iterators over preprocessed data in some sort of
+tabular format.  Each converter has these methods:
+
+Converter(iterator[, time])
+    New method of usage.
+
+converter.run()
+    New method of usage.  Instantiating an object as above and running
+    like this has the same effect as Converter.convert() (below), but
+    will handle errors.  Error messages are placed in converter.errors
+    and converter.error_dict.  TODO: finish documenting this.  TODO:
+    more flexible error handling in in this method.
+
+Converter.convert(iterator[, time])
+    The argument to this function should be an iterator over
+    (datetime, str) tuples.  The datetime.datetime is the raw data
+    packet time (when data was recceived by the server).  The str
+    is the raw string data which the device has sent to the server.
+    The return value is an iterator over tuples, each tuple
+    represents one row of output as Python objects.
+
+    This is the core logic of this module.  Each converter class
+    should overwrite this function to implement its logic.
+    Typically, it would be something like: json decode the string
+    data, extract info, yield one or more lines.
+
+Converter.header2()
+    Returns the output column names, list of strings.  Used in csv, for
+    example.  The default implementation just returns self.header.
+    (It's a bit hackish to have both header attribute and header2 method,
+    but things changed and a quick hack was introduced pending a final
+    solution).
+
+Converter.name()
+    Returns the human-readable name of the converter.
+
+Converter.desc
+    Human-readable description of the converter.
+
+To make a new converter, you would basically:
+
+- Look to find a similar converter (for example, all of the Purple
+  Robot ones are similar)
+- Build on (copy or subclass) that.
+- Change the convert() method
+- Change the header (header attribute)
+
+
+This file, when run a a script, provides a simple command line interface
+(at the bottom).
+
+To access data from Python code, there is no shortcut method right now,
+you should do this.  There is an example script at the bottom of this
+file.:
+
+- import converter
+- converter_class = converter.PRScreen  # for example
+- header = converter_class.header2()
+- Without error handling (run this if you want to handle them yourself):
+  for row in converter_class.convert(rows):
+      ... # do something with each row
+- There is a second option with error handling:
+  converter = converter_class(rows)
+  for row in converter.run():
+      ... # do something with each row
+  # At the end
+  converter.errors
+  converter.errors_dict
+"""
+
+from __future__ import print_function
+
+from six import iteritems
 from six.moves import zip
 
 from calendar import timegm
@@ -8,6 +84,7 @@ from datetime import datetime
 import itertools
 from json import loads, dumps
 import time
+import sys
 
 import logging
 log = logging.getLogger(__name__)
@@ -43,11 +120,25 @@ class _Converter(object):
         being used, the converter class must be instantiated with the
         rows/time arguments that .convert() takes.
         """
+        # Convert the rows into an iterator explicitely here.  For
+        # objects like querysets or generators, this has no effect.
+        # But for lists/tuples, if we don't do this, every repitition
+        # of the while loop *restarts*, which is not what we want.  By
+        # making the iterator here, each repitition in the loop below
+        # starts where the previous left off.
+        rows = iter(self.rows)
+        # Until we are exhausted (we get to the break)
         while True:
             try:
-                for x in self.convert(self.rows, self.time):
+                # Iterate through yielding everything.
+                for x in self.convert(rows, self.time):
                     yield x
+                # If we manage to finish, break loop and we are done.
+                # Everything is simple.
                 break
+            # If there was exception, do something with it, then
+            # restart the while loop.  It will break when iterator
+            # exhausted.  The handling colud be improved later.
             except Exception as e:
                 print(e)
                 self.errors.append(e)
@@ -274,7 +365,6 @@ class PRAccelerometerFrequency(_PRGeneric):
         ('FREQ_Z', ),
         ]
 
-from six import iteritems
 class PRDataSize(_Converter):
     per_page = None
     header = ['probe', 'bytes']
@@ -304,3 +394,88 @@ class IosLocation(_Converter):
                        )
                 except:
                     pass
+
+
+
+
+
+if __name__ == "__main__":
+    import argparse
+    description = """\
+    Command line utility for converting raw data into other forms.
+
+    This converts raw data using the converters defined in this file.
+    It is a simple command line version of views_data.py:device_data.
+    In the future, the common ground of these two functions should be
+    merged.
+
+    So far, the input format must be 'json-lines', that is, one JSON
+    object on each line.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', help="Input filename")
+    parser.add_argument('converter', help="Output filename")
+    parser.add_argument('-f', '--format', help="Output format [csv,json,py]",
+                        default='csv')
+    parser.add_argument('--handle-errors', help="Catch errors and continue",
+                        action='store_true', default=False)
+    parser.add_argument('--suppress-errors', help="If there were errorrs, do not print "
+                                        "anything about them.  Has no effect unless "
+                                        "--handle-errors is given.",
+                        action='store_true', default=False)
+    args = parser.parse_args()
+
+    converter = globals()[args.converter]
+
+    # Open the input file.  We expect it to have one JSON object per
+    # line (as separated by \n).  Then, we make an iterator that JSON
+    # decodes each line, and give this iterater to the converter.  The
+    # converter returns another iterator over the reprocessed data.
+    f = open(args.input)
+    row_iter = (loads(line) for line in f )
+    # Reprocess the row to convert the unixtime to UTC datetime
+    row_iter = ((datetime.utcfromtimestamp(ts), data) for (ts, data) in row_iter)
+    # First method is new conversion that handles errors
+    # semi-intelligently.
+    if args.handle_errors:
+        converter = converter(list(row_iter))
+        table = converter.run()
+    # Second does not handle errors, if an error happens exception is
+    # propagated.
+    else:
+        table = converter().convert(row_iter)  # iterate through lines
+
+
+    # Write as python objects (repr)
+    if args.format == 'py':
+        for row in table:
+            print(repr(row))
+
+    # Write as CSV
+    elif args.format == 'csv':
+        csv_writer = csv.writer(sys.stdout)
+        csv_writer.writerow(converter.header2())
+        for row in table:
+            csv_writer.writerow(row)
+
+    # Write as JSON
+    elif args.format == 'json':
+        print('[')
+        table = iter(table)
+        print(dumps(next(table)), end='')
+        for row in table:
+            print(',') # makes newline
+            print(dumps(row), end='')
+        print('\n]')
+
+    else:
+        print("Unknown output format: %s"%args.format)
+        exit(1)
+
+    # If there were any errors, make a warning about them.
+    if args.handle_errors and not args.suppress_errors:
+        if converter.errors:
+            print("")
+            print("The following errors were found:")
+            for error in converter.errors:
+                print(error)
