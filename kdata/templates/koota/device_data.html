@@ -15,11 +15,13 @@ Download as (all pages subject to filter):<br>
 <p>
 
 
+{% if pages_total > 1 %}
 {%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
 {%if page_prev %}<a href="?{{page_prev }}">Prev</a>{%endif%}
 [{{page_number}}/{{pages_total}}]
 {%if page_next %}<a href="?{{page_next }}">Next</a>{%endif%}
 {%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}
+{% endif %}
 
 <table>
   <tr>{% for name in converter.header2 %}
@@ -32,14 +34,17 @@ Download as (all pages subject to filter):<br>
 {% endfor %}
 </table>
 
-  
+{% if pages_total > 1 %}
 {%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
 {%if page_prev %}<a href="?{{page_prev }}">Prev</a>{%endif%}
 [{{page_number}}/{{pages_total}}]
 {%if page_next %}<a href="?{{page_next }}">Next</a>{%endif%}
 {%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}
+{% endif %}
 
 
-<p>Errors: {{ converter.errors }} {{ converter.errors_dict }}</p>
+{% if converter.errors %}
+<p><font color="red">Errors: {{ converter.errors }} {{ converter.errors_dict }}</font></p>
+{% endif %}
 
 {% endblock %}

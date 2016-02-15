@@ -118,7 +118,7 @@ def device_data(request, public_id, converter, format):
 
     # Paginate, if needed
     if converter_class.per_page is not None and not format:
-        page_number = c['page_number'] = request.GET.get('page', None)
+        page_number = c['page_number'] = request.GET.get('page', 1)
         paginator = Paginator(queryset, min(int(request.GET.get('perpage', converter_class.per_page)), 100))
         c['pages_total'] = paginator.num_pages
         if page_number == 'last':
