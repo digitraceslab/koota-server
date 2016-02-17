@@ -154,7 +154,7 @@ class Raw(_Converter):
             yield time(timegm(dt.utctimetuple())), data
 
 class MurataBSN(_Converter):
-    header = ['unixtime', 'hr', 'rr', 'sv', 'hrv', 'ss', 'status', 'bbt0', 'bbt1', 'bbt2']
+    header = ['time', 'hr', 'rr', 'sv', 'hrv', 'ss', 'status', 'bbt0', 'bbt1', 'bbt2']
     desc = "Basic information from Murata bed sensors"
     def convert(self, rows, time=lambda x:x):
         from defusedxml.ElementTree import fromstring as xml_fromstring
@@ -266,7 +266,7 @@ class PRStepCounter(_Converter):
                            probe['STEP_COUNT'],
                            )
 class PRDeviceInUse(_Converter):
-    header = ['time', 'packet_ts', 'in_use']
+    header = ['time', 'packet_time', 'in_use']
     desc = "Purple Robot DeviceInUseFeature"
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
