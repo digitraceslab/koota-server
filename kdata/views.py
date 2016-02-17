@@ -183,7 +183,7 @@ from six.moves.urllib.parse import quote as url_quote
 from django.conf import settings
 def device_qrcode(request, public_id):
     device = models.Device.get_by_id(public_id)
-    if not util.has_device_perm(self.request, device):
+    if not util.has_device_perm(request, device):
         raise PermissionDenied("No permission for device")
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     url_base = "{0}://{1}".format(request.scheme, settings.POST_DOMAIN)
