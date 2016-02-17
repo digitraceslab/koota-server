@@ -307,6 +307,18 @@ class PRAccelerometer(_Converter):
                                                   probe['ACCURACY'],
                                               ):
                         yield time(t1), time(t2), x, y, z, a
+class PRTimestamps(_Converter):
+    desc = 'All actual data timestamps of all PR probes'
+    header = ['time',
+              #'packet_time',
+              'probe',]
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                yield (time(probe['TIMESTAMP']),
+                       #timegm(ts.timetuple())
+                       probe['PROBE'].rsplit('.',1)[-1])
 class _PRGeneric(_Converter):
     """Generic simple probe
 
