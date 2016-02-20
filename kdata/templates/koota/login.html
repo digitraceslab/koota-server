@@ -26,9 +26,15 @@
       <td>{{ form.password.label_tag }}</td>
       <td>{{ form.password }}</td>
     </tr>
+    {% if form.get_user %}
+    {# <tr> {{ form.otp_device.errors }}{{ form.otp_device.label_tag }}{{ form.otp_device }} </tr> #}
+    {% endif %}
+    <tr>
+      <td>{{ form.otp_token.errors }}{{ form.otp_token.label_tag }}</td>
+      <td>{{ form.otp_token }} </td>
   </table>
 
-  <input type="submit" value="login" />
+  <input type="submit" value="Login" />
   <input type="hidden" name="next" value="{% url 'device-list' %}{#{{ next }}#}" />
 </form>
 

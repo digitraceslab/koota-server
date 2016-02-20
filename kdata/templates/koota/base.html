@@ -7,7 +7,8 @@
 
   <div style="border:1px solid black;">
   {% if user.is_authenticated %}
-  Logged in as {{ user.username }}. <a href="{% url 'logout'%}?next={% url 'main' %}">Logout</a><br/>
+  Logged in as {{ user.username }}{% if user.is_verified %}(+OTP){% endif %}. <a href="{% url 'logout'%}?next={% url 'main' %}">Logout</a><br/>
+
   {% else %}
   <a href="{% url 'login2' %}">Login</a> <a href="{% url 'register-user' %}">Register</a><br/>
   {% endif %}

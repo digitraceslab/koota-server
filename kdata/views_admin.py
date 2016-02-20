@@ -1,11 +1,14 @@
+from django import forms
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 from django.db.models import Func, F, Q, Sum #, RawSQL
 from django.db.models.functions import Length
+from django.template.response import TemplateResponse
 
 from math import log
 from datetime import timedelta
@@ -15,12 +18,145 @@ from . import models
 from . import devices
 from . import util
 
+import logging
+log = logging.getLogger(__name__)
+
 def human_bytes(x):
     """Add proper binary prefix to number in bytes, returning string"""
     unit_list = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
     exponent = int(log(x, 1024))
     quotient = x / 1024**exponent
     return '%6.2f %-3s'%(quotient, unit_list[exponent])
+
+
+
+# One-time password (TOTP, one-factor auth) related views.
+import django_otp.forms
+from django_otp.forms import OTPAuthenticationForm
+class KootaOTPAuthenticationForm(OTPAuthenticationForm):
+    """OTP auth form that allows auth to be optional.  This is mostly
+    taken from the django-otp, with the last part commented out.
+
+    """
+    otp_token = forms.CharField(required=False, label="OTP Token (optional)")
+    def clean_otp(self, user):
+        """Process the otp_* fields
+
+        Like django_otp.forms.OTPAuthenticationForm, but make OTP
+        authentication optional.  No error is raised if it is not
+        present, but the user is not verified.
+        """
+        if user is None:
+            return
+
+        device = self._chosen_device(user)
+        token = self.cleaned_data.get('otp_token')
+        error = None
+
+        user.otp_device = None
+
+        if self.cleaned_data.get('otp_challenge'):
+            error = self._handle_challenge(device)
+        elif token:
+            user.otp_device = self._verify_token(user, token, device)
+
+        #if user.otp_device is None:
+        #    self._update_form(user)
+        #
+        #    if error is None:
+        #        error = forms.ValidationError(_('Please enter your OTP token'))
+        #
+        #    raise error
+from django import forms
+class OTPVerifyForm(forms.Form):
+    otp_token = forms.CharField()
+def otp_config(request):
+    """View to manage two-factor (OTP) auth.
+
+    - Show QR code if the device is not confirmed.
+    - Allow user to confirm their code, if it not confirmed.  Then
+      mark the device as confirmed.
+    - If device is already confirmed, then don't show the QR code
+      since that would risk it being lost.  However, do show it if the
+      user has logged in using OTP (user.is_verified) and you have
+      just verified your token.
+    """
+    context = c = { }
+    # Get devices
+    devices = list(django_otp.devices_for_user(request.user, confirmed=None)) # conf
+    # and unconf If there is more than one device, log an error.
+    # FIXME: this does not support one-time passwords and multiple
+    # devices yet.
+    if len(devices) > 1:
+        log.critical("User has more than one OTP device: %s", request.user.id)
+    # If the user has no devices, create one now.
+    if len(devices) == 0:
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+        device = TOTPDevice(user=request.user,
+                            confirmed=False,
+                            name='Auto device')
+        device.save()
+    # If everything is normal, then select the user's device.
+    else:
+        device = devices[0]
+        c['confirmed'] = device.confirmed
+
+    # Attempt to verify code or confirm the unconfirmed device.
+    if request.method == 'POST':
+        form = c['otp_form'] = OTPVerifyForm(request.POST)
+        form.is_valid()  # validate form - validation is null op.
+        success = c['success'] = device.verify_token(form.cleaned_data['otp_token'])
+        # Success: if the device is unconfirmed, then confirm it.  It
+        # can then be used for logging in, etc.
+        if success:
+            # Do device confirmation
+            if not device.confirmed:
+                device.confirmed = True
+                device.save()
+                c['confirmed'] = device.confirmed
+            message = c['message'] = 'Code verified.'
+        else:
+            message = c['message'] = 'Code not successful.'
+        # Note that there is no other special action on success.
+
+        # Reset the form - don't display code again or anything.
+        form = c['otp_form'] = OTPVerifyForm()
+    else:
+        form = c['otp_form'] = OTPVerifyForm()
+
+    return TemplateResponse(request, 'koota/otp.html', context)
+import base64
+import qrcode
+import io
+from six.moves.urllib.parse import quote as url_quote
+def otp_qr(request):
+    """Produce the HOTP QR code for this user.
+
+    FIXME: this will generate the code if user.is_verified, but does
+    not check for valid code on the otp_config page.
+
+    """
+    if request.user.is_anonymous():
+        return HttpResponse(status=403)
+    # Get the right device.  Assume that there is only one per user...
+    devices = list(django_otp.devices_for_user(request.user, confirmed=None))
+    device = next(iter(devices)) # Assume only one device
+    if device.confirmed and not request.user.is_verified():
+        return HttpResponse('Can not get QR code (confirmed, login not verified)',
+                            status=403, content_type='text/plain')
+
+    # Generate the QR code and return.
+    uri = 'otpauth://totp/{0}?secret={1}'.format(
+        'Koota-'+request.user.username,
+        base64.b32encode(device.bin_key).decode('utf-8'))
+    img = qrcode.make(uri, border=4, box_size=2,
+                     error_correction=qrcode.constants.ERROR_CORRECT_L)
+    cimage = io.BytesIO()
+    img.save(cimage)
+    cimage.seek(0)
+    return HttpResponse(cimage.getvalue(), content_type='image/png')
+
+
 
 def stats(request):
     """Produce basic stats on database usage.

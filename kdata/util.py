@@ -10,7 +10,7 @@ def has_device_perm(request, device):
     """
     if isinstance(device, six.string_types):
         device = models.Device.objects.get(device_id=device)
-    if request.user.is_superuser:
+    if request.user.is_superuser and request.user.is_verified():
         return True
     if device.user == request.user:
         return True
