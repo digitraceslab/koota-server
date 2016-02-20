@@ -15,6 +15,7 @@ class Data(models.Model):
     device_id = models.CharField(max_length=64)
     ts = models.DateTimeField(auto_now_add=True)
     ip = models.GenericIPAddressField()
+    data_length = models.IntegerField(blank=True, null=True)
     data = models.TextField(blank=True)
 
 class Device(models.Model):
