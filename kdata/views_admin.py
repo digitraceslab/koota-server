@@ -215,11 +215,11 @@ def stats(request):
         if duration <= timedelta(days=2):
 
             # Data per day
-            size = models.Data.objects.filter(ts__gt=start, ts__lte=end).aggregate(sum=Sum(Length('data')))['sum']
+            size = models.Data.objects.filter(ts__gt=start, ts__lte=end).aggregate(sum=Sum(F('data_length')))['sum']
             stats.append('Total data size: %s/day'%human_bytes(to_per_day(size)))
 
             # Amount of data, per device.
-            c.execute("SELECT type, sum(length(data)) FROM kdata_data LEFT JOIN kdata_device USING (device_id) "
+            c.execute("SELECT type, sum(data_length) FROM kdata_data LEFT JOIN kdata_device USING (device_id) "
                       "WHERE ts>%s and ts <=%s GROUP BY type ORDER BY type",
                       [start, end])
             for device_type, size in c:
