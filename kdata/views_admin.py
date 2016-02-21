@@ -19,7 +19,7 @@ from . import devices
 from . import util
 
 import logging
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 def human_bytes(x):
     """Add proper binary prefix to number in bytes, returning string"""
@@ -88,7 +88,7 @@ def otp_config(request):
     # FIXME: this does not support one-time passwords and multiple
     # devices yet.
     if len(devices) > 1:
-        log.critical("User has more than one OTP device: %s", request.user.id)
+        logger.critical("User has more than one OTP device: %s", request.user.id)
     # If the user has no devices, create one now.
     if len(devices) == 0:
         from django_otp.plugins.otp_totp.models import TOTPDevice
