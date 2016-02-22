@@ -155,7 +155,7 @@ class MurataBSN(_Device):
                  ]
     raw_instructions = textwrap.dedent("""\
     See <a href="https://github.com/CxAalto/koota-server/wiki/MurataBSN">the wiki page</a>.
-    The <tt>device_secret_id</tt> to use for the "Node ID" on the "Communicaiton Settings" page
+    The <tt>device_secret_id</tt> to use for the "Node ID" on the "Communication Settings" page
     is <tt>{device.secret_id}</tt>.  Do <b>not</b> put in your Koota username and password,
     leave them as <tt>x</tt> or something.
     """)
