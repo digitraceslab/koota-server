@@ -81,6 +81,8 @@ def otp_config(request):
       user has logged in using OTP (user.is_verified) and you have
       just verified your token.
     """
+    if request.user.is_anonymous():
+        return HttpResponse("Forbidden: must be logged in", status=403)
     context = c = { }
     # Get devices
     devices = list(django_otp.devices_for_user(request.user, confirmed=None)) # conf
@@ -137,7 +139,7 @@ def otp_qr(request):
 
     """
     if request.user.is_anonymous():
-        return HttpResponse(status=403)
+        return HttpResponse("Forbidden: must be logged in", status=403)
     # Get the right device.  Assume that there is only one per user...
     devices = list(django_otp.devices_for_user(request.user, confirmed=None))
     device = next(iter(devices)) # Assume only one device
