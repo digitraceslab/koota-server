@@ -450,7 +450,7 @@ if __name__ == "__main__":
     # First method is new conversion that handles errors
     # semi-intelligently.
     if args.handle_errors:
-        converter = converter(list(row_iter))
+        converter = converter(row_iter)
         table = converter.run()
     # Second does not handle errors, if an error happens exception is
     # propagated.
