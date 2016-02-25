@@ -74,7 +74,7 @@ file.:
 
 from __future__ import print_function
 
-from six import iteritems
+from six import iteritems, itervalues
 from six.moves import zip
 
 from calendar import timegm
@@ -381,6 +381,15 @@ class PRDataSize(_Converter):
     per_page = None
     header = ['probe', 'bytes']
     desc = "Total bytes taken by each separate probe (warning: takes a long time to compute)"
+    days_ago = None
+    @classmethod
+    def query(cls, queryset):
+        """"Limit   to the number of days ago, if cls.days_ago is given."""
+        if not cls.days_ago:
+            return queryset
+        from django.utils import timezone
+        now = timezone.now()
+        return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
     def convert(self, queryset, time=lambda x:x):
         sizes = collections.defaultdict(int)
         for ts, data in queryset:
@@ -389,6 +398,14 @@ class PRDataSize(_Converter):
                 sizes[probe['PROBE']] += len(dumps(probe))
         for probe, size in sorted(iteritems(sizes), key=lambda x: x[1], reverse=True):
             yield probe, size
+        yield 'total', sum(itervalues(sizes))
+class PRDataSize1Day(PRDataSize):
+    desc = "Like PRDataSize, but limited to 1 day.  Use this for most testing."
+    days_ago = 1
+class PRDataSize1Week(PRDataSize):
+    desc = "Like PRDataSize, but limited to 7 days.  Also more efficient."
+    days_ago = 7
+
 class PRMissingData(_Converter):
     """Report time periods of greater than 3600s when no data was recorded.
 

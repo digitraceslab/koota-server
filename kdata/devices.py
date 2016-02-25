@@ -55,6 +55,8 @@ class PurpleRobot(_Device):
                   converter.PRAccelerometerBasicStatistics,
                   converter.PRAccelerometerFrequency,
                   converter.PRTimestamps,
+                  converter.PRDataSize1Day,
+                  converter.PRDataSize1Week,
                   converter.PRDataSize,
                   converter.PRMissingData,
                   ]
