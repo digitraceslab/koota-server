@@ -99,7 +99,10 @@ def device_data(request, public_id, converter, format):
     c['query_params_nopage'] = replace_page(request, '')
 
     # Fetch all relevant data
-    queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts').defer('data')
+    queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
+    if hasattr(converter_class, 'query'):
+        queryset = converter_class.query(queryset)
+    queryset = queryset.defer('data')
 
     # Process the form and apply options
     form = c['select_form'] = DataListForm(request.GET)

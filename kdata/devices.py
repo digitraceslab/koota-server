@@ -56,6 +56,7 @@ class PurpleRobot(_Device):
                   converter.PRAccelerometerFrequency,
                   converter.PRTimestamps,
                   converter.PRDataSize,
+                  converter.PRMissingData,
                   ]
     @classmethod
     def configure(cls, device):

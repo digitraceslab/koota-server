@@ -80,7 +80,7 @@ from six.moves import zip
 from calendar import timegm
 import collections
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 import itertools
 from json import loads, dumps
 import time
@@ -389,6 +389,48 @@ class PRDataSize(_Converter):
                 sizes[probe['PROBE']] += len(dumps(probe))
         for probe, size in sorted(iteritems(sizes), key=lambda x: x[1], reverse=True):
             yield probe, size
+class PRMissingData(_Converter):
+    """Report time periods of greater than 3600s when no data was recorded.
+
+    This uses the PRTimestamps converter to the timestamps of actual
+    data collection, not just when data was uploaded which is expected
+    to be intermitent.  This is used for testing Purple Robot
+    functioning.
+    """
+    per_page = None
+    header = ['time0', 'time1', 'gap_s']
+    desc = "Report gaps of greater than 3600s in last 14 days of Purple Robot data."
+    days_ago = 14
+    min_gap = 3600
+    @classmethod
+    def query(cls, queryset):
+        """Do necessary filtering on the django QuerySet.
+
+        In this case, restrict to the last 14 days."""
+        #now = datetime.utcnow() This method depends on django, but
+        # that is OK since it used Queryset semantics, which itself
+        # depend on django.  This method only makes sent to call in
+        # the server itself.
+        from django.utils import timezone
+        now = timezone.now()
+        return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
+    def convert(self, rows, time=lambda x:x):
+        #import IPython ; IPython.embed()
+        # Get list of all actual data timestamps (using PRTimestamps converter)
+        ts_list = PRTimestamps(rows).run()
+        # Avoid all timestamps less than 1e8s (1973).  This avoids
+        # times converted from things that weren't unixtimes.
+        ts_list_sorted = sorted(x[0] for x in ts_list if x[0] > 100000000)
+        ts_list_sorted = iter(ts_list_sorted)
+        # Simple core: go through, convert all data, any gaps that are
+        # greater than self.min_gap seconds, yield that info.
+        time0 = next(ts_list_sorted)
+        for time1 in ts_list_sorted:
+            if time1 > time0 + self.min_gap:
+                yield (time(time0), time(time1), time1-time0)
+            time0 = time1
+
+
 
 class IosLocation(_Converter):
     header = ['time', 'lat', 'lon', 'alt', 'speed']
