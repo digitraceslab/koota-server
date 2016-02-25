@@ -121,7 +121,7 @@ def device_data(request, public_id, converter, format):
 
     # Paginate, if needed
     if converter_class.per_page is not None and not format:
-        page_number = c['page_number'] = request.GET.get('page', 1)
+        page_number = request.GET.get('page', 'last')
         paginator = Paginator(queryset, min(int(request.GET.get('perpage', converter_class.per_page)), 100))
         c['pages_total'] = paginator.num_pages
         if page_number == 'last':
@@ -130,6 +130,7 @@ def device_data(request, public_id, converter, format):
             page_number = int(page_number)
         else:
             page_number = 1
+        c['page_number'] = page_number
         page_obj = c['page_obj'] = paginator.page(page_number)
         # Set our URLs for pagination.  Need to do this here because
         # you can't embed tags within filter arguments, at least so I
