@@ -157,11 +157,17 @@ def device_data(request, public_id, converter, format):
         time_converter = lambda ts: ts
 
     # Make our table object by passing raw data through the converter.
-    converter = c['converter'] \
-                = converter_class(((x.ts, x.data) for x in data.iterator()),
+    catch_errors = 1
+    if catch_errors:
+        converter = c['converter'] \
+                = converter_class(data.values_list('ts', 'data'),
                                   time=time_converter)
-    table = c['table'] = \
-      converter.run()
+        table = c['table'] = \
+                converter.run()
+    else:
+        converter = c['converter'] = converter_class()
+        table = c['table'] = converter.convert(data.values_list('ts', 'data'),
+                                               time=time_converter)
 
     # Convert to custom formats if it was requested.
     context['download_formats'] = [('csv2',  'csv (download)'),
