@@ -319,6 +319,20 @@ class PRTimestamps(_Converter):
                 yield (time(probe['TIMESTAMP']),
                        #timegm(ts.timetuple())
                        probe['PROBE'].rsplit('.',1)[-1])
+class PRRunningSoftware(_Converter):
+    header = ['time', 'PACKAGE_NAME', 'TASK_STACK_INDEX', 'PACKAGE_CATEGORY', ]
+    desc = "All software currently running"
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.RunningSoftwareProbe':
+                    for software in probe['RUNNING_TASKS']:
+                        yield (time(probe['TIMESTAMP']),
+                               software['PACKAGE_NAME'],
+                               software['TASK_STACK_INDEX'],
+                               software['PACKAGE_CATEGORY'],
+                              )
 class _PRGeneric(_Converter):
     """Generic simple probe
 
@@ -375,6 +389,18 @@ class PRAccelerometerFrequency(_PRGeneric):
         ('FREQ_Y', ),
         ('POWER_Z', ),
         ('FREQ_Z', ),
+        ]
+class PRApplicationLaunches(_PRGeneric):
+    probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.ApplicationLaunchProbe'
+    desc = "ApplicationLaunchProbe, when software is started"
+    fields = [
+        ('CURRENT_APP_PKG', ),
+        ('CURRENT_APP_NAME', ),
+        # These can always be found by looking at previous row, and
+        # are missing in the first row.
+        #('PREVIOUS_APP_PKG', ),
+        #('PREVIOUS_APP_NAME', ),
+        #('PREVIOUS_TIMESTAMP', ),
         ]
 
 class PRDataSize(_Converter):
