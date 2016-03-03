@@ -151,14 +151,16 @@ class DeviceListView(ListView):
     def get_queryset(self):
         # fixme: return "not possible" if not logged in
         if self.request.user.is_superuser:
-            queryset = self.model.objects.all()
+            queryset = self.model.objects.all().order_by('_public_id')
         else:
-            queryset = self.model.objects.filter(user=self.request.user)
+            queryset = self.model.objects.filter(user=self.request.user).order_by('_public_id')
         return queryset
 
-class DeviceConfig(DetailView):
+class DeviceConfig(UpdateView):
     template_name = 'koota/device_config.html'
     model = models.Device
+    fields = ['name', 'type', 'label', 'comment']
+
     def get_object(self):
         """Get device model object, testing permissions"""
         obj = self.model.get_by_id(self.kwargs['public_id'])
@@ -180,6 +182,8 @@ class DeviceConfig(DetailView):
             context['data_latest'] = device_data.order_by('-ts').first().ts
             context['data_latest_data'] = device_data.order_by('-ts').first().data
         return context
+    def get_success_url(self):
+        return reverse('device-config', kwargs=dict(public_id=self.object.public_id))
 
 import qrcode
 import io
@@ -214,7 +218,7 @@ def device_qrcode(request, public_id):
 class DeviceCreate(CreateView):
     template_name = 'koota/device_create.html'
     model = models.Device
-    fields = ['name', 'type']
+    fields = ['name', 'type', 'label', 'comment']
 
     def form_valid(self, form):
         user = self.request.user

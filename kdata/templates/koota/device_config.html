@@ -32,4 +32,21 @@ Scan this with the device<p>
 <img src="{% url 'device-qr' public_id=object.public_id %}">
 {% endif %}
 
+<h2>Change device properties</h2>
+
+Here, you can adjust some basic properties of your device.  The name
+is just for your use.  The usage (primary, secondary) will be passed
+on to researchers.  Only primary and secondary devices are considered
+for research projects.  The comment field is currently unused, but
+could possibly be used for research.  The device type should not
+normally be changed unless you configured it wrong at the start.  Make
+a new server device if you need to test other device types.
+
+<form method="post">
+{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="Submit" />
+</form>
+
+
 {% endblock %}

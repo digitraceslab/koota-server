@@ -10,3 +10,6 @@ admin.site.register(models.Device, DeviceAdmin)
 class DataAdmin(admin.ModelAdmin):
     pass
 admin.site.register(models.Data, DataAdmin)
+class DeviceLabelAdmin(admin.ModelAdmin):
+    pass
+admin.site.register(models.DeviceLabel, DeviceLabelAdmin)

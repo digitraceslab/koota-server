@@ -21,14 +21,18 @@ class Data(models.Model):
 class Device(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     name = models.CharField(max_length=64,
-                            help_text='Give your device a name')
+                            help_text='A descriptive name for your device.')
     type = models.CharField(max_length=32,
-                            help_text='What type of device is this',
+                            help_text='What type of device is this?',
                             choices=devices.device_choices)
     device_id = models.CharField(max_length=64, primary_key=True, unique=True)
     active = models.BooleanField(default=True)
     _public_id = models.CharField(db_column='public_id', max_length=64, null=True, blank=True, db_index=True)
     _secret_id = models.CharField(db_column='secret_id', max_length=64, null=True, blank=True, db_index=True)
+    label = models.ForeignKey('DeviceLabel', null=True, blank=True, verbose_name="Usage",
+                              help_text='How is this device used?  Primary means that you actively use the '
+                                        ' device in your life, secondary is used by you sometimes. ')
+    comment = models.CharField(max_length=256, null=True, blank=True, help_text='Any other comments to researchers (optional)')
     @property
     def public_id(self):
         """Device secret_id.  secret_id column, if missing then device_id[:6]"""
@@ -51,3 +55,9 @@ class Device(models.Model):
             return cls.objects.get(_public_id=public_id)
         except cls.DoesNotExist:
             return cls.objects.get(device_id__startswith=public_id)
+
+class DeviceLabel(models.Model):
+    name = models.CharField(max_length=64, null=True, blank=True)
+    description = models.CharField(max_length=256, null=True, blank=True)
+    def __str__(self):
+        return self.name
