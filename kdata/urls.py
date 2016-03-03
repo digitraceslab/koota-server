@@ -29,6 +29,8 @@ urlpatterns = [
         views_data.device_data,
         name='device-data'),
 
+    url(r'^log$', kviews.log, name='log'),
+
     url(r'^stats/', views_admin.stats),
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),

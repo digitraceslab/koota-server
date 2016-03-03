@@ -78,6 +78,9 @@ def post(request, device_id=None, device_class=None):
     if 'response' in results:
         return results['response']
     return JsonResponse(dict(ok=True))
+@csrf_exempt
+def log(request, device_id=None, device_class=None):
+    return JsonResponse(dict(status='success'))
 
 @csrf_exempt
 def config(request, device_class=None):
