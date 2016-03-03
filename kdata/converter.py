@@ -140,7 +140,10 @@ class _Converter(object):
             # restart the while loop.  It will break when iterator
             # exhausted.  The handling colud be improved later.
             except Exception as e:
+                log.error("Exception in %s", self.__class__.__name__)
+                import traceback
                 log.error(e)
+                log.error(traceback.format_exc())
                 self.errors.append(e)
                 self.errors_dict[str(e)] += 1
                 #self.errors_emit_error(e)
