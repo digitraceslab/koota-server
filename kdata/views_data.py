@@ -82,6 +82,8 @@ def replace_page(request, n):
     """
     dict_ = request.GET.copy()
     dict_['page'] = n
+    if n is None:
+        del dict_['page']
     for key in list(dict_):
         if not dict_[key]:  del dict_[key]
     return dict_.urlencode()
@@ -128,8 +130,17 @@ def device_data(request, public_id, converter, format):
             page_number = paginator.num_pages
         elif page_number:
             page_number = int(page_number)
+            if int(page_number) > paginator.num_pages:
+                # Page is out of bounds.  This can happen if someone
+                # adjusts the date filters and , now there are fewer
+                # pages and we are too far forward.  Redirect to same
+                # URL with no page given.  Alternative solution: when
+                # applying new filters, remove the page number?  Would
+                # need to remove page from the filter form.
+                return HttpResponseRedirect('?'+replace_page(request, n=None),
+                                            reason='Page out of bounds')
         else:
-            page_number = 1
+            page_number = paginator.num_pages
         c['page_number'] = page_number
         page_obj = c['page_obj'] = paginator.page(page_number)
         # Set our URLs for pagination.  Need to do this here because
