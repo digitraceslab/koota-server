@@ -1,0 +1,43 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+
+
+{# Confirmed codes #}
+{% if confirmed %}
+<p>Your OTP device is confirmed.  If have logged in using two-factor
+authentication, and successfully re-verify your code, you can view the
+QR code again so that you can re-use it.</p>
+
+{% if request.user.is_verified and success %}
+<img src="{% url 'otp-qr' %}">
+{% endif %}
+{% endif %}
+
+
+
+{# Unconfirmed codes #}
+{% if not confirmed %}
+<h2>Unconfirmed code</h2>
+
+<p>Before you can use two-factor authentication, you need to confirm
+this device.</p>
+
+<p>This code is unverified, please enable and verify.</p>
+
+<img src="{% url 'otp-qr' %}">
+{% endif %}
+
+
+
+<h2>Test or confirm code</h2>
+{{ message }}
+<form method="post">
+  {% csrf_token %}
+  {{ otp_form }}
+  <input type="submit" value="Verify" />
+</form>
+
+
+{% endblock %}
