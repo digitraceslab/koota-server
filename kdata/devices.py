@@ -27,11 +27,28 @@ def get_class(name):
         #raise NoDeviceTypeError()
     return globals()[name]
 
+
+
 class _Device(object):
+    """Standard device object."""
+    # Converters are special data processors.
     converters = [converter.Raw]
     @classmethod
     def configure(cls, device):
+        """Return any special options for configuration.
+
+        A dict mapping keys to values.  This is used on the
+        device_config page.
+        """
         return { }
+    #def post(self, request):
+    #    """Handle special options needed for accepting data.
+    #
+    #    Returns a dict which controls the functioning of the post() view."""
+    #    return { }
+
+
+
 
 class Ios(_Device):
     converters = [converter.Raw,
