@@ -42,6 +42,17 @@ except IOError:
 import __main__
 if hasattr(__main__, '__file__') and __main__.__file__.endswith('manage.py'):
     DEBUG = True
+else:
+    # production
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+X_FRAME_OPTIONS = 'DENY'
+#SECURE_SSL_REDIRECT = True # But server should do this before it gets here.
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+
 
 ALLOWED_HOSTS = [
     # aalto hosts
