@@ -1,3 +1,5 @@
+from calendar import timegm
+import datetime
 import json
 import os
 import base64
@@ -33,22 +35,21 @@ class Integer(_SurveyField):
     field = forms.IntegerField
 class Time(_SurveyField):
     field = forms.TimeField
+    widget = forms.TimeInput
+#    widget = admin_widgets.AdminTimeWidget
 
 def field_to_json(x):
     if isinstance(x, _SurveyField):
         return (x.__class__.__name__,
                 x.__dict__)
+    if isinstance(x, datetime.time):
+        return x.strftime('%H:%M:%S')
+    if isinstance(x, datetime.datetime):
+        return timegm(x.utctimetuple())
+    if isinstance(x, datetime.date):
+        return x.strftime('%Y-%m-%d')
     raise ValueError("JSON enocde error: unknown type: %r"%x)
 json_encode = json.JSONEncoder(default=field_to_json).encode
-
-
-survey_data = {'name': 'Survey 1',
-               'id': 1,
-               'fields': [
-                   ('sleep-quality', Choice('How did you sleep?', (1, 2, 3, 4, 5))),
-                   ('fine',          Bool('Are you fine?')),
-                   ]
-           }
 
 
 def make_form(data):
@@ -75,7 +76,11 @@ def take_survey(request, token):
     """This is the view which handles surveys."""
     context = c = { }
     # Find the survey data via token, then find the
-    token_row = models.SurveyToken.objects.get(token=token)
+    try:
+        token_row = models.SurveyToken.objects.get(token=token)
+    except models.SurveyToken.DoesNotExist:
+        return HttpResponse('Survey %s does not exist...'%token,
+                            status=404)
     device = models.SurveyDevice.get_by_id(token_row.device_id)
     survey_class = device.get_class()
 
@@ -101,6 +106,8 @@ def take_survey(request, token):
                 data['answers'][tag] = dict(q=q, a=a)
 
             # Save the data
+            data['access_time'] = token_row.ts_access
+            data['submit_time'] = token_row.ts_submit
             data = json_encode(data)
             views.save_data(data=data, device_id=token_row.device_id,
                             request=request)
@@ -116,7 +123,7 @@ def take_survey(request, token):
 
 
 from . import converter
-class _Survey(devices._Device):
+class BaseSurvey(devices._Device):
     dbmodel = models.SurveyDevice
     converters = [converter.Raw,
                  ]
@@ -159,7 +166,7 @@ class _Survey(devices._Device):
 
 
 
-class TestSurvey1(_Survey):
+class TestSurvey1(BaseSurvey):
     """This is a test survey."""
     @classmethod
     def get_survey(cls, data):
