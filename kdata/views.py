@@ -78,6 +78,19 @@ def post(request, device_id=None, device_class=None):
     if 'response' in results:
         return results['response']
     return JsonResponse(dict(ok=True))
+def save_data(data, device_id, request=None):
+    """Save data programatically, as in not in a HTTP request.
+
+    This is a stripped down copy of POST."""
+    if not util.check_checkdigits(device_id):
+        raise ValueError("Invalid device ID: checkdigits invalid.")
+    remote_ip = '127.0.0.1'
+    if request is not None:
+        remote_ip = request.META['REMOTE_ADDR']
+    row = models.Data(device_id=device_id, ip=remote_ip, data=data)
+    row.data_length = len(data)
+    row.save()
+
 @csrf_exempt
 def log(request, device_id=None, device_class=None):
     return JsonResponse(dict(status='success'))
@@ -170,11 +183,8 @@ class DeviceConfig(UpdateView):
     def get_context_data(self, **kwargs):
         """Override template context data with special instructions from the DeviceType object."""
         context = super(DeviceConfig, self).get_context_data(**kwargs)
-        device_class = context['device_class'] = devices.get_class(self.object.type)
-        try:
-            context.update(device_class.configure(device=self.object))
-        except devices.NoDeviceTypeError:
-            pass
+        device_class = context['device_class'] = self.object.get_class()
+        context.update(device_class.configure(device=self.object))
         device_data = models.Data.objects.filter(device_id=self.object.device_id)
         context['data_number'] = device_data.count()
         if context['data_number'] > 0:
@@ -217,27 +227,70 @@ def device_qrcode(request, public_id):
 
 class DeviceCreate(CreateView):
     template_name = 'koota/device_create.html'
-    model = models.Device
+    _model = models.Device
     fields = ['name', 'type', 'label', 'comment']
 
+    @property
+    def model(self):
+        model = self._model
+        if self.request.method == 'POST':
+            device_class = self.request.POST.get('type', None)
+            if device_class is not None:
+                dbmodel = devices.get_class(device_class).dbmodel
+                if dbmodel is not None:
+                    model = dbmodel
+        return model
+    #def get_form_class(*args, **kwargs):
+    #    """Get form class, taking into account different types of db Devices.
+    #
+    #    The whole point of this is that not every device should be a
+    #    models.Device.  For example, surveys are instances of
+    #    models.SurveyDevice.  Instead of needing to create this
+    #    ourselves in the devices._Device.create_hook, and link them,
+    #    we can create from the start.
+    #    """
+    #    from django.forms import modelform_factory
+    #    # Default model
+    #    model = self.model
+    #    # Override model, if we have been POSTed to, and we know the
+    #    # expected device_type, and that class overrides our database
+    #    # model.
+    #    if self.request.method == 'POST':
+    #        device_class = self.request.POST.get('type', None)
+    #        if device_class is not None:
+    #            dbmodel = devices.get_class(device_class).dbmodel
+    #            if dbmodel is not None:
+    #                model = dbmodel
+    #    # The following two lines are taken from
+    #    # ModelFormMixin.get_form_class and FormMixin.get_form.
+    #    form_class = modelform_factory(model, fields=self.fields)
+    #    form = form_class(**self.get_form_kwargs())
+    def get_form(self, *args, **kwargs):
+        """Get the form and override device choices based on user.
+        """
+        form = super(DeviceCreate, self).get_form(*args, **kwargs)
+
+        # This gets only the standard choices, that all users should
+        # have.
+        choices = devices.get_choices()
+        # Extend to extra devices that this user should have.  TODO:
+        # make this user-dependent.
+        choices.extend([('kdata.survey.TestSurvey1', 'Test Survey #1'),])
+        form.fields['type'].choices = choices
+        form.fields['type'].widget.choices = choices
+        return form
     def form_valid(self, form):
+        """Create the device."""
         user = self.request.user
         if user.is_authenticated():
             form.instance.user = user
-        # random device ID
-        import random, string
-        # Loop until we find an ID which does not exist.
-        while True:
-            id_ = ''.join(random.choice(string.hexdigits[:16]) for _ in range(14))
-            id_ = util.add_checkdigits(id_)
-            try:
-                self.model.get_by_id(id_[:6])
-            except self.model.DoesNotExist:
-                break
-        form.instance.device_id = id_
-        form.instance._public_id = id_[:6]
+        else:
+            raise Http404   # XXX
+        device_class = devices.get_class(form.cleaned_data['type'])
+        device_class.create_hook(form.instance, user=user)
         return super(DeviceCreate, self).form_valid(form)
     def get_success_url(self):
+        """Redirect to device config page."""
         self.object.save()
         self.object.refresh_from_db()
         #print 'id'*5, self.object.device_id

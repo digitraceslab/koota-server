@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import json
 import textwrap
 from django.core.urlresolvers import reverse_lazy
@@ -7,11 +8,17 @@ import logging
 log = logging.getLogger(__name__)
 
 from . import converter
+from . import util
 
-class NoDeviceTypeError(Exception):
-    pass
 
-device_choices = [
+# Here we define the different types of available devices.  This is
+# sort of tricky.  For models.Device, we need Device.type.choices to
+# have *all* possible devices, otherwise the DB won't validate.
+# However, we need to restrict the types of devices available in
+# forms, because sometimes some devices will only be available to
+# certain users.
+# Standard device choices: What should always be in forms.
+standard_device_choices = [
     ('Android', 'Android'),
     ('PurpleRobot', 'Purple Robot (Android)'),
     ('Ios', 'IOS'),
@@ -19,20 +26,84 @@ device_choices = [
     #('', ''),
     #('', ''),
     ]
+# All device choices: what should validate in DB.
+all_device_choices = list(standard_device_choices)
 
+def get_choices(all=False):
+    """Get the device classes.
+
+    all=False --> return standard for forms.
+    all=True  --> return all for DB."""
+    if all:
+        return list(x[:2] for x in all_device_choices)
+    return list(x[:2] for x in standard_device_choices)
+def register_device(cls, desc):
+    """Allow us to dynamically register devices.
+
+    This dynamically changes the models.Device.type.choices when
+    things are registered.  It is a hack but can be improved later...
+    """
+    name = '%s.%s'%(cls.__module__, cls.__name__)
+    all_device_choices.append((name, desc))
+    # This is an epic hack and deserves fixing eventually.  We must
+    # extend the model fields, or else updated models won't pass
+    # validation.  Eventually, devices should not be a .choices
+    # property on a model.
+    from . import models
+    models.Device._meta.get_field('type').choices \
+            = all_device_choices
 def get_class(name):
-    """Get a device class by (string) name"""
-    if name not in globals():
-        return _Device
-        #raise NoDeviceTypeError()
-    return globals()[name]
+    """Get a device class by (string) name.
+
+    Option 1: from this namespace.
+    Option 2: import it, if it contains a '.'.
+    Option 3: return generice device _Device.
+    """
+    if name in globals():
+        device = globals()[name]
+    elif '.' in name:
+        modname, clsname = name.rsplit('.', 1)
+        mod = importlib.import_module(modname)
+        device = getattr(mod, clsname)
+    else:
+        device = _Device
+    return device
 
 
 
+import random, string
 class _Device(object):
     """Standard device object."""
     # Converters are special data processors.
     converters = [converter.Raw]
+    # If dbmodel is given, this overrides the models.Device model when
+    # an object is created.  This has to be used _before_ the DB
+    # device is created, so needs some hack kind of things in forms.
+    dbmodel = None
+    @classmethod
+    def name(cls):
+        """Human name for this device"""
+        return cls.__name__
+    @classmethod
+    def create_hook(cls, instance, user):
+        """Do initial device set-up.
+
+        Create and set the various device_ids.  This was originally in
+        kdata/views.py:DeviceCreate, and now other classes can extend
+        this.
+        """
+        # random device ID
+        # Loop until we find an ID which does not exist.
+        while True:
+            id_ = ''.join(random.choice(string.hexdigits[:16]) for _ in range(14))
+            id_ = util.add_checkdigits(id_)
+            try:
+                instance.__class__.get_by_id(id_[:6])
+            except instance.DoesNotExist:
+                break
+        instance.device_id = id_
+        instance._public_id = id_[:6]
+
     @classmethod
     def configure(cls, device):
         """Return any special options for configuration.

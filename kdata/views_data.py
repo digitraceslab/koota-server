@@ -39,11 +39,8 @@ class DeviceDetail(DetailView):
     def get_context_data(self, **kwargs):
         """Override template context data with special instructions from the DeviceType object."""
         context = super(DeviceDetail, self).get_context_data(**kwargs)
-        device_class = context['device_class'] = devices.get_class(self.object.type)
-        try:
-            context.update(device_class.configure(device=self.object))
-        except devices.NoDeviceTypeError:
-            pass
+        device_class = context['device_class'] = self.object.get_class()
+        context.update(device_class.configure(device=self.object))
         device_data = models.Data.objects.filter(device_id=self.object.device_id)
         context['data_number'] = device_data.count()
         if context['data_number'] > 0:
@@ -95,7 +92,7 @@ def device_data(request, public_id, converter, format):
     device = c['device'] = models.Device.get_by_id(public_id=public_id)
     if not util.has_device_perm(request, device):
         raise PermissionDenied("No permission for device")
-    device_class = c['device_class'] = devices.get_class(device.type)
+    device_class = c['device_class'] = device.get_class()
     converter_class = c['converter_class'] = \
         [ x for x in device_class.converters if x.name() == converter ][0]
     c['query_params_nopage'] = replace_page(request, '')

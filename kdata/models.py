@@ -22,9 +22,9 @@ class Device(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     name = models.CharField(max_length=64,
                             help_text='A descriptive name for your device.')
-    type = models.CharField(max_length=32,
+    type = models.CharField(max_length=128,
                             help_text='What type of device is this?',
-                            choices=devices.device_choices)
+                            choices=devices.get_choices(all=True))
     device_id = models.CharField(max_length=64, primary_key=True, unique=True)
     active = models.BooleanField(default=True)
     _public_id = models.CharField(db_column='public_id', max_length=64, null=True, blank=True, db_index=True)
@@ -47,17 +47,50 @@ class Device(models.Model):
         return self.device_id
     @classmethod
     def get_by_id(cls, public_id):
-        """Get a Device object given its public_id.
+        """Get a Device object given its public_id or device_id.
         """
         # First check public_id column, if that is not found return
         # device that has device_id beginning with public_id.
+        if len(public_id) < 6:
+            raise Http404
         try:
             return cls.objects.get(_public_id=public_id)
         except cls.DoesNotExist:
             return cls.objects.get(device_id__startswith=public_id)
+    def get_class(self):
+        """Return the Python class corresponding to this device."""
+        return devices.get_class(self.type)
 
 class DeviceLabel(models.Model):
     name = models.CharField(max_length=64, null=True, blank=True)
     description = models.CharField(max_length=256, null=True, blank=True)
     def __str__(self):
         return self.name
+
+
+class SurveyDevice(Device):
+    # epheremal surveys do not always have a token
+    token        = models.CharField(max_length=32, null=True, blank=True,
+                              help_text="The survey token, or blank for ephemeral surveys")
+    persistent   = models.BooleanField(blank=True, default=True,
+                              help_text="Does this survey have different tokens for each taking?")
+    survey_active= models.BooleanField(blank=True, default=True,
+                              help_text="Will this survey send notifications?")
+    pyclass      = models.CharField(max_length=128, blank=True)
+    pyclass_data = models.CharField(max_length=256, blank=True)
+    send_via     = models.CharField(max_length=128, blank=True,
+                              help_text="How to send survey to person?")
+
+
+class SurveyToken(models.Model):
+    token = models.CharField(max_length=32, primary_key=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    #device = models.ForeignKey(SurveyDevice)
+    device_id = models.CharField(max_length=64, unique=True)
+    persistent= models.BooleanField(blank=True, default=True)
+    ts_create = models.DateTimeField(auto_now_add=True)
+    ts_expire = models.DateTimeField(blank=True, null=True)
+    ts_access = models.DateTimeField(blank=True, null=True)
+    ts_submit = models.DateTimeField(blank=True, null=True)
+    data = models.CharField(max_length=256, blank=True)
+    #admin_note = models.TextField(null=True, blank=True)
