@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 import os
 
 # Local settings
+MAIN_DOMAIN = 'koota.cs.aalto.fi'
 POST_DOMAIN = 'data.koota.cs.aalto.fi'
 POST_DOMAIN_SS = 'ss1.koota.cs.aalto.fi'
 

@@ -18,26 +18,27 @@ from . import views
 
 
 class _SurveyField(object):
+    widget = None
     def __init__(self, question):
         self.question = question
 class Bool(_SurveyField):
-    widget = forms.BooleanField
+    field = forms.BooleanField
 class Char(_SurveyField):
-    widget = forms.CharField
+    field = forms.CharField
 class Choice(_SurveyField):
     def __init__(self, question, choices):
         self.question = question
         self.choices = choices
 class Integer(_SurveyField):
-    widget = forms.IntegerField
+    field = forms.IntegerField
 class Time(_SurveyField):
-    widget = forms.TimeField
+    field = forms.TimeField
 
 def field_to_json(x):
     if isinstance(x, _SurveyField):
         return (x.__class__.__name__,
                 x.__dict__)
-    raise ValueError()
+    raise ValueError("JSON enocde error: unknown type: %r"%x)
 json_encode = json.JSONEncoder(default=field_to_json).encode
 
 
@@ -61,7 +62,8 @@ def make_form(data):
                 widget=forms.RadioSelect,
                 required=False)
         else:
-            form_fields[tag] = row.widget(label=row.question, required=False)
+            form_fields[tag] = row.field(label=row.question, required=False,
+                                         widget=row.widget)
 
     Form = type('DynamicSurveyForm',
                 (forms.Form, ),
@@ -80,7 +82,7 @@ def take_survey(request, token):
     survey_data = survey_class.get_survey(data=token_row.data)
 
     Form = make_form(survey_data['questions'])
-    survey_name = c['survey_name'] = survey_data['name']
+    survey_name = c['survey_name'] = survey_data.get('name', survey_class.__name__)
 
     if request.method == 'POST':
         form = c['form'] = Form(request.POST)
@@ -103,6 +105,7 @@ def take_survey(request, token):
             views.save_data(data=data, device_id=token_row.device_id,
                             request=request)
             #print(data)
+            c['success'] = True
         else:
             pass
     else:
@@ -145,10 +148,11 @@ class _Survey(devices._Device):
 
     @classmethod
     def configure(cls, device):
-        instructions = """You should program the URL <tt>https://{post_domain}{post}</tt> to
+        instructions = """You should program the URL <tt>https://{main_domain}{post}</tt> to
         take this survey.  """.format(
             post=reverse_lazy('survey-take', kwargs=dict(token=device.surveydevice.token)),
             post_domain=settings.POST_DOMAIN,
+            main_domain=settings.MAIN_DOMAIN,
             )
         return dict(qr=False,
                     raw_instructions=instructions)
@@ -162,9 +166,14 @@ class TestSurvey1(_Survey):
         questions = [
             ('sleep-quality', Choice('How did you sleep?', (1, 2, 3, 4, 5))),
             ('fine',          Bool('Are you fine?')),
+            ('asleep',        Time('When did you go to sleep?')),
+            ('woke-up',       Time('When did you wake up?')),
+            ('fine3',         Bool('Are you fine?')),
+            ('fine4',         Bool('Are you fine?')),
+            ('fine5',         Bool('Are you fine?')),
         ]
         # Can do extra logic here
-        survey_data = {'name': 'Survey 1',
+        survey_data = {'name': 'Test Survey 1',
                        'id': 1,
                        'questions':questions,
                    }

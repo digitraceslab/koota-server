@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <title>{% block title%}Koota{% endblock %}</title>
+    <title>{{survey_name}}</title>
     <link href="{% static 'bootstrap-3.3.6-dist/css/bootstrap.min.css' %}" rel="stylesheet">
     <script src="{% static 'jquery-1.12.0.min.js' %}"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1 user-scalable=no">
@@ -11,6 +11,7 @@
     <style>
       body { font-size: x-large; }
     </style>
+    {{ form.media }}
   </head>
 
 <body>
@@ -19,7 +20,11 @@
 <div class="row">
 <div class="col-xs-12">
 
-<h1>Survey</h1>
+{% if success %}
+<p style="padding-bottom: 25%">Survey successful.  You may close the window.</p>
+{% endif %}
+
+<h1>{{survey_name}}</h1>
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
@@ -33,6 +38,7 @@
 </div>
 </div>
 
+<div style="padding-bottom: 50%;"></div>
 
 </body>
 </html>
