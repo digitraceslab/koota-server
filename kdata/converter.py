@@ -405,6 +405,18 @@ class PRApplicationLaunches(_PRGeneric):
         #('PREVIOUS_APP_NAME', ),
         #('PREVIOUS_TIMESTAMP', ),
         ]
+class PRAudioFeatures(_PRGeneric):
+    probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.AudioFeaturesProbe'
+    desc = "Audio Features Probe - some signal information on audio"
+    fields = [
+        ('FREQUENCY', ),
+        ('NORMALIZED_AVG_MAGNITUDE', ),
+        ('POWER', ),
+        ('SAMPLE_BUFFER_SIZE', ),
+        ('SAMPLE_RATE', ),
+        ('SAMPLES_RECORDED', ),
+        ]
+
 
 class PRDataSize(_Converter):
     per_page = None
