@@ -103,7 +103,7 @@ class _Converter(object):
         """Return header, either dynamic or static."""
         if hasattr(cls, 'header') and cls.header:
             return cls.header
-        return ['time'] + [x[0] for x in cls.fields]
+        return ['time'] + [x[0].lower() for x in cls.fields]
     def __init__(self, rows=None, time=lambda x: x):
         # Warning: during template rendering this is used in a variable as "_Converter.name"
         pass
