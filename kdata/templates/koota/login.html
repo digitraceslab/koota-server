@@ -35,7 +35,7 @@
   </table>
 
   <input type="submit" value="Login" />
-  <input type="hidden" name="next" value="{% url 'device-list' %}{#{{ next }}#}" />
+  <input type="hidden" name="next" value="{{ next }}" />
 </form>
 
 {# Assumes you setup the password_reset view in your URLconf #}

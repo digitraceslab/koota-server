@@ -52,6 +52,8 @@ X_FRAME_OPTIONS = 'DENY'
 #SECURE_SSL_REDIRECT = True # But server should do this before it gets here.
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+LOGIN_URL = 'login2'
+LOGIN_REDIRECT_URL = 'device-list'
 
 
 
