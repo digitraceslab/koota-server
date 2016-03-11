@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 
 from . import devices
+from . import util
 # Create your models here.
 
 class Data(models.Model):
@@ -66,6 +67,52 @@ class DeviceLabel(models.Model):
     description = models.CharField(max_length=256, null=True, blank=True)
     def __str__(self):
         return self.name
+
+
+class Group(models.Model):
+    slug = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=64)
+    desc = models.CharField(max_length=64)
+    active = models.BooleanField(default=True)
+    pyclass = models.CharField(max_length=128, blank=True, null=True)
+    pyclass_data = models.CharField(max_length=256, blank=True, null=True)
+    url = models.CharField(max_length=256, blank=True, null=True)
+    ts_start = models.DateTimeField(blank=True, null=True)
+    ts_end = models.DateTimeField(blank=True, null=True)
+    invite_code = models.CharField(max_length=64)
+    otp_required = models.BooleanField(default=False,
+                                       help_text="Require OTP auth for researchers?")
+    subjects = models.ManyToManyField(settings.AUTH_USER_MODEL,
+                                      through='GroupSubject',
+                                      related_name='subject_of_groups',
+                                      swappable=True)
+    researchers = models.ManyToManyField(settings.AUTH_USER_MODEL,
+                                         through='GroupResearcher',
+                                         related_name='researcher_of_groups',
+                                         swappable=True)
+    def __str__(self):
+        return self.name
+    def n_subjects(self):
+        return self.subjects.count()
+    def n_researchers(self):
+        return self.researchers.count()
+    def get_class(self):
+        return util.import_by_name(self.pyclass)
+
+class GroupSubject(models.Model):
+    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    active = models.BooleanField(default=True)
+    ts_start = models.DateTimeField(blank=True, null=True)
+    ts_end = models.DateTimeField(blank=True, null=True)
+class GroupResearcher(models.Model):
+    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    active = models.BooleanField(default=True)
+    ts_start = models.DateTimeField(blank=True, null=True)
+    ts_end = models.DateTimeField(blank=True, null=True)
+
+
 
 
 class SurveyDevice(Device):

@@ -12,4 +12,12 @@
 
 <p><a href="https://github.com/CxAalto/koota-server/issues">Issue tracker</a></p>
 
+{% if user.subject_of_groups.exists %}
+<p>You are a member of the following groups:
+<ul>{% for group in user.subject_of_groups.all %}
+  <li>{{group.name}}</li>{% endfor %}
+</ul>
+</p>
+{% endif %}
+
 {% endblock%}

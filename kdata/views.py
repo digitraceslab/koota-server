@@ -275,7 +275,17 @@ class DeviceCreate(CreateView):
         choices = devices.get_choices()
         # Extend to extra devices that this user should have.  TODO:
         # make this user-dependent.
-        choices.extend([('kdata.survey.TestSurvey1', 'Test Survey #1'),])
+        #choices.extend([('kdata.survey.TestSurvey1', 'Test Survey #1'),])
+        for group in self.request.user.subject_of_groups.all():
+            cls = group.get_class()
+            if hasattr(cls, 'group_devices'):
+                for dev in cls.group_devices:
+                    row = dev._devicechoices_row()
+                    # This is O(N^2) but deal with it later since
+                    # number of devices for any one person should not
+                    # grow too large.
+                    if row not in choices:
+                        choices.append(row)
         form.fields['type'].choices = choices
         form.fields['type'].widget.choices = choices
         return form

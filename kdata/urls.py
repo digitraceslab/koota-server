@@ -8,6 +8,7 @@ from kdata import views_data
 from kdata import views_admin
 from kdata import devices
 from kdata import survey
+from kdata import group
 
 urlpatterns = [
     url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post, dict(device_class=devices.PurpleRobot),
@@ -34,6 +35,9 @@ urlpatterns = [
     url(r'^stats/', views_admin.stats),
 
     url(r'^survey/take/(?P<token>[\w]*)', survey.take_survey, name='survey-take'),
+
+    url(r'^group/$', group.group_join, name='group-join'),
+    url(r'^group/(?P<group_name>[\w]+)', group.GroupView.as_view(), name='group-view'),
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]
