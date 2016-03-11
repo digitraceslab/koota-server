@@ -1,8 +1,9 @@
+import base64
 from calendar import timegm
 import datetime
 import json
 import os
-import base64
+import six
 
 from django import forms
 from django.conf import settings
@@ -84,7 +85,7 @@ def take_survey(request, token):
     device = models.SurveyDevice.get_by_id(token_row.device_id)
     survey_class = device.get_class()
 
-    survey_data = survey_class.get_survey(data=token_row.data)
+    survey_data = survey_class.get_survey(data=token_row.data, device=device)
 
     Form = make_form(survey_data['questions'])
     survey_name = c['survey_name'] = survey_data.get('name', survey_class.__name__)
@@ -122,16 +123,33 @@ def take_survey(request, token):
     return TemplateResponse(request, 'koota/survey.html', context)
 
 
+class _SurveyMetaclass(type):
+    """Automatically register new devices
+
+    This metaclass will call devices.register_device automatically
+    upon class creation.
+    """
+    def __new__(mcs, name, bases, dict):
+        cls = type.__new__(mcs, name, bases, dict)
+        if (cls.__name__ != 'BaseSurvey'
+            and not cls.__name__.startswith('_')
+            and dict.get('_register_device', True)
+           ):
+            devices.register_device(cls)
+        return cls
+
 from . import converter
+@six.add_metaclass(_SurveyMetaclass)
 class BaseSurvey(devices._Device):
     dbmodel = models.SurveyDevice
     converters = [converter.Raw,
                  ]
 
     @classmethod
-    def get_survey(cls, data):
+    def get_survey(cls, data, device):
         """This method should be overwritten to return the survey data."""
-        raise NotImplementedError("This is an ABC.")
+        raise NotImplementedError("This survey is not yet configured, "
+                                  "define get_survey().")
 
     @classmethod
     def create_hook(cls, instance, user):
@@ -140,7 +158,7 @@ class BaseSurvey(devices._Device):
         Mainly, this is used for making the survey tokens and for
         ephemeral surveys, any setup needed there.
         """
-        super(_Survey, cls).create_hook(instance, user)
+        super(BaseSurvey, cls).create_hook(instance, user)
         device_id = instance.device_id
 
         # Set any tokens we need
@@ -169,7 +187,7 @@ class BaseSurvey(devices._Device):
 class TestSurvey1(BaseSurvey):
     """This is a test survey."""
     @classmethod
-    def get_survey(cls, data):
+    def get_survey(cls, data, device):
         questions = [
             ('sleep-quality', Choice('How did you sleep?', (1, 2, 3, 4, 5))),
             ('fine',          Bool('Are you fine?')),
@@ -186,4 +204,4 @@ class TestSurvey1(BaseSurvey):
                    }
 
         return survey_data
-devices.register_device(TestSurvey1, "Test Survey #1")
+#devices.register_device(TestSurvey1, "Test Survey #1")

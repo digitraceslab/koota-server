@@ -1,3 +1,5 @@
+import importlib
+
 import six
 
 from . import models
@@ -23,6 +25,20 @@ def check_device_permissions(func):
             return Http404
         return func(request, *args, **kwargs)
     return _decorated
+
+def import_by_name(name):
+    """Import a name from a module.  Return object."""
+    modname, objname = name.rsplit('.', 1)
+    try:
+        mod = importlib.import_module(modname)
+    except ImportError:
+        return None
+    try:
+        obj = getattr(mod, objname)
+    except AttributeError:
+        return None
+    return obj
+
 
 def luhn1(num, check=False):
     """Luhn algorithm mod 16"""

@@ -8,6 +8,7 @@ import logging
 log = logging.getLogger(__name__)
 
 from . import converter
+from . import models
 from . import util
 
 
@@ -37,19 +38,25 @@ def get_choices(all=False):
     if all:
         return list(x[:2] for x in all_device_choices)
     return list(x[:2] for x in standard_device_choices)
-def register_device(cls, desc):
+def register_device(cls, desc=None):
     """Allow us to dynamically register devices.
 
     This dynamically changes the models.Device.type.choices when
     things are registered.  It is a hack but can be improved later...
+
+    If description is not given, use the class methods .name() and
+    .pyclass_name() (vi _devicechocies_row()) to automatically find
+    the necessary data.
     """
-    name = '%s.%s'%(cls.__module__, cls.__name__)
-    all_device_choices.append((name, desc))
+    if desc:
+        name = '%s.%s'%(cls.__module__, cls.__name__)
+        all_device_choices.append((name, desc))
+    else:
+        all_device_choices.append(cls._devicechoices_row())
     # This is an epic hack and deserves fixing eventually.  We must
     # extend the model fields, or else updated models won't pass
     # validation.  Eventually, devices should not be a .choices
     # property on a model.
-    from . import models
     models.Device._meta.get_field('type').choices \
             = all_device_choices
 def get_class(name):
@@ -82,8 +89,29 @@ class _Device(object):
     dbmodel = None
     @classmethod
     def name(cls):
-        """Human name for this device"""
+        """Human name for this device.
+
+        This is used in select fields and so on."""
         return cls.__name__
+    @classmethod
+    def pyclass_name(cls):
+        """Importable name for this class.
+
+        This is the Python class name corresponding to this device.
+        This is used when the server needs to import the object
+        corresponding to the device.
+        """
+        return '%s.%s'%(cls.__module__, cls.__name__)
+    @classmethod
+    def _devicechoices_row(cls):
+        """Helper for adding this to device list.
+
+        This returns (pyclass_name, name) that is used for the choices
+        option of the "type" field of the model, and selection
+        forms.
+        """
+        return (cls.pyclass_name(), cls.name())
+
     @classmethod
     def create_hook(cls, instance, user):
         """Do initial device set-up.
