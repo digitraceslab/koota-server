@@ -5,6 +5,8 @@
     <title>{% block title%}Koota{% endblock %}</title>
   </head>
 
+<body>
+
   <div style="border:1px solid black;">
   {% if user.is_authenticated %}
   Logged in as {{ user.username }}{% if user.is_verified %}(+OTP){% endif %}. <a href="{% url 'logout'%}?next={% url 'main' %}">Logout</a><br/>
@@ -18,7 +20,6 @@
   </div><br>
 
 
-<body>
 {% block body %}
 {% endblock %}
 </body>
