@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
+import sys
+sys.path.append('/srv/koota/pymod/') # for custom classes
 
 # Local settings
 MAIN_DOMAIN = 'koota.cs.aalto.fi'
