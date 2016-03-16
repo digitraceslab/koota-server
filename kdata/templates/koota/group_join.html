@@ -1,0 +1,27 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+{% if round == 'verify' %}
+Click again to verify joining the following groups.
+{% elif round == 'done' %}
+You have successfully joined the following groups:
+{% else %}
+Please enter the invite code to join the group.
+{% endif %}
+
+{% if round == 'verify' or round == 'done' %}
+<ul>{% for group in groups %}
+  <li>{{group.name}} </li>{% endfor %}
+</ul>
+{% endif %}
+
+{% if round != 'done' %}
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="Join group" />
+</form>
+{% endif %}
+
+{% endblock %}
