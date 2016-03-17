@@ -1,6 +1,7 @@
 import base64
 from calendar import timegm
 import datetime
+from functools import partial
 import json
 from json import loads, dumps
 import os
@@ -25,6 +26,9 @@ from . import util
 from . import views
 
 
+# These define different field types for the survey.  We can add more
+# if needed, for example a Choice field with default options, or other
+# fancy types of inputs.
 class _SurveyField(object):
     widget = None
     def __init__(self, question):
@@ -40,10 +44,12 @@ class Choice(_SurveyField):
 class Integer(_SurveyField):
     field = forms.IntegerField
 class Time(_SurveyField):
-    field = forms.TimeField
+    field = partial(forms.TimeField, input_formats=[
+        '%H:%M:%S', '%H:%M', '%H.%M', '%H,%M','%H %M', '%H%M', ])
     widget = forms.TimeInput
 #    widget = admin_widgets.AdminTimeWidget
 
+# A JSON encoder that can convert date and time objects to strings.
 def field_to_json(x):
     if isinstance(x, _SurveyField):
         return (x.__class__.__name__,
@@ -57,7 +63,7 @@ def field_to_json(x):
     raise ValueError("JSON enocde error: unknown type: %r"%x)
 json_encode = json.JSONEncoder(default=field_to_json).encode
 
-
+# Helper to make a form out of the fields.
 def make_form(data):
     """Take Python data and return a django.forms.Form."""
     form_fields = { }
@@ -71,7 +77,6 @@ def make_form(data):
         else:
             form_fields[tag] = row.field(label=row.question, required=False,
                                          widget=row.widget)
-
     Form = type('DynamicSurveyForm',
                 (forms.Form, ),
                 form_fields)
@@ -131,7 +136,7 @@ def take_survey(request, token):
 
 
 
-
+# The two converters
 class SurveyAnswers(converter._Converter):
     header = ['id', 'question', 'answer']
     desc = "Survey questions and answers"
@@ -155,7 +160,8 @@ class SurveyMeta(converter._Converter):
 
 
 
-
+# Below we have the survey devices.  These are auto-registering
+# subclasses of devices._Device.
 class _SurveyMetaclass(type):
     """Automatically register new devices
 
@@ -190,8 +196,9 @@ class BaseSurvey(devices._Device):
     def create_hook(cls, instance, user):
         """In this create hook, do survey specifc setup.
 
-        Mainly, this is used for making the survey tokens and for
-        ephemeral surveys, any setup needed there.
+        This is run every time a new device is created.  Mainly, this
+        is used for making the survey tokens and for ephemeral
+        surveys, any setup needed there.
         """
         super(BaseSurvey, cls).create_hook(instance, user)
         device_id = instance.device_id
@@ -208,6 +215,7 @@ class BaseSurvey(devices._Device):
 
     @classmethod
     def configure(cls, device):
+        """Information for the device configure page."""
         instructions = """You should program the URL <tt>https://{main_domain}{post}</tt> to
         take this survey.  """.format(
             post=reverse_lazy('survey-take', kwargs=dict(token=device.surveydevice.token)),
