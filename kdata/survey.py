@@ -2,11 +2,13 @@ import base64
 from calendar import timegm
 import datetime
 import json
+from json import loads, dumps
 import os
 import six
 
-from django import forms
+#from django import forms
 from django.conf import settings
+from django.contrib.admin import widgets as admin_widgets
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
@@ -14,6 +16,9 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.template.response import TemplateResponse
 
+import floppyforms as forms
+
+from . import converter
 from . import models
 from . import devices
 from . import util
