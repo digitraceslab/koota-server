@@ -83,11 +83,20 @@ import csv
 from datetime import datetime, timedelta
 import itertools
 from json import loads, dumps
+from math import log
 import time
 import sys
 
 import logging
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
+# This is defined in kdata/views_admin.py.  Copied here so that there are no dependencies.
+def human_bytes(x):
+    """Add proper binary prefix to number in bytes, returning string"""
+    unit_list = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+    exponent = int(log(x, 1024))
+    quotient = x / 1024**exponent
+    return '%6.2f %-3s'%(quotient, unit_list[exponent])
 
 
 class _Converter(object):
@@ -140,10 +149,10 @@ class _Converter(object):
             # restart the while loop.  It will break when iterator
             # exhausted.  The handling colud be improved later.
             except Exception as e:
-                log.error("Exception in %s", self.__class__.__name__)
+                logger.error("Exception in %s", self.__class__.__name__)
                 import traceback
-                log.error(e)
-                log.error(traceback.format_exc())
+                logger.error(e)
+                logger.error(traceback.format_exc())
                 self.errors.append(e)
                 self.errors_dict[str(e)] += 1
                 #self.errors_emit_error(e)
@@ -258,14 +267,18 @@ class PRBluetooth(_Converter):
                                dev_info.get('BLUETOOTH_ADDRESS', ''),
                                )
 class PRStepCounter(_Converter):
-    header = ['time', 'step_count']
+    header = ['time', 'step_count', 'last_boot']
     desc = "Step counter"
     def convert(self, queryset, time=lambda x:x):
+        last_boot = 0
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.RobotHealthProbe':
+                    last_boot = probe['LAST_BOOT']/1000
+                    yield (time(probe['TIMESTAMP']), '', time(last_boot))
                 if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.StepCounterProbe':
-                    yield (time(probe['TIMESTAMP']),
+                    yield (time(probe['TIMESTAMP']+last_boot),
                            probe['STEP_COUNT'],
                            )
 class PRDeviceInUse(_Converter):
@@ -323,7 +336,7 @@ class PRTimestamps(_Converter):
                        #timegm(ts.timetuple())
                        probe['PROBE'].rsplit('.',1)[-1])
 class PRRunningSoftware(_Converter):
-    header = ['time', 'PACKAGE_NAME', 'TASK_STACK_INDEX', 'PACKAGE_CATEGORY', ]
+    header = ['time', 'package_name', 'task_stack_index', 'package_category', ]
     desc = "All software currently running"
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
@@ -336,6 +349,58 @@ class PRRunningSoftware(_Converter):
                                software['TASK_STACK_INDEX'],
                                software['PACKAGE_CATEGORY'],
                               )
+class PRCallHistoryFeature(_Converter):
+    header = ['time', 'window_index',
+              'window_size', 'total', 'new_count', 'min_duration',
+              'max_duration', 'avg_duration', 'total_duration',
+              'std_deviation', 'incoming_count', 'outgoing_count',
+              'incoming_ratio', 'ack_ratio', 'ack_count', 'stranger_count',
+              'acquiantance_count', 'acquaintance_ratio', ]
+    desc = "Aggregated call info"
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.features.CallHistoryFeature':
+                    ts = time(probe['TIMESTAMP'])
+                    for i, window in enumerate(probe['WINDOWS']):
+                        yield (ts,
+                               i,
+                               window['WINDOW_SIZE'],
+                               window['TOTAL'],
+                               window['NEW_COUNT'],
+                               window['MIN_DURATION'],
+                               window['MAX_DURATION'],
+                               window['AVG_DURATION'],
+                               window['TOTAL_DURATION'],
+                               window['STD_DEVIATION'],
+                               window['INCOMING_COUNT'],
+                               window['OUTGOING_COUNT'],
+                               window['INCOMING_RATIO'],
+                               window['ACK_RATIO'],
+                               window['ACK_COUNT'],
+                               window['STRANGER_COUNT'],
+                               window['ACQUIANTANCE_COUNT'],
+                               window['ACQUAINTANCE_RATIO'],
+                              )
+class PRSunriseSunsetFeature(_Converter):
+    header = ['time', 'is_day', 'sunrise', 'sunset', 'day_duration']
+    desc = "Sunrise and sunset info at current location"
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.features.SunriseSunsetFeature':
+                    yield (time(probe['TIMESTAMP']),
+                           probe['IS_DAY'],
+                           time(probe['SUNRISE']/1000.),
+                           time(probe['SUNSET']/1000.),
+                           probe['DAY_DURATION']/1000.,
+                    )
+
+
+
+
 class _PRGeneric(_Converter):
     """Generic simple probe
 
@@ -357,6 +422,38 @@ class _PRGeneric(_Converter):
                 if probe['PROBE'] == self.probe_name:
                     yield (time(probe['TIMESTAMP']), ) + \
                          tuple(probe[x[-1]] for x in self.fields)
+class _PRGenericArray(_Converter):
+    """Generic simple probe
+
+    This is an abstract base class for converting any probe into one row.
+
+    Required attribute: 'field', which is tuples of (field_name,
+    PROBE_FIELD).  The first is the output field name, the second is
+    what is found in the probe object.  If length second is missing,
+    use the first for both.
+    """
+    def header2(cls):
+        """Return header, either dynamic or static."""
+        if hasattr(cls, 'header') and cls.header:
+            return cls.header
+        return ['time', 'probe_time'] + [x[0].lower() for x in cls.fields] + [x[0].lower() for x in cls.fields_array]
+    @classmethod
+    def convert(self, queryset, time=lambda x:x):
+        """Iterate through all data, extract the probes, take the probes we
+        want, then yield timestamp+the requested fields.
+        """
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == self.probe_name:
+                    row_common = tuple(probe[f[-1]] for f in self.fields)
+                    for row in zip(probe[self.ts_field], *(probe[f[-1]] for f in self.fields_array )):
+                        ts_event = row[0]
+                        yield (time(ts_event),
+                               time(probe['TIMESTAMP'])) \
+                              + row_common \
+                              + row[1:]
+
 
 class PRAccelerometerBasicStatistics(_PRGeneric):
     probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.features.AccelerometerBasicStatisticsFeature'
@@ -416,11 +513,31 @@ class PRAudioFeatures(_PRGeneric):
         ('SAMPLE_RATE', ),
         ('SAMPLES_RECORDED', ),
         ]
+class PRCallState(_PRGeneric):
+    probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CallStateProbe'
+    desc = "Call state (idle/active)"
+    fields = [
+        ('CALL_STATE', ),
+        ]
+class PRTouchEvents(_PRGeneric):
+    probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CallStateProbe'
+    desc = "Touch events, number of"
+    fields = [
+        ('TOUCH_COUNT', ),
+        ('LAST_TOUCH_DELAY', ),
+        ]
+class PRProximity(_PRGenericArray):
+    probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.ProximityProbe'
+    desc = "Proximity probe"
+    ts_field = 'EVENT_TIMESTAMP'
+    fields = [ ]
+    fields_array = [('ACCURACY',),
+                    ('DISTANCE',), ]
 
 
 class PRDataSize(_Converter):
     per_page = None
-    header = ['probe', 'bytes']
+    header = ['probe', 'count', 'bytes', 'human_bytes', 'bytes/day']
     desc = "Total bytes taken by each separate probe (warning: takes a long time to compute)"
     days_ago = None
     @classmethod
@@ -433,19 +550,32 @@ class PRDataSize(_Converter):
         return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
     def convert(self, queryset, time=lambda x:x):
         sizes = collections.defaultdict(int)
+        counts = collections.defaultdict(int)
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
                 sizes[probe['PROBE']] += len(dumps(probe))
+                counts[probe['PROBE']] += 1
         for probe, size in sorted(iteritems(sizes), key=lambda x: x[1], reverse=True):
-            yield probe, size
-        yield 'total', sum(itervalues(sizes))
+            yield (probe,
+                   counts[probe],
+                   size,
+                   human_bytes(size),
+                   human_bytes(size/float(self.days_ago)))
+        yield ('total',
+               sum(itervalues(counts)),
+               sum(itervalues(sizes)),
+               human_bytes(sum(itervalues(sizes))),
+               human_bytes(sum(itervalues(sizes))/float(self.days_ago)))
 class PRDataSize1Day(PRDataSize):
     desc = "Like PRDataSize, but limited to 1 day.  Use this for most testing."
     days_ago = 1
 class PRDataSize1Week(PRDataSize):
     desc = "Like PRDataSize, but limited to 7 days.  Also more efficient."
     days_ago = 7
+class PRDataSize1Hour(PRDataSize):
+    desc = "Like PRDataSize, but limited to 7 days.  Also more efficient."
+    days_ago = 1/24.
 
 class PRMissingData(_Converter):
     """Report time periods of greater than 3600s when no data was recorded.
