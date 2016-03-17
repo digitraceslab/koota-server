@@ -98,6 +98,7 @@ def take_survey(request, token):
             #import IPython ; IPython.embed()
             data = { }
             data['survey_data'] = dict(survey_data)
+            data['survey_name'] = survey_data.get('name', survey_class.__name__)
             data['token'] = token
             data['answers'] = { }
             # Go through and record all answers.
@@ -123,6 +124,33 @@ def take_survey(request, token):
     return TemplateResponse(request, 'koota/survey.html', context)
 
 
+
+
+
+class SurveyAnswers(converter._Converter):
+    header = ['id', 'question', 'answer']
+    desc = "Survey questions and answers"
+    def convert(self, rows, time=lambda x:x):
+        for ts, data in rows:
+            data = loads(data)
+            for slug, x in data['answers'].items():
+                yield slug, x['q'], x['a'];
+class SurveyMeta(converter._Converter):
+    header = ['name', 'access_time', 'submit_time', 'seconds', 'n_questions']
+    desc = "Survey questions and answers"
+    def convert(self, rows, time=lambda x:x):
+        for ts, data in rows:
+            data = loads(data)
+            yield (data.get('survey_name', None),
+                   data['access_time'],
+                   data['submit_time'],
+                   data['submit_time']-data['access_time'],
+                   len(data['answers']),
+                   )
+
+
+
+
 class _SurveyMetaclass(type):
     """Automatically register new devices
 
@@ -143,6 +171,8 @@ from . import converter
 class BaseSurvey(devices._Device):
     dbmodel = models.SurveyDevice
     converters = [converter.Raw,
+                  SurveyAnswers,
+                  SurveyMeta,
                  ]
 
     @classmethod
