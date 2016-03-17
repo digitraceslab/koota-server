@@ -4,6 +4,9 @@ import six
 
 from . import models
 
+import logging
+logger = logging.getLogger(__name__)
+
 def get_device(request, *args, **kwargs):
     raise NotImplemented
 
@@ -32,10 +35,12 @@ def import_by_name(name):
     try:
         mod = importlib.import_module(modname)
     except ImportError:
+        logger.error("Custom class import failed: %s (%s)"%(name, modname))
         return None
     try:
         obj = getattr(mod, objname)
     except AttributeError:
+        logger.error("Custom class import failed: %s (%s)"%(name, objname))
         return None
     return obj
 
