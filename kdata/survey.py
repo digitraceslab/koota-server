@@ -138,13 +138,17 @@ def take_survey(request, token):
 
 # The two converters
 class SurveyAnswers(converter._Converter):
-    header = ['id', 'question', 'answer']
+    header = ['id', 'access_time', 'submit_time', 'question', 'answer']
     desc = "Survey questions and answers"
     def convert(self, rows, time=lambda x:x):
         for ts, data in rows:
             data = loads(data)
             for slug, x in data['answers'].items():
-                yield slug, x['q'], x['a'];
+                yield (slug,
+                       time(data['access_time']),
+                       time(data['submit_time']),
+                       x['q'],
+                       x['a'],)
 class SurveyMeta(converter._Converter):
     header = ['name', 'access_time', 'submit_time', 'seconds', 'n_questions']
     desc = "Survey questions and answers"
