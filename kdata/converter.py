@@ -623,6 +623,7 @@ class PRMissingData(_Converter):
 class IosLocation(_Converter):
     header = ['time', 'lat', 'lon', 'alt', 'speed']
     desc = "Location data"
+    per_page = 1
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
