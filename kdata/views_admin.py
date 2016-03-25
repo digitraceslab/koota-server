@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 def human_bytes(x):
     """Add proper binary prefix to number in bytes, returning string"""
+    if x <= 0:
+        return '%6.2f %-3s'%(x, 'B')
     unit_list = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
     exponent = int(log(x, 1024))
     quotient = x / 1024**exponent
