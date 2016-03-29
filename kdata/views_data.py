@@ -116,8 +116,6 @@ def device_data(request, public_id, converter, format):
         # Bad data, return early and make the user fix the form
         return TemplateResponse(request, 'koota/device_data.html', context)
 
-    data = queryset
-
     # Paginate, if needed
     if converter_class.per_page is not None and not format:
         page_number = request.GET.get('page', 'last')
@@ -149,6 +147,9 @@ def device_data(request, public_id, converter, format):
         if page_number < paginator.num_pages:
                               c['page_last']  = replace_page(request, 'last')
         data = page_obj.object_list
+    else:
+        # not paginating data
+        data = queryset
 
     # For web view, convert to pretty time, others use raw unixtime.
     if not format or request.GET.get('textdate', False):
@@ -168,14 +169,19 @@ def device_data(request, public_id, converter, format):
     catch_errors = 1
     if catch_errors:
         converter = c['converter'] \
-                = converter_class(data.values_list('ts', 'data'),
+                = converter_class(((x.ts, x.data) for x in data.iterator()),
                                   time=time_converter)
         table = c['table'] = \
                 converter.run()
     else:
         converter = c['converter'] = converter_class()
-        table = c['table'] = converter.convert(data.values_list('ts', 'data'),
+        table = c['table'] = converter.convert(((x.ts, x.data) for x in data.iterator()),
                                                time=time_converter)
+
+    # the "data" and "queryset" options are dangerous.  If they are
+    # iterated throguh or maybe formatted by an error message, then we
+    # get large memory consumption.
+    del data, queryset
 
     # Convert to custom formats if it was requested.
     context['download_formats'] = [('csv2',  'csv (download)'),

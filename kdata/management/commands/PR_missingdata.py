@@ -25,13 +25,12 @@ class Command(BaseCommand):
 
         for device in devices:
             print(device.public_id, device.user.username, device.type)
-            rows = Data.objects.filter(device_id=device.device_id, 
+            rows = Data.objects.filter(device_id=device.device_id,
                                        ts__gt=timezone.now()-timedelta(days=options['history'])).defer('data')
             print('count:', rows.count())
 
             from kdata import converter
-            ts_list = converter.PRTimestamps().convert(rows.values_list('ts', 'data'))
-                                       
+            ts_list = converter.PRTimestamps().convert(((x.ts, x.data) for x in rows.iterator()))
 
             ts_list_sorted = sorted(x[0] for x in ts_list if x[0] > 100000000)
             ts_list_sorted = iter(ts_list_sorted)
@@ -40,5 +39,3 @@ class Command(BaseCommand):
                 if time > time0 + min_gap:
                     print("  {0}    {1:<5.5}".format(datetime.fromtimestamp(time0), (time-time0)/3600))
                 time0 = time
-            
-            
