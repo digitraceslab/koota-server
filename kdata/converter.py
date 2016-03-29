@@ -85,6 +85,7 @@ import itertools
 from json import loads, dumps
 from math import log
 import time
+import time as mod_time
 import sys
 
 import logging
@@ -545,18 +546,42 @@ class PRDataSize(_Converter):
     days_ago = None
     @classmethod
     def query(cls, queryset):
-        """"Limit   to the number of days ago, if cls.days_ago is given."""
+        """"Limit to the number of days ago, if cls.days_ago is given."""
         if not cls.days_ago:
             return queryset
         from django.utils import timezone
         now = timezone.now()
         return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
     def convert(self, queryset, time=lambda x:x):
+        if self.days_ago is not None:
+            start_time = mod_time.time() - self.days_ago * (24*3600)
+            total_days = self.days_ago
+        else:
+            start_time = 0
+            total_days = None
         sizes = collections.defaultdict(int)
         counts = collections.defaultdict(int)
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
+                if probe['TIMESTAMP'] < start_time:
+                    # TODO: some probes may have wrong timestamps
+                    # (like StepCounterProbe) which makes this
+                    # comparison wrong.
+                    continue
+                if total_days is None:
+                    # Figure out the total days.  If we are in django,
+                    # this is an aware datetime.  Otherwise, it is
+                    # _probably_ a naive one, which we assume to be
+                    # UTC.  This hackish stuff also allows us to not
+                    # depend on django.  TODO: improve this.
+                    try:
+                        total_days = (datetime.utcfromtimestamp(mod_time.time())-ts).total_seconds() / (3600*24)
+                    except TypeError:
+                        from django.utils import timezone
+                        now = timezone.now()
+                        total_days = (now-ts).total_seconds() / (3600*24)
+                # Actual body:
                 sizes[probe['PROBE']] += len(dumps(probe))
                 counts[probe['PROBE']] += 1
         for probe, size in sorted(iteritems(sizes), key=lambda x: x[1], reverse=True):
@@ -564,12 +589,12 @@ class PRDataSize(_Converter):
                    counts[probe],
                    size,
                    human_bytes(size),
-                   human_bytes(size/float(self.days_ago)))
+                   human_bytes(size/float(total_days)))
         yield ('total',
                sum(itervalues(counts)),
                sum(itervalues(sizes)),
                human_bytes(sum(itervalues(sizes))),
-               human_bytes(sum(itervalues(sizes))/float(self.days_ago)))
+               human_bytes(sum(itervalues(sizes))/float(total_days)))
 class PRDataSize1Day(PRDataSize):
     desc = "Like PRDataSize, but limited to 1 day.  Use this for most testing."
     days_ago = 1
