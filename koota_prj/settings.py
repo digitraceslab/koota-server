@@ -42,6 +42,7 @@ except IOError:
     SECRET_KEY = ''.join(random.choice(string.printable) for _ in range(30))
 
 # SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = False
 import __main__
 if hasattr(__main__, '__file__') and __main__.__file__.endswith('manage.py'):
     DEBUG = True
@@ -188,22 +189,35 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter':'console',
+        },
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'log.txt'),
+            'formatter':'standard',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['console'] if DEBUG else ['file'],
             'level': 'ERROR',
             'propagate': False,
         },
         '': {
-            'handlers': ['file'],
+            'handlers': ['console'] if DEBUG else ['file'],
             'level': 'INFO',
             'propagate': True,
+        },
+    },
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+        'console': {
+            'format': '[%(levelname)s] %(name)s: %(message)s'
         },
     },
 }

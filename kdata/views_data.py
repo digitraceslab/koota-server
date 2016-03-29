@@ -18,7 +18,7 @@ from . import devices
 from . import util
 
 import logging
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 from django import forms
 from django.contrib.auth.models import User
