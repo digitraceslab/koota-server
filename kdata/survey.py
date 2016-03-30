@@ -7,17 +7,18 @@ from json import loads, dumps
 import os
 import six
 
-#from django import forms
+from django import forms
 from django.conf import settings
 from django.contrib.admin import widgets as admin_widgets
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.template.response import TemplateResponse
 
-import floppyforms as forms
+#import floppyforms as forms
 
 from . import converter
 from . import models
@@ -25,11 +26,36 @@ from . import devices
 from . import util
 from . import views
 
+# django.forms field/widget types.  These are used to override the
+# HTML in the form and add in section headings, or special input
+# types like a time picker
+class TimeInput(forms.TimeInput):
+    """HTML5 time input."""
+    input_type = 'time'
+class InstructionsWidget(forms.Widget):
+    """Fake widget that returns nothing.
+
+    This widget is not for an actual input, but is just used for text
+    which has no value associated with it.
+    """
+    def render(self, name, value, attrs=None):
+        return ''
+class InstructionsField(forms.Field):
+    """Field for a text paragraph"""
+    widget = InstructionsWidget
+    css_class = 'instructions'
+    def __init__(self, label, **kwargs):
+        super(InstructionsField, self).__init__(label_suffix='', **kwargs)
+        self.label = mark_safe('<span class="{css_class}">{0}</span>'.format(label, css_class=self.css_class))
+class SectionField(InstructionsField):
+    """Field for a section heading."""
+    css_class = 'section-heading'
 
 # These define different field types for the survey.  We can add more
 # if needed, for example a Choice field with default options, or other
 # fancy types of inputs.
 class _SurveyField(object):
+    not_a_question = False   # for marking instructions/section headings
     widget = None
     def __init__(self, question):
         self.question = question
@@ -46,8 +72,14 @@ class Integer(_SurveyField):
 class Time(_SurveyField):
     field = partial(forms.TimeField, input_formats=[
         '%H:%M:%S', '%H:%M', '%H.%M', '%H,%M','%H %M', '%H%M', ])
-    widget = forms.TimeInput
+    widget = TimeInput
 #    widget = admin_widgets.AdminTimeWidget
+class Section(_SurveyField):
+    not_a_question = True
+    field = SectionField
+class Instructions(_SurveyField):
+    not_a_question = True
+    field = InstructionsField
 
 # A JSON encoder that can convert date and time objects to strings.
 def field_to_json(x):
@@ -64,10 +96,11 @@ def field_to_json(x):
 json_encode = json.JSONEncoder(default=field_to_json).encode
 
 # Helper to make a form out of the fields.
-def make_form(data):
+def make_form(survey_data):
     """Take Python data and return a django.forms.Form."""
     form_fields = { }
-    for i, (tag, row) in enumerate(data):
+    question_order = [ ]
+    for i, (tag, row) in enumerate(survey_data):
         if isinstance(row, Choice):
             form_fields[tag] = forms.ChoiceField(
                 [(i,x) for i,x in enumerate(row.choices)],
@@ -77,6 +110,19 @@ def make_form(data):
         else:
             form_fields[tag] = row.field(label=row.question, required=False,
                                          widget=row.widget)
+        form_fields[tag].not_a_question = row.not_a_question
+        if not row.not_a_question:
+            question_order.append(tag)
+    # The _question_order field allows us to convey the order of
+    # questions to the next stage.  It is important because it is
+    # possible for order to be randomized, and each form generation
+    # would have a different order!  TODO: what about multiple
+    # submissions?
+    form_fields['_question_order'] = forms.CharField(
+                                         required=False,
+                                         initial=','.join(question_order),
+                                         widget=forms.HiddenInput)
+    form_fields['_question_order'].not_a_question = True
     Form = type('DynamicSurveyForm',
                 (forms.Form, ),
                 form_fields)
@@ -111,19 +157,25 @@ def take_survey(request, token):
             data['survey_name'] = survey_data.get('name', survey_class.__name__)
             data['token'] = token
             data['answers'] = { }
+            # Make a 'question order' lookup to get question order of
+            # the last round.
+            question_order = form.cleaned_data.pop('_question_order', '').split(',')
+            question_order = { tag:i for i,tag in enumerate(question_order) }
             # Go through and record all answers.
             for tag, field in form.fields.items():
+                if getattr(field, 'not_a_question', False): continue
                 q = field.label
                 a = form.cleaned_data[tag]
-                data['answers'][tag] = dict(q=q, a=a)
+                order = question_order.get(tag)
+                data['answers'][tag] = dict(q=q, a=a, order=order)
 
             # Save the data
             data['access_time'] = token_row.ts_access
             data['submit_time'] = token_row.ts_submit
+            #import pprint ; pprint.pprint(data)
             data = json_encode(data)
             views.save_data(data=data, device_id=token_row.device_id,
                             request=request)
-            #print(data)
             c['success'] = True
         else:
             pass
@@ -138,7 +190,7 @@ def take_survey(request, token):
 
 # The two converters
 class SurveyAnswers(converter._Converter):
-    header = ['id', 'access_time', 'submit_time', 'question', 'answer']
+    header = ['id', 'access_time', 'submit_time', 'question', 'answer', 'order']
     desc = "Survey questions and answers"
     def convert(self, rows, time=lambda x:x):
         for ts, data in rows:
@@ -148,7 +200,8 @@ class SurveyAnswers(converter._Converter):
                        time(data['access_time']),
                        time(data['submit_time']),
                        x['q'],
-                       x['a'],)
+                       x['a'],
+                       x.get('order',''),)
 class SurveyMeta(converter._Converter):
     header = ['name', 'access_time', 'submit_time', 'seconds', 'n_questions']
     desc = "Survey questions and answers"
@@ -236,10 +289,13 @@ class TestSurvey1(BaseSurvey):
     @classmethod
     def get_survey(cls, data, device):
         questions = [
+            ('header1',       Section('Section 1')),
+            ('header2',       Instructions('This is a section heading')),
             ('sleep-quality', Choice('How did you sleep?', (1, 2, 3, 4, 5))),
             ('fine',          Bool('Are you fine?')),
             ('asleep',        Time('When did you go to sleep?')),
             ('woke-up',       Time('When did you wake up?')),
+            ('header3',       Section('Section 2')),
             ('fine3',         Bool('Are you fine?')),
             ('fine4',         Bool('Are you fine?')),
             ('fine5',         Bool('Are you fine?')),
