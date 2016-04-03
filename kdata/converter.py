@@ -524,7 +524,7 @@ class PRCallState(_PRGeneric):
         ('CALL_STATE', ),
         ]
 class PRTouchEvents(_PRGeneric):
-    probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CallStateProbe'
+    probe_name = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.TouchEventsProbe'
     desc = "Touch events, number of"
     fields = [
         ('TOUCH_COUNT', ),
