@@ -152,14 +152,17 @@ class _Converter(object):
             # restart the while loop.  It will break when iterator
             # exhausted.  The handling colud be improved later.
             except Exception as e:
-                logger.error("Exception in %s", self.__class__.__name__)
-                import traceback
-                logger.error(e)
-                logger.error(traceback.format_exc())
-                if len(self.errors) < 1000:
+                if len(self.errors) < 100:
+                    logger.error("Exception in %s", self.__class__.__name__)
+                    import traceback
+                    logger.error(e)
+                    logger.error(traceback.format_exc())
                     self.errors.append(e)
                 self.errors_dict[str(e)] += 1
                 #self.errors_emit_error(e)
+                # Possibly we need to prevent each next traceback from
+                # storing the previous traceback, too.
+                del e
 
 class Raw(_Converter):
     header = ['time', 'data']
