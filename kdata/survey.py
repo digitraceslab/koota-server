@@ -270,14 +270,18 @@ class BaseSurvey(devices._Device):
         instance.save()
         surveytoken_row.save()
 
+    instructions = (
+        """You should program the URL """
+        """<b><tt>https://{main_domain}{post}</tt></b> """
+        """take this survey.""")
     @classmethod
     def configure(cls, device):
         """Information for the device configure page."""
-        instructions = """You should program the URL <tt>https://{main_domain}{post}</tt> to
-        take this survey.  """.format(
+        instructions = cls.instructions.format(
             post=reverse_lazy('survey-take', kwargs=dict(token=device.surveydevice.token)),
             post_domain=settings.POST_DOMAIN,
             main_domain=settings.MAIN_DOMAIN,
+            token=device.surveydevice.token,
             )
         return dict(qr=False,
                     raw_instructions=instructions)
