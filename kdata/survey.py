@@ -231,7 +231,7 @@ class _SurveyMetaclass(type):
             and not cls.__name__.startswith('_')
             and dict.get('_register_device', True)
            ):
-            devices.register_device(cls)
+            devices.register_device(cls, getattr(cls, 'desc', None))
         return cls
 
 from . import converter

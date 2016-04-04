@@ -166,7 +166,7 @@ class DeviceListView(ListView):
         if self.request.user.is_superuser:
             queryset = self.model.objects.all().order_by('_public_id')
         else:
-            queryset = self.model.objects.filter(user=self.request.user).order_by('_public_id')
+            queryset = self.model.objects.filter(user=self.request.user).order_by('type', '_public_id')
         return queryset
 
 class DeviceConfig(UpdateView):

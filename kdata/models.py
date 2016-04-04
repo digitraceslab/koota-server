@@ -61,6 +61,11 @@ class Device(models.Model):
     def get_class(self):
         """Return the Python class corresponding to this device."""
         return devices.get_class(self.type)
+    def human_name(self):
+        cls = self.get_class()
+        # super object does notwork with .get_FOO_display()
+        #return super(Device, self).get_type_display()
+        return self.get_type_display()
 
 class DeviceLabel(models.Model):
     name = models.CharField(max_length=64, null=True, blank=True)

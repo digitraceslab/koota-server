@@ -6,16 +6,16 @@ Device list
 
 <table>
   <tr>
+    <th>type</th>
     <th>ID</th>
     <th>Name</th>
-    <th>type</th>
     <th>User</th>
   </tr>
   {% for device in object_list %}
   <tr>
+    <td>{{device.human_name}}</td>
     <td>{{device.public_id}}</td>
     <td>{{device.name}}</td>
-    <td>{{device.get_type_display}}</td>
     <td>{{device.user}}</td>
     <td><a href="{% url 'device' public_id=device.public_id%}">Info</a></td>
     <td><a href="{% url 'device-config' public_id=device.public_id%}">Configure</a></td>

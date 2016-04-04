@@ -111,7 +111,7 @@ class _Device(object):
         option of the "type" field of the model, and selection
         forms.
         """
-        return (cls.pyclass_name(), cls.name())
+        return (cls.pyclass_name(), getattr(cls, 'desc', cls.name()))
 
     @classmethod
     def create_hook(cls, instance, user):
