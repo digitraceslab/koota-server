@@ -303,6 +303,7 @@ class TestSurvey1(BaseSurvey):
             ('fine3',         Bool('Are you fine?')),
             ('fine4',         Bool('Are you fine?')),
             ('fine5',         Bool('Are you fine?')),
+            ('drinks',        Integer('How many drinks did you have?')),
         ]
         # Can do extra logic here
         survey_data = {'name': 'Test Survey 1',
