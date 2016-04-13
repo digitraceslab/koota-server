@@ -290,6 +290,7 @@ class BaseSurvey(devices._Device):
 
 class TestSurvey1(BaseSurvey):
     """This is a test survey."""
+    desc = "Test Survey #1"
     @classmethod
     def get_survey(cls, data, device):
         questions = [

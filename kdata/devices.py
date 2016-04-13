@@ -24,7 +24,7 @@ standard_device_choices = [
     ('PurpleRobot', 'Purple Robot (Android)'),
     ('Ios', 'IOS'),
     ('MurataBSN', 'Murata Bed Sensor'),
-    ('kdata.survey.TestSurvey1', 'Test Survey #1'),
+    #('kdata.survey.TestSurvey1', 'Test Survey #1'),
     #('', ''),
     #('', ''),
     ]
