@@ -293,7 +293,7 @@ class PRStepCounter(_Converter):
                            probe['STEP_COUNT'],
                            )
 class PRDeviceInUse(_Converter):
-    header = ['time', 'packet_time', 'in_use']
+    header = ['time', 'in_use']
     desc = "Purple Robot DeviceInUseFeature"
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
