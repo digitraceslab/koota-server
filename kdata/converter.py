@@ -239,12 +239,16 @@ class PRWifi(_Converter):
             for probe in data:
                 if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.WifiAccessPointsProbe':
                     ts = time(probe['TIMESTAMP'])
-                    current = probe['CURRENT_BSSID']
-                    yield (ts,
-                           loads(probe['CURRENT_SSID']),
-                           #probe['CURRENT_BSSID'],
-                           1,
-                           probe['CURRENT_RSSI'],
+                    # Emit a special row for CURRENT_SSID
+                    if 'CURRENT_SSID' in probe:
+                        current_ssid = probe['CURRENT_SSID']
+                        if current_ssid.startswith('"'):
+                            current_ssid = loads(current_ssid)
+                        yield (ts,
+                               current_ssid,
+                               #probe['CURRENT_BSSID'],
+                               1,
+                               probe['CURRENT_RSSI'],
                            )
                     for ap_info in probe['ACCESS_POINTS']:
                         yield (ts,
