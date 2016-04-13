@@ -140,9 +140,20 @@ class SurveyToken(models.Model):
     #device = models.ForeignKey(SurveyDevice)
     device_id = models.CharField(max_length=64, unique=True)
     persistent= models.BooleanField(blank=True, default=True)
+    # We have a lot of different timestamps:
+    # - create:      when this row was created
+    # - take:        when this can first be taken
+    # - expire:      when one can no longer take this survey
+    # - access:      when someone loads the page
+    # - submit:      when someone submits the page
+    # - notify_at:   when you should email the person
+    # - notify_sent: when the notification was sent
     ts_create = models.DateTimeField(auto_now_add=True)
+    #ts_take   = models.DateTimeField(blank=True, null=True)
     ts_expire = models.DateTimeField(blank=True, null=True)
     ts_access = models.DateTimeField(blank=True, null=True)
     ts_submit = models.DateTimeField(blank=True, null=True)
+    #ts_notify_at   = models.DateTimeField(blank=True, null=True)
+    #ts_notify_sent = models.DateTimeField(blank=True, null=True)
     data = models.CharField(max_length=256, blank=True)
     #admin_note = models.TextField(null=True, blank=True)
