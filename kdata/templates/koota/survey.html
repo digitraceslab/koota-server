@@ -24,7 +24,8 @@
 
 {% if success %}
 <p style="padding-bottom: 25%">Survey successful.  You may close the window.</p>
-{% endif %}
+{% else %}
+
 
 {% if form.errors %}
 <div class="errorlist">Please check your answers!</div>
@@ -39,6 +40,9 @@
 
 </div>-->
 </form>
+
+{% endif %}
+
 
 </div>
 </div>
