@@ -337,14 +337,14 @@ class PRAccelerometer(_Converter):
 class PRTimestamps(_Converter):
     desc = 'All actual data timestamps of all PR probes'
     header = ['time',
-              #'packet_time',
+              'packet_time',
               'probe',]
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
                 yield (time(probe['TIMESTAMP']),
-                       #timegm(ts.timetuple())
+                       time(timegm(ts.utctimetuple())),
                        probe['PROBE'].rsplit('.',1)[-1])
 class PRRunningSoftware(_Converter):
     header = ['time', 'package_name', 'task_stack_index', 'package_category', ]

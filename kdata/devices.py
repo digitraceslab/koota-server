@@ -161,6 +161,7 @@ class PurpleRobot(_Device):
     config_url = reverse_lazy('config-purple')
     converters = [converter.Raw,
                   converter.PRProbes,
+                  converter.PRTimestamps,
                   converter.PRScreen,
                   converter.PRBattery,
                   converter.PRWifi,
@@ -179,7 +180,6 @@ class PurpleRobot(_Device):
                   converter.PRCallHistoryFeature,
                   converter.PRSunriseSunsetFeature,
                   converter.PRTouchEvents,
-                  converter.PRTimestamps,
                   converter.PRDataSize1Hour,
                   converter.PRDataSize1Day,
                   converter.PRDataSize1Week,
