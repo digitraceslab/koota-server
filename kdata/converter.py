@@ -621,7 +621,7 @@ class PRMissingData(_Converter):
     functioning.
     """
     per_page = None
-    header = ['time0', 'time1', 'gap_s']
+    header = ['gap_start', 'gap_end', 'gap_s', 'previous_duration_s']
     desc = "Report gaps of greater than 3600s in last 14 days of Purple Robot data."
     days_ago = 14
     min_gap = 3600
@@ -647,11 +647,18 @@ class PRMissingData(_Converter):
         ts_list_sorted = iter(ts_list_sorted)
         # Simple core: go through, convert all data, any gaps that are
         # greater than self.min_gap seconds, yield that info.
-        time0 = next(ts_list_sorted)
-        for time1 in ts_list_sorted:
-            if time1 > time0 + self.min_gap:
-                yield (time(time0), time(time1), time1-time0)
-            time0 = time1
+        t_before_gap = next(ts_list_sorted)
+        t_active_start = None
+        for t_next in ts_list_sorted:
+            if t_next > t_before_gap + self.min_gap:
+
+                yield (time(t_before_gap),
+                       time(t_next),
+                       t_next-t_before_gap,
+                       t_before_gap-t_active_start if t_active_start else '',
+                )
+                t_active_start = t_next
+            t_before_gap = t_next
 
 
 
