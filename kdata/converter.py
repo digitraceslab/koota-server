@@ -682,8 +682,8 @@ class PRMissingData(_Converter):
     """
     per_page = None
     header = ['gap_start', 'gap_end', 'gap_s', 'previous_duration_s']
-    desc = "Report gaps of greater than 3600s in last 14 days of Purple Robot data."
-    days_ago = 14
+    desc = "Report gaps of greater than 3600s in last 28 days of Purple Robot data."
+    days_ago = 28
     min_gap = 3600
     @classmethod
     def query(cls, queryset):
@@ -704,6 +704,7 @@ class PRMissingData(_Converter):
         # Avoid all timestamps less than 1e8s (1973).  This avoids
         # times converted from things that weren't unixtimes.
         ts_list_sorted = sorted(x[0] for x in ts_list if x[0] > 100000000)
+        ts_list_sorted.append(mod_time.time())
         ts_list_sorted = iter(ts_list_sorted)
         # Simple core: go through, convert all data, any gaps that are
         # greater than self.min_gap seconds, yield that info.
