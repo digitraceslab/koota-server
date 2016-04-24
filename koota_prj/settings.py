@@ -57,7 +57,10 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 LOGIN_URL = 'login2'
 LOGIN_REDIRECT_URL = 'device-list'
-
+# Make a random salt using this and paste it here.  By default we have
+# an epheremal random salt.
+# bytes(bytearray((random.randint(0, 255) for _ in range(32))))
+SALT = None
 
 
 ALLOWED_HOSTS = [

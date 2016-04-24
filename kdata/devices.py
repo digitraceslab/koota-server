@@ -179,6 +179,8 @@ class PurpleRobot(_Device):
                   converter.PRCallState,
                   converter.PRCallHistoryFeature,
                   converter.PRSunriseSunsetFeature,
+                  converter.PRLightProbe,
+                  converter.PRCommunicationEventProbe,
                   converter.PRTouchEvents,
                   converter.PRDataSize1Hour,
                   converter.PRDataSize1Day,

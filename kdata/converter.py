@@ -77,10 +77,12 @@ from __future__ import print_function
 from six import iteritems, itervalues
 from six.moves import zip
 
+from base64 import b64encode
 from calendar import timegm
 import collections
 import csv
 from datetime import datetime, timedelta
+from hashlib import sha256
 import itertools
 from json import loads, dumps
 from math import log
@@ -90,6 +92,32 @@ import sys
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+# Make a safe-hash function.  This can be used to hide identifiers.
+# This currently uses sha256 + a random secret salt for security.  We
+# go through thees steps to a) ensure that we never use a hard-coded
+# salt, and b) not depend on django.
+try:
+    from django.conf import settings
+except:
+    # Make a random salt that changes on every invocation.  This is
+    # not stable (changes every time the process runs), but is the
+    # safest option until there is some way to specify things.  So far
+    # there is no point where comparing across invocations is
+    # important.
+    import urandom
+    SALT = bytes(bytearray((random.randint(0, 255) for _ in range(32))))
+finally:
+    SALT = settings.SALT
+    del settings
+def safe_hash(data):
+    """Make a safe hash function for identifiers."""
+    if not isinstance(data, bytes):
+        data = data.encode('utf8')
+    return b64encode(sha256(SALT+data).digest()[:18])
+
+
 
 # This is defined in kdata/views_admin.py.  Copied here so that there are no dependencies.
 def human_bytes(x):
@@ -334,6 +362,21 @@ class PRAccelerometer(_Converter):
                                                   probe['ACCURACY'],
                                               ):
                         yield time(t1), time(t2), x, y, z, a
+class PRLightProbe(_Converter):
+    desc = 'Purple Robot Light Probe (builtin.LightProbe).  Some metadata is not yet included here.'
+    header = ['event_timestamp', 'lux', 'accuracy']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LightProbe':
+                    for t, l, a in zip(probe['EVENT_TIMESTAMP'],
+                                       probe['LUX'],
+                                       probe['ACCURACY'],
+                                       ):
+                        yield time(t), l, a
+
+
 class PRTimestamps(_Converter):
     desc = 'All actual data timestamps of all PR probes'
     header = ['time',
@@ -407,6 +450,23 @@ class PRSunriseSunsetFeature(_Converter):
                            time(probe['SUNRISE']/1000.),
                            time(probe['SUNSET']/1000.),
                            probe['DAY_DURATION']/1000.,
+                    )
+class PRCommunicationEventProbe(_Converter):
+    desc = 'Purple Robot Communication Event Probe'
+    header = ['time', 'communication_type', 'communication_direction','number','duration']
+    desc = "Communication Event Probe"
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CommunicationEventProbe':
+                    if 'DURATION' not in probe:
+                        probe['DURATION'] = 0
+                    yield (time(probe['COMM_TIMESTAMP']/1000.),
+                           probe['COMMUNICATION_DIRECTION'],
+                           probe['COMMUNICATION_TYPE'],
+                           safe_hash(probe['NUMBER']),
+                           probe['DURATION']
                     )
 
 
