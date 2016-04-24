@@ -8,12 +8,20 @@ from django.utils import timezone
 from django.db import transaction
 
 class Command(BaseCommand):
-    help = 'Fix the Purple Robot json-evaled bug'
+    """This command splits very large iOS device packets.
+
+    Early versions of the iOS app uploaded data packets with sizes
+    that could increase without bound.  This would cause memory
+    problems for the server, even when processing them inline.  We
+    solve this by manually splitting them.
+
+    To run this script you have to manually uncomment a few lines
+    before running (for safety).
+    """
+    help = 'Split very large iOS packets'
 
     def add_arguments(self, parser):
         parser.add_argument('device_id', nargs='*')
-        #parser.add_argument('--history', help="Number of past days to use for test.", default=14, type=int)
-        #parser.add_argument('--min-gap', help="Minimum missing data gap to report (s).", default=3600, type=int)
 
     def handle(self, *args, **options):
         #print(options)
@@ -30,9 +38,9 @@ class Command(BaseCommand):
 
           rows = Data.objects.filter(device_id=device.device_id).defer('data')
 
-          with transaction.atomic():
 
-            for row in rows.iterator():
+          for row in rows.iterator():
+            with transaction.atomic():
                 if row.data_length <= 2**20:
                     continue
                 # Row needs processing
@@ -59,13 +67,17 @@ class Command(BaseCommand):
                     i += 1
                 for data2 in new_data:
                     print(len(data2))
-                    #new_row = Data(device_id=row.device_id,
-                    #               ts=row.ts,
-                    #               ip=row.ip,
-                    #               data=data2,
-                    #               data_length=len(data2))
-                    #new_row.save()
-                #row.device_id = row.device_id+'_orig1'
-                #row.save()
+                    # The following rows must be uncommend to run this.
+#                    new_row = Data(device_id=row.device_id,
+#                                   ts=row.ts,
+#                                   ip=row.ip,
+#                                   data=data2,
+#                                   data_length=len(data2))
+#                    new_row.save()
+#                    new_row.ts = row.ts
+#                    new_row.save()
+#                row.device_id = row.device_id+'_orig1'
+#                row.save()
 
-                #break
+                # Comment this line to run everything
+                break
