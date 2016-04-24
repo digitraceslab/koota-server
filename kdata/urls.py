@@ -6,6 +6,7 @@ from django.contrib.auth import views as auth_views
 from kdata import views as kviews
 from kdata import views_data
 from kdata import views_admin
+from kdata import views_funf
 from kdata import devices
 from kdata import survey
 from kdata import group
@@ -38,6 +39,10 @@ urlpatterns = [
 
     url(r'^group/$', group.group_join, name='group-join'),
     url(r'^group/(?P<group_name>[\w]+)', group.GroupView.as_view(), name='group-view'),
+
+    url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.config_funf, name='funf-config'),
+    url(r'^funf/post/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.post, name='funf-post'),
+
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]
