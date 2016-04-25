@@ -283,6 +283,8 @@ from defusedxml.ElementTree import fromstring as xml_fromstring
 class MurataBSN(_Device):
     converters = [converter.Raw,
                   converter.MurataBSN,
+                  converter.MurataBSNDebug,
+                  converter.MurataBSNSafe,
                  ]
     raw_instructions = textwrap.dedent("""\
     See <a href="https://github.com/CxAalto/koota-server/wiki/MurataBSN">the wiki page</a>.

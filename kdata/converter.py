@@ -201,26 +201,78 @@ class Raw(_Converter):
             yield time(timegm(dt.utctimetuple())), data
 
 class MurataBSN(_Converter):
-    header = ['time', 'hr', 'rr', 'sv', 'hrv', 'ss', 'status', 'bbt0', 'bbt1', 'bbt2']
-    desc = "Basic information from Murata bed sensors"
+    _header = ['time',
+              'hr', 'rr', 'sv', 'hrv', 'ss',
+              'status', 'bbt0', 'bbt1', 'bbt2',
+              'time2',
+             ]
+    _header_debug = ['row_i', 'delta_i', 'time_packet', 'offset_s',
+                     'xml_start_time',]
+    @classmethod
+    def header2(cls):
+        if cls.debug:
+            return cls._header + cls._header_debug
+        return cls._header
+    desc = "Murata sleep sensors, basic information."
+    debug = False
+    safe = False
     def convert(self, rows, time=lambda x:x):
         from defusedxml.ElementTree import fromstring as xml_fromstring
         from dateutil import parser as date_parser
         count = 0
-        for ts, data in rows:
+        for ts_packet, data in rows:
+            unixtime_packet = timegm(ts_packet.timetuple())
+            # Do various XML parsing
             doc = xml_fromstring(data)
             node = doc[0][0]
             device_id = node.attrib['id']
             start_time = doc[0][0][0][0].attrib['time']
             ts = date_parser.parse(start_time)
             values = doc[0][0][0][0][9]
+            # This is O(n_rows) in memory here.  n_rows is supposed to
+            # be always small (~90 max).  Should this assumption be
+            # violated, we need a two-pass method.  Just save
+            # last_row_i on the first pass, then do second pass.
+            rows = [ ]
             reader = csv.reader(values.text.split('\n'))
             for row in reader:
-                #count += 1 ; print count
                 if not row: continue
+                rows.append(row)
+            last_time_i = int(rows[-1][0])
+            for row in rows:
+                #count += 1 ; print count
                 unixtime = timegm(ts.timetuple()) + int(row[0])
-                #yield [unixtime, time.strftime('%H:%M:%S', time.localtime(unixtime))]+ row[1:]
-                yield [time(unixtime), ]+ row[1:]
+                # The actual data.  In safe mode, replace everything
+                # with null strings.
+                data_values = row[1:]
+                if self.safe:
+                    data_values = [ "" for _ in data_values ]
+                # These values are used for debuging.  In debug mode,
+                # include a bunch of extra data.  In normal mode,
+                # include the field time2, which is the time as
+                # calcultaed from the packet.
+                unixtime_from_packet = unixtime_packet - ( last_time_i - int(row[0]))
+                if not self.debug:
+                    extra_data = [time(unixtime_from_packet), ]
+                else:
+                    extra_data = [
+                        time(unixtime_from_packet),
+                        int(row[0]),
+                        last_time_i - int(row[0]),
+                        time(unixtime_packet),
+                        unixtime_from_packet-unixtime,
+                        start_time,
+                    ]
+                # Compose and return columns
+                yield [time(unixtime), ] + data_values + extra_data
+class MurataBSNDebug(MurataBSN):
+    desc = "Murata sleep sensors with extra debugging info."
+    debug = True
+class MurataBSNSafe(MurataBSN):
+    desc = "Murata sleep sensors with debugging info and data removed."
+    safe = True
+    debug = True
+
 
 
 class PRProbes(_Converter):
