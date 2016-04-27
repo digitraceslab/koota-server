@@ -74,7 +74,7 @@ file.:
 
 from __future__ import print_function
 
-from six import iteritems, itervalues
+from six import iteritems, itervalues, string_types
 from six.moves import zip
 
 from base64 import b64encode
@@ -100,17 +100,16 @@ logger = logging.getLogger(__name__)
 # salt, and b) not depend on django.
 try:
     from django.conf import settings
+    SALT = settings.SALT
+    del settings
 except:
     # Make a random salt that changes on every invocation.  This is
     # not stable (changes every time the process runs), but is the
     # safest option until there is some way to specify things.  So far
     # there is no point where comparing across invocations is
     # important.
-    import urandom
+    import random
     SALT = bytes(bytearray((random.randint(0, 255) for _ in range(32))))
-finally:
-    SALT = settings.SALT
-    del settings
 def safe_hash(data):
     """Make a safe hash function for identifiers."""
     if not isinstance(data, bytes):
@@ -815,6 +814,8 @@ if __name__ == "__main__":
     parser.add_argument('converter', help="Output filename")
     parser.add_argument('-f', '--format', help="Output format [csv,json,py]",
                         default='csv')
+    parser.add_argument('-o', '--output', help="Output filename",
+                        default=None)
     parser.add_argument('--handle-errors', help="Catch errors and continue",
                         action='store_true', default=False)
     parser.add_argument('--suppress-errors', help="If there were errorrs, do not print "
@@ -842,29 +843,37 @@ if __name__ == "__main__":
     # propagated.
     else:
         table = converter().convert(row_iter)  # iterate through lines
-
+    # Output filename
+    if args.output is not None:
+        f_output = open(args.output, 'w')
+    else:
+        f_output = sys.stdout
 
     # Write as python objects (repr)
     if args.format == 'py':
         for row in table:
-            print(repr(row))
+            print(repr(row), file=f_output)
 
     # Write as CSV
     elif args.format == 'csv':
-        csv_writer = csv.writer(sys.stdout)
-        csv_writer.writerow(converter.header2())
+        # We have to be a bit convoluted to support both python2 and
+        # python3 here.  Maybe there is a better way to do this...
+        csv_writer = csv.writer(f_output)
+        csv_writer.writerow([x.encode('utf-8') for x in converter.header2()])
         for row in table:
-            csv_writer.writerow(row)
+            #csv_writer.writerow(row)
+            csv_writer.writerow([x.encode('utf-8') if isinstance(x, string_types) else x
+                                 for x in row])
 
     # Write as JSON
     elif args.format == 'json':
-        print('[')
+        print('[', file=f_output)
         table = iter(table)
-        print(dumps(next(table)), end='')
+        print(dumps(next(table)), end='', file=f_output)
         for row in table:
-            print(',') # makes newline
-            print(dumps(row), end='')
-        print('\n]')
+            print(',', file=f_output) # makes newline
+            print(dumps(row), end='', file=f_output)
+        print('\n]', file=f_output)
 
     else:
         print("Unknown output format: %s"%args.format)
