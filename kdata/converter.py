@@ -114,7 +114,7 @@ def safe_hash(data):
     """Make a safe hash function for identifiers."""
     if not isinstance(data, bytes):
         data = data.encode('utf8')
-    return b64encode(sha256(SALT+data).digest()[:18])
+    return b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
 
 
 
@@ -207,6 +207,7 @@ class MurataBSN(_Converter):
              ]
     _header_debug = ['row_i', 'delta_i', 'time_packet', 'offset_s',
                      'xml_start_time',]
+    device_class = 'MurataBSN'
     @classmethod
     def header2(cls):
         if cls.debug:
@@ -243,27 +244,27 @@ class MurataBSN(_Converter):
                 unixtime = timegm(ts.timetuple()) + int(row[0])
                 # The actual data.  In safe mode, replace everything
                 # with null strings.
-                data_values = row[1:]
+                data_values = tuple(row[1:])
                 if self.safe:
-                    data_values = [ "" for _ in data_values ]
+                    data_values = tuple( "" for _ in data_values )
                 # These values are used for debuging.  In debug mode,
                 # include a bunch of extra data.  In normal mode,
                 # include the field time2, which is the time as
                 # calcultaed from the packet.
                 unixtime_from_packet = unixtime_packet - ( last_time_i - int(row[0]))
                 if not self.debug:
-                    extra_data = [time(unixtime_from_packet), ]
+                    extra_data = (time(unixtime_from_packet), )
                 else:
-                    extra_data = [
+                    extra_data = (
                         time(unixtime_from_packet),
                         int(row[0]),
                         last_time_i - int(row[0]),
                         time(unixtime_packet),
                         unixtime_from_packet-unixtime,
                         start_time,
-                    ]
+                    )
                 # Compose and return columns
-                yield [time(unixtime), ] + data_values + extra_data
+                yield (time(unixtime), ) + data_values + extra_data
 class MurataBSNDebug(MurataBSN):
     desc = "Murata sleep sensors with extra debugging info."
     debug = True
@@ -277,6 +278,7 @@ class MurataBSNSafe(MurataBSN):
 class PRProbes(_Converter):
     header = ['time', 'packet_time', 'probe', 'data']
     desc = "Purple Robot raw JSON data, divided into each probe"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -289,6 +291,7 @@ class PRProbes(_Converter):
 class PRBattery(_Converter):
     header = ['time', 'level', 'plugged']
     desc = "Battery level"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -301,6 +304,7 @@ class PRBattery(_Converter):
 class PRScreen(_Converter):
     header = ['time', 'onoff']
     desc = "Screen on/off times"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -312,6 +316,7 @@ class PRScreen(_Converter):
 class PRWifi(_Converter):
     header = ['time', 'essid', 'current', 'strength']
     desc = "Wifi networks found"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -339,6 +344,7 @@ class PRWifi(_Converter):
 class PRBluetooth(_Converter):
     header = ['time', 'bluetooth_name', 'bluetooth_address']
     desc = "Bluetooth devices found"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -359,6 +365,7 @@ class PRBluetooth(_Converter):
 class PRStepCounter(_Converter):
     header = ['time', 'step_count', 'last_boot']
     desc = "Step counter"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         last_boot = 0
         for ts, data in queryset:
@@ -374,6 +381,7 @@ class PRStepCounter(_Converter):
 class PRDeviceInUse(_Converter):
     header = ['time', 'in_use']
     desc = "Purple Robot DeviceInUseFeature"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -398,6 +406,7 @@ class PRLocation(_Converter):
 class PRAccelerometer(_Converter):
     desc = 'Purple Robot Accelerometer (builtin.AccelerometerProbe).  Some metadata is not yet included here.'
     header = ['event_timestamp', 'normalized_timestamp', 'x', 'y', 'z', 'accuracy']
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -416,6 +425,7 @@ class PRAccelerometer(_Converter):
 class PRLightProbe(_Converter):
     desc = 'Purple Robot Light Probe (builtin.LightProbe).  Some metadata is not yet included here.'
     header = ['event_timestamp', 'lux', 'accuracy']
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -433,6 +443,7 @@ class PRTimestamps(_Converter):
     header = ['time',
               'packet_time',
               'probe',]
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -443,6 +454,7 @@ class PRTimestamps(_Converter):
 class PRRunningSoftware(_Converter):
     header = ['time', 'package_name', 'task_stack_index', 'package_category', ]
     desc = "All software currently running"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -462,6 +474,7 @@ class PRCallHistoryFeature(_Converter):
               'incoming_ratio', 'ack_ratio', 'ack_count', 'stranger_count',
               'acquiantance_count', 'acquaintance_ratio', ]
     desc = "Aggregated call info"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -491,6 +504,7 @@ class PRCallHistoryFeature(_Converter):
 class PRSunriseSunsetFeature(_Converter):
     header = ['time', 'is_day', 'sunrise', 'sunset', 'day_duration']
     desc = "Sunrise and sunset info at current location"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -506,6 +520,7 @@ class PRCommunicationEventProbe(_Converter):
     desc = 'Purple Robot Communication Event Probe'
     header = ['time', 'communication_type', 'communication_direction','number','duration']
     desc = "Communication Event Probe"
+    device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
@@ -533,6 +548,7 @@ class _PRGeneric(_Converter):
     what is found in the probe object.  If length second is missing,
     use the first for both.
     """
+    device_class = 'PurpleRobot'
     @classmethod
     def convert(self, queryset, time=lambda x:x):
         """Iterate through all data, extract the probes, take the probes we
@@ -554,6 +570,8 @@ class _PRGenericArray(_Converter):
     what is found in the probe object.  If length second is missing,
     use the first for both.
     """
+    device_class = 'PurpleRobot'
+    @classmethod
     def header2(cls):
         """Return header, either dynamic or static."""
         if hasattr(cls, 'header') and cls.header:
@@ -658,6 +676,7 @@ class PRProximity(_PRGenericArray):
 
 
 class PRDataSize(_Converter):
+    device_class = 'PurpleRobot'
     per_page = None
     header = ['probe', 'count', 'bytes', 'human_bytes', 'bytes/day']
     desc = "Total bytes taken by each separate probe (warning: takes a long time to compute)"
@@ -731,6 +750,7 @@ class PRMissingData(_Converter):
     to be intermitent.  This is used for testing Purple Robot
     functioning.
     """
+    device_class = 'PurpleRobot'
     per_page = None
     header = ['gap_start', 'gap_end', 'gap_s', 'previous_duration_s']
     desc = "Report gaps of greater than 3600s in last 28 days of Purple Robot data."
@@ -778,6 +798,7 @@ class IosLocation(_Converter):
     header = ['time', 'lat', 'lon', 'alt', 'speed']
     desc = "Location data"
     per_page = 1
+    device_class = 'Ios'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)

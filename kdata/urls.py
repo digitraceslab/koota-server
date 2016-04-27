@@ -38,7 +38,9 @@ urlpatterns = [
     url(r'^survey/take/(?P<token>[\w]*)', survey.take_survey, name='survey-take'),
 
     url(r'^group/$', group.group_join, name='group-join'),
-    url(r'^group/(?P<group_name>[\w]+)', group.GroupView.as_view(), name='group-view'),
+    url(r'^group/(?P<group_name>[\w]+)/?$', group.group_view, name='group-view'),
+    url(r'^group/(?P<group_name>[\w]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?',
+        group.group_data, name='group-data'),
 
     url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.config_funf, name='funf-config'),
     url(r'^funf/post/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.post, name='funf-post'),

@@ -198,35 +198,23 @@ def device_data(request, public_id, converter, format):
         form.cleaned_data['start'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['start'] else '',
         form.cleaned_data['end'].strftime('%Y-%m-%d-%H:%M:%S') if form.cleaned_data['end'] else ''
     )
+    if format:
+        return handle_format_downloads(table,
+                                       format,
+                                       converter=converter,
+                                       header=converter.header2(),
+                                       filename_base=filename_base,
+                                       )
+
+    # Done, return
+    return TemplateResponse(request, 'koota/device_data.html', context)
+
+
+
+def handle_format_downloads(table, format, converter, header, filename_base):
     if format and format.startswith('csv'):
-        import csv
-        from six import StringIO as IO
-        def csv_iter():
-            rows = iter(table)
-            fo = IO()
-            csv_writer = csv.writer(fo)
-            csv_writer.writerow(converter.header2())
-            while True:
-                try:
-                  for _ in range(1000):
-                    row = next(rows)
-                    #print row
-                    csv_writer.writerow(row)
-                except StopIteration:
-                    fo.seek(0)
-                    yield fo.read().encode('utf-8')
-                    del fo
-                    break
-                fo.seek(0)
-                data = fo.read().encode('utf-8')
-                fo.seek(0)
-                fo.truncate()
-                yield data
-            if converter.errors:
-                yield 'The following errors were found at unspecified points in processing:\n'
-                for error in converter.errors:
-                    yield str(error)+'\n'
-        response = StreamingHttpResponse(csv_iter(), content_type='text/plain')
+        lines = util.csv_iter(table, converter=converter, header=header)
+        response = StreamingHttpResponse(lines, content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
             filename = filename_base+'.csv'
@@ -235,48 +223,20 @@ def device_data(request, public_id, converter, format):
     # A JSON format where there is one object on every line
     elif format and format.startswith('json-lines'):
         print('x'*50)
-        def json_iter():
-            rows = iter(table)
-            try:
-                while True:
-                    yield dumps(next(rows))+'\n'
-            except StopIteration:
-                pass
-            if converter.errors:
-                yield 'The following errors were found at unspecified points in processing:\n'
-                for error in converter.errors:
-                    yield str(error)+'\n'
-        response = StreamingHttpResponse(json_iter(), content_type='text/plain')
+        lines = util.json_lines_iter(table, converter=converter)
+        response = StreamingHttpResponse(lines, content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
             filename = filename_base+'.json-lines'
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
     elif format and format.startswith('json'):
-        def json_iter():
-            rows = iter(table)
-            yield '[\n'
-            try:
-                yield dumps(next(rows))  # first one (hope there is no StopIteration now)
-                while True:
-                    row = next(rows)  # raises StopIteration if data exhausted
-                    yield ',\n'  # finalize the one from before, IF we have a next row
-                    yield dumps(row)
-            except StopIteration:
-                pass
-            yield '\n]\n'
-            if converter.errors:
-                yield 'The following errors were found at unspecified points in processing:\n'
-                for error in converter.errors:
-                    yield str(error)+'\n'
-        response = StreamingHttpResponse(json_iter(), content_type='text/plain')
+        lines = json_iter(table, converter=converter)
+        response = StreamingHttpResponse(lines, content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):
             filename = filename_base+'.json'
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
-
-
-    # Done, return
-    return TemplateResponse(request, 'koota/device_data.html', context)
-
+    else:
+        raise ValueError("Unknown format: %s"%format)

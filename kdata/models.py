@@ -34,6 +34,10 @@ class Device(models.Model):
                               help_text='How is this device used?  Primary means that you actively use the '
                                         ' device in your life, secondary is used by you sometimes. ')
     comment = models.CharField(max_length=256, null=True, blank=True, help_text='Any other comments to researchers (optional)')
+
+    def __str__(self):
+        """String representation: Device(public_id)"""
+        return 'Device(%s)'%self.public_id
     @property
     def public_id(self):
         """Device secret_id.  secret_id column, if missing then device_id[:6]"""
@@ -103,6 +107,13 @@ class Group(models.Model):
         return self.researchers.count()
     def get_class(self):
         return util.import_by_name(self.pyclass)
+    def is_subject(self, user):
+        """Is given user a subject of this group?"""
+        return self.subjects.filter(groupsubject__user=user).exists()
+    def is_researcher(self, user):
+        """Is given user a researcher of this group?"""
+        return self.researchers.filter(groupresearcher__user=user).exists()
+
 
 class GroupSubject(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

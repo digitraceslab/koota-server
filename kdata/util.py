@@ -1,4 +1,9 @@
+from base64 import b64encode
+import csv
+from hashlib import sha256
 import importlib
+from json import dumps
+from six import StringIO as IO
 
 import six
 
@@ -45,6 +50,82 @@ def import_by_name(name):
     return obj
 
 
+from django.conf import settings
+SALT = settings.SALT
+def safe_hash(data):
+    """Make a safe hash function for identifiers."""
+    if not isinstance(data, bytes):
+        data = data.encode('utf8')
+    return b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
+
+class IntegerMap(object):
+    """Map objects to integers"""
+    def __init__(self):
+        self.map = { }
+    def __call__(self, value):
+        return self.map.setdefault(value, len(self.map))
+
+
+def csv_iter(table, converter=None, header=None):
+    rows = iter(table)
+    fo = IO()
+    csv_writer = csv.writer(fo)
+    csv_writer.writerow(header)
+    while True:
+        try:
+          for _ in range(1000):
+            row = next(rows)
+            #print row
+            csv_writer.writerow(row)
+        except StopIteration:
+            fo.seek(0)
+            yield fo.read().encode('utf-8')
+            del fo
+            break
+        fo.seek(0)
+        data = fo.read().encode('utf-8')
+        fo.seek(0)
+        fo.truncate()
+        yield data
+    if converter and converter.errors:
+        yield 'The following errors were found at unspecified points in processing:\n'
+        for error in converter.errors:
+            yield str(error)+'\n'
+
+def json_lines_iter(table, converter=None):
+    rows = iter(table)
+    try:
+        while True:
+            yield dumps(next(rows))+'\n'
+    except StopIteration:
+        pass
+    if converter and converter.errors:
+        yield 'The following errors were found at unspecified points in processing:\n'
+        for error in converter.errors:
+            yield str(error)+'\n'
+def json_iter(table, converter=None):
+    rows = iter(table)
+    yield '[\n'
+    try:
+        yield dumps(next(rows))  # first one (hope there is no StopIteration now)
+        while True:
+            row = next(rows)  # raises StopIteration if data exhausted
+            yield ',\n'  # finalize the one from before, IF we have a next row
+            yield dumps(row)
+    except StopIteration:
+        pass
+    yield '\n]\n'
+    if converter and converter.errors:
+        yield 'The following errors were found at unspecified points in processing:\n'
+        for error in converter.errors:
+            yield str(error)+'\n'
+
+
+
+
+#
+# The following functions deal with device checkdigits.
+#
 def luhn1(num, check=False):
     """Luhn algorithm mod 16"""
     factor = 2
