@@ -791,6 +791,9 @@ class PRMissingData(_Converter):
                 )
                 t_active_start = t_next
             t_before_gap = t_next
+class PRMissingData7Days(PRMissingData):
+    days_ago = 7
+    desc = "Report gaps of greater than 3600s in last 7 days of Purple Robot data."
 
 
 
