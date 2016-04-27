@@ -1,0 +1,28 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+Download as (all pages subject to filter):<br>
+{% for ext, format in download_formats %}<a href="{{request.path_info}}.{{ext}}?{{query_params_nopage}}">{{format}}</a>, {% endfor %}<p>
+
+<form method="get">
+    {{ select_form }}
+    <input type="submit" value="Submit" />
+</form>(Datetime format YYYY-MM-DD [HH:MM[:SS]].  Beware, reversing does not reverse values within data packets.)
+<p>
+
+<p>Below is only 50 rows per device, 1000 rows total.</p>
+
+<table>
+  <tr>{% for name in header %}
+    <th>{{ name }}</th>{% endfor %}
+  </tr>
+{% for row in table %}
+  <tr>{% for item in row %}
+    <td>{{ item }}</td>{% endfor %}
+  </tr>
+{% endfor %}
+</table>
+
+
+{% endblock %}
