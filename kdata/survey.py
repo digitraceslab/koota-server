@@ -209,8 +209,8 @@ class SurveyMeta(converter._Converter):
         for ts, data in rows:
             data = loads(data)
             yield (data.get('survey_name', None),
-                   data['access_time'],
-                   data['submit_time'],
+                   time(data['access_time']),
+                   time(data['submit_time']),
                    data['submit_time']-data['access_time'],
                    len(data['answers']),
                    )
