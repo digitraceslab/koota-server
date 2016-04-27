@@ -80,7 +80,7 @@ def group_view(request, group_name):
     c['group'] = group
     c['G'] = G
     # effective number of subjects: can be overridden
-    c['n_subjects'] = sum(1 for _ in iter_subjects(group_class))
+    c['n_subjects'] = sum(1 for _ in iter_subjects(group, group_class))
     return TemplateResponse(request, 'koota/group_view.html',
                             context=context)
 
