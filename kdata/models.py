@@ -70,6 +70,11 @@ class Device(models.Model):
         # super object does notwork with .get_FOO_display()
         #return super(Device, self).get_type_display()
         return self.get_type_display()
+# See comment in kdata.devices.register_device to know why this is
+# here. It is a hack to work around a circular import.
+Device._meta.get_field('type').choices = devices.all_device_choices
+
+
 
 class DeviceLabel(models.Model):
     name = models.CharField(max_length=64, null=True, blank=True)

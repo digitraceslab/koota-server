@@ -61,7 +61,15 @@ def register_device(cls, desc=None, default=False):
     # extend the model fields, or else updated models won't pass
     # validation.  Eventually, devices should not be a .choices
     # property on a model.
-    models.Device._meta.get_field('type').choices \
+
+    # Second hack: kdata.models and kdata.devices import each other.
+    # This needs to have models.Device initialized, but this is not
+    # done until after this file is loaded.  So we can't
+    # register_device in this file yet.  Here is our hack: if
+    # models.Device is not there yet, then don't do anything.  There
+    # is a line
+    if hasattr(models, 'Device'):
+        models.Device._meta.get_field('type').choices \
             = all_device_choices
 def register_device2(desc=None, default=False):
     def register(cls):
