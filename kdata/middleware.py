@@ -11,8 +11,8 @@ class KdataMiddleware(object):
         request.breadcrumbs = breadcrumbs = [ ]
         breadcrumbs.append(('Koota', reverse('main')))
 
+        # Device-related
         if kwargs.get('public_id', None):
-
             public_id = kwargs['public_id']
             breadcrumbs.append(('All Devices', reverse('device-list')))
 
@@ -23,7 +23,19 @@ class KdataMiddleware(object):
                 breadcrumbs.append((kwargs['converter'], reverse('device-data',
                                                                  kwargs=dict(public_id=public_id,
                                                                              converter=kwargs['converter']))))
+        # Device list
         if getattr(view_func, 'view_class', None) == kviews.DeviceListView:
             breadcrumbs.append(('All Devices', reverse('device-list')))
+        # Group-related
         if view_func == group.group_join:
             breadcrumbs.append(('Groups', reverse('group-join')))
+        if 'group_name' in kwargs:
+            breadcrumbs.append((kwargs['group_name'],
+                                reverse('group-view',
+                                        kwargs={'group_name':kwargs['group_name']})))
+            if 'converter' in kwargs:
+                breadcrumbs.append((kwargs['converter'],
+                                    reverse('group-data',
+                                            kwargs={'group_name':kwargs['group_name'],
+                                                    'converter':kwargs['converter']})))
+
