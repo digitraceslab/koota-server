@@ -36,6 +36,8 @@ def check_device_permissions(func):
 
 def import_by_name(name):
     """Import a name from a module.  Return object."""
+    if not name:
+        return None
     modname, objname = name.rsplit('.', 1)
     try:
         mod = importlib.import_module(modname)
