@@ -39,7 +39,7 @@ def get_choices(all=False):
     if all:
         return list(x[:2] for x in all_device_choices)
     return list(x[:2] for x in standard_device_choices)
-def register_device(cls, desc=None):
+def register_device(cls, desc=None, default=False):
     """Allow us to dynamically register devices.
 
     This dynamically changes the models.Device.type.choices when
@@ -51,15 +51,23 @@ def register_device(cls, desc=None):
     """
     if desc:
         name = '%s.%s'%(cls.__module__, cls.__name__)
-        all_device_choices.append((name, desc))
+        row = name, desc
     else:
-        all_device_choices.append(cls._devicechoices_row())
+        row = cls._devicechoices_row()
+    all_device_choices.append(row)
+    if default:
+        standard_device_choices.append(row)
     # This is an epic hack and deserves fixing eventually.  We must
     # extend the model fields, or else updated models won't pass
     # validation.  Eventually, devices should not be a .choices
     # property on a model.
     models.Device._meta.get_field('type').choices \
             = all_device_choices
+def register_device2(desc=None, default=False):
+    def register(cls):
+        register_device(cls, desc=desc, default=default)
+        return cls
+    return register
 def get_class(name):
     """Get a device class by (string) name.
 
@@ -141,7 +149,8 @@ class _Device(object):
         device_config page.
         """
         return { }
-    #def post(self, request):
+    #@classmethod
+    #def post(cls, request):
     #    """Handle special options needed for accepting data.
     #
     #    Returns a dict which controls the functioning of the post() view."""
