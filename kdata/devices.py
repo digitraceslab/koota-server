@@ -335,3 +335,15 @@ class MurataBSN(_Device):
         return dict(raw_instructions=cls.raw_instructions.format(device=device),
                     )
 
+@register_device2()
+class Actiwatch(_Device):
+    desc = "Philips Actiwatch"
+    converters = [converter.Raw,
+                  ]
+    raw_instructions = textwrap.dedent("""\
+    Write down the "device secret ID" you can see above.
+    """)
+    @classmethod
+    def configure(cls, device):
+        return dict(raw_instructions=cls.raw_instructions.format(device=device),
+                    )
