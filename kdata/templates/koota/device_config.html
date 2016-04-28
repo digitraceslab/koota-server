@@ -26,7 +26,7 @@
 {% endif %}
 
 
-{% if qr != False %}
+{% if qr %}
 <h2>Configuration QR code</h2>
 Scan this with the device<p>
 <img src="{% url 'device-qr' public_id=object.public_id %}">

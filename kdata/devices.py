@@ -153,7 +153,20 @@ class _Device(object):
 class Ios(_Device):
     converters = [converter.Raw,
                   converter.IosLocation]
-    pass
+    @classmethod
+    def configure(cls, device):
+        """Special options for configuration
+        """
+        return dict(qr=True)
+
+class Android(_Device):
+    converters = [converter.Raw,
+                  ]
+    @classmethod
+    def configure(cls, device):
+        """Special options for configuration
+        """
+        return dict(qr=True)
 
 
 class PurpleRobot(_Device):
@@ -231,7 +244,6 @@ class PurpleRobot(_Device):
             ))
         return dict(post=cls.post_url,
                     config=cls.config,
-                    qr=False,
                     raw_instructions=raw_instructions,
                     )
     @classmethod
@@ -302,7 +314,6 @@ class MurataBSN(_Device):
                     )
     @classmethod
     def configure(cls, device):
-        return dict(qr=False,
-                    raw_instructions=cls.raw_instructions.format(device=device),
+        return dict(raw_instructions=cls.raw_instructions.format(device=device),
                     )
 
