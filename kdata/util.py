@@ -1,4 +1,4 @@
-from base64 import b64encode
+from base64 import urlsafe_b64encode
 import csv
 from hashlib import sha256
 import importlib
@@ -56,7 +56,7 @@ def safe_hash(data):
     """Make a safe hash function for identifiers."""
     if not isinstance(data, bytes):
         data = data.encode('utf8')
-    return b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
+    return urlsafe_b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
 
 class IntegerMap(object):
     """Map objects to integers"""

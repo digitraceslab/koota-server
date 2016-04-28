@@ -77,7 +77,7 @@ from __future__ import print_function
 from six import iteritems, itervalues, string_types
 from six.moves import zip
 
-from base64 import b64encode
+from base64 import urlsafe_b64encode
 from calendar import timegm
 import collections
 import csv
@@ -114,7 +114,7 @@ def safe_hash(data):
     """Make a safe hash function for identifiers."""
     if not isinstance(data, bytes):
         data = data.encode('utf8')
-    return b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
+    return urlsafe_b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
 
 
 
