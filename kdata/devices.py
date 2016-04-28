@@ -216,6 +216,7 @@ class PurpleRobot(_Device):
                   converter.PRDataSize1Day,
                   converter.PRDataSize1Week,
                   converter.PRDataSize,
+                  converter.PRMissingData7Days,
                   converter.PRMissingData,
                   ]
     @classmethod
