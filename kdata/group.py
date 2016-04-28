@@ -70,6 +70,7 @@ def group_join(request):
                             context=context)
 
 
+@login_required
 def group_view(request, group_name):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
@@ -115,6 +116,7 @@ def iter_users_devices(group, group_class, group_converter_class):
 
 
 
+@login_required
 def group_data(request, group_name, converter, format=None):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
