@@ -42,8 +42,10 @@ urlpatterns = [
     url(r'^group/(?P<group_name>[\w]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?',
         group.group_data, name='group-data'),
 
-    url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.config_funf, name='funf-config'),
-    url(r'^funf/post/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.post, name='funf-post'),
+    url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.config_funf, name='funf-journal-config'),
+    url(r'^funf/post1/(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post,
+        dict(device_class=views_funf.FunfJournal),
+        name='funf-journal-post'),
 
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
