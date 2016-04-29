@@ -135,9 +135,9 @@ config_v1 = """\
 """
 
 config_v2 = """\
-{"name": "funf",
+{"name": "funf-%(device_id)s",
  "version":1,
- "dataArchivePeriod":3600,
+# "dataArchivePeriod":3600,
  "dataRequests":{
     "edu.mit.media.funf.probe.builtin.LocationProbe": [
             { "PERIOD": 1800 }
@@ -159,10 +159,13 @@ config_v2 = """\
      "goodEnoughAccuracy": 80,
      "maxWaitTime": 60}
    ],
- "upload": { "url": "https://dev.koota.zgib.net%(url_path)s",
+ "upload": { "url": "%(domain)s%(post_path)s",
              "@schedule": {"interval": 600},
              "wifiOnly": true
-    }
+    },
+ "update": {"url": "%(domain)s%(config_path)s",
+            "@schedule": {"interval": 3600}
+           }
 }
 """
 
@@ -179,8 +182,14 @@ def config_funf(request, device_id=None):
             return JsonResponse(dict(ok=False, error='Invalid device_id checkdigits',
                                      device_id=device_id),
                                 status=400, reason="Invalid device_id checkdigits")
-    url_path = reverse('funf-journal-post', kwargs=dict(device_id=device_id))
-    config = config_v2%dict(url_path=url_path)
+    domain = "https://dev.koota.zgib.net"
+    post_path = reverse('funf-journal-post', kwargs=dict(device_id=device_id))
+    config_path = reverse('funf-journal-config', kwargs=dict(device_id=device_id))
+    config = config_v2%dict(domain=domain,
+                            post_path=post_path,
+                            config_path=config_path,
+                            device_id=device_id,
+                            )
 
     config = '\n'.join(x for x in config.split('\n') if not x.startswith('#'))
     json.loads(config) # check for valid syntax
