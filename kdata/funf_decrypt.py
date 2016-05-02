@@ -70,7 +70,7 @@ def key_from_password(password, salt=_salt, iterations=_iterations):
     
 def prompt_for_password():
     from getpass import getpass
-    return getpass("Enter encryption password: ")
+    return getpass("Enter encryption password: ").encode('utf8')
 
 def backup_file(file_name, extension=None):
     extension = extension or default_extension
@@ -157,3 +157,4 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
     key = options.key if options.key else key_from_password(prompt_for_password())
     decrypt(args, key, options.extension)
+    #open('funf-decrypt.sqlite', 'wb').write(decrypt2(open(args[0],'rb').read(), key))
