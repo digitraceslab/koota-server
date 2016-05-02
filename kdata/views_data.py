@@ -231,7 +231,7 @@ def handle_format_downloads(table, format, converter, header, filename_base):
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
     elif format and format.startswith('json'):
-        lines = json_iter(table, converter=converter)
+        lines = util.json_iter(table, converter=converter)
         response = StreamingHttpResponse(lines, content_type='text/plain')
         # Force download for the '2' options.
         if format.endswith('2'):

@@ -1,4 +1,5 @@
 from base64 import urlsafe_b64encode
+import collections
 import csv
 from hashlib import sha256
 import importlib
@@ -81,11 +82,11 @@ def csv_iter(table, converter=None, header=None):
             csv_writer.writerow(row)
         except StopIteration:
             fo.seek(0)
-            yield fo.read().encode('utf-8')
+            yield fo.read()
             del fo
             break
         fo.seek(0)
-        data = fo.read().encode('utf-8')
+        data = fo.read()
         fo.seek(0)
         fo.truncate()
         yield data
@@ -93,8 +94,28 @@ def csv_iter(table, converter=None, header=None):
         yield 'The following errors were found at unspecified points in processing:\n'
         for error in converter.errors:
             yield str(error)+'\n'
+def csv_aligned_iter(table, converter=None, header=None):
+    """Yields CSV lines, but try to align them.
 
-def json_lines_iter(table, converter=None):
+    This is a bit of a hack, just useful for human reading.  It makes
+    CSV lines, and each field is aligned to the length of longest
+    field in that column seen so far.  It also includes a bottom header.
+    """
+    # Header
+    yield ','.join(str(x) for x in header)+'\n'
+    # Data
+    widths = collections.defaultdict(int)
+    for row in table:
+        row2 = [ ]
+        for i, x in enumerate(row):
+            x = str(x)
+            w = widths[i] = max(widths[i], len(x))
+            row2.append(x.ljust(w))
+        yield ','.join(row2)+'\n'
+    # Bottom header, properly aligned to data above.
+    yield ','.join(str(x).ljust(widths[i]) for i,x in enumerate(header))+'\n'
+
+def json_lines_iter(table, converter=None, header=None):
     rows = iter(table)
     try:
         while True:
@@ -105,7 +126,7 @@ def json_lines_iter(table, converter=None):
         yield 'The following errors were found at unspecified points in processing:\n'
         for error in converter.errors:
             yield str(error)+'\n'
-def json_iter(table, converter=None):
+def json_iter(table, converter=None, header=None):
     rows = iter(table)
     yield '[\n'
     try:

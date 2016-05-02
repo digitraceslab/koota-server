@@ -114,6 +114,61 @@ def iter_users_devices(group, group_class, group_converter_class):
                                          label__name='Primary personal device'):
             yield subject, device
 
+def iter_group_data(group,
+                    group_class,
+                    group_converter_class,
+                    converter_class,
+                    converter_for_errors,
+                    filter_queryset=None,
+                    row_limit=None,
+                    time_converter=lambda x: x):
+    """Core data iterator: (user, data, converter_data...)
+
+    This abstracts out the core iteration of group data.  Basically,
+    it takes as input some group information and a converter, runs
+    that converter on all (user, device) pairs and iterates over all
+    rows together.  There is a lot of support work to do this, and
+    this does it all.  This is a separate function since the same
+    logic may be needed several places.  There are many options to
+    this because this should almost be embedded in other functions.
+    The interface may evolve.
+
+    Returns: iterator of rows.
+        These rows are ['user_hash', 'device_hash'] + converter_rows.
+    """
+    #hash_subject = util.IntegerMap()
+    #hash_device  = util.IntegerMap()
+    hash_subject = util.safe_hash
+    hash_device  = util.safe_hash
+
+    for subject, device in iter_users_devices(group, group_class, group_converter_class):
+        subject_hash = hash_subject(subject.username)
+        device_hash  = hash_device(device.public_id)
+
+        # Fetch all relevant data
+        queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
+        # Filter the queryset however needed.  Two parts: group
+        # limitations (left here), other user filtering (done via
+        # filter_queryset callback.)
+        if hasattr(converter_class, 'query'):
+            queryset = converter_class.query(queryset)
+        if group.ts_start: queryset = queryset.filter(ts__gte=group.ts_start)
+        if group.ts_end:   queryset = queryset.filter(ts__lt=group.ts_end)
+        if filter_queryset:
+            queryset = filter_queryset(queryset)
+
+        # Apply the converter.
+        queryset = queryset.defer('data')
+        rows = ((x.ts, x.data) for x in queryset.iterator())
+        converter = converter_class(rows=rows, time=time_converter)
+        converter.errors = converter_for_errors.errors
+        converter.errors_dict = converter_for_errors.errors_dict
+        rows = converter.run()
+        # Possibility to limit total data output (for testing purposes).
+        if row_limit:
+            rows = itertools.islice(rows, row_limit)
+        for row in rows:
+            yield (subject_hash, device_hash) + row
 
 
 @login_required
@@ -143,13 +198,9 @@ def group_data(request, group_name, converter, format=None):
     converter_class = group_converter_class.converter
     converter_for_errors = converter_class(rows=None)
 
-    def queryset_filter(queryset):
+    def filter_queryset(queryset):
         """Callback to apply our queryset filtering operations."""
         #import IPython ; IPython.embed()
-        if hasattr(converter_class, 'query'):
-            queryset = converter_class.query(queryset)
-        if group.ts_start: queryset = queryset.filter(ts__gte=group.ts_start)
-        if group.ts_end:   queryset = queryset.filter(ts__lt=group.ts_end)
         if form.cleaned_data['start']:
             queryset = queryset.filter(ts__gte=form.cleaned_data['start'])
         if form.cleaned_data['end']:
@@ -165,34 +216,13 @@ def group_data(request, group_name, converter, format=None):
         time_converter = lambda ts: ts
 
 
-    def iter_data():
-        """Core data iterator: (user, data, converter_data...)"""
-        hash_subject = util.IntegerMap()
-        hash_device  = util.IntegerMap()
-        hash_subject = util.safe_hash
-        hash_device  = util.safe_hash
-
-        for subject, device in iter_users_devices(group, group_class, group_converter_class):
-            subject_hash = hash_subject(subject.username)
-            device_hash  = hash_device(device.public_id)
-
-            # Fetch all relevant data
-            queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
-            queryset = queryset_filter(queryset)
-            queryset = queryset.defer('data')
-
-            rows = ((x.ts, x.data) for x in queryset.iterator())
-            converter = converter_class(rows=rows, time=time_converter)
-            converter.errors = converter_for_errors.errors
-            converter.errors_dict = converter_for_errors.errors_dict
-            rows = converter.run()
-            if not format:
-                rows = itertools.islice(rows, 50)
-            #rows = converter.convert(rows=rows)
-            for row in rows:
-                yield (subject_hash, device_hash) + row
-
-    table = iter_data()
+    table = iter_group_data(group, group_class,
+                            group_converter_class, converter_class,
+                            converter_for_errors=converter_for_errors,
+                            filter_queryset=filter_queryset,
+                            time_converter=time_converter,
+                            row_limit=50 if format else None,
+                            )
     if not format:
         table = itertools.islice(table, 1000)
     c['table'] = table
