@@ -204,6 +204,7 @@ class PurpleRobot(_Device):
                   converter.PRAccelerometerFrequency,
                   converter.PRApplicationLaunches,
                   converter.PRRunningSoftware,
+                  converter.PRSoftwareInformation,
                   converter.PRAudioFeatures,
                   converter.PRProximity,
                   converter.PRCallState,

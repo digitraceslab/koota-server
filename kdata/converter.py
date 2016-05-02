@@ -460,11 +460,33 @@ class PRRunningSoftware(_Converter):
             data = loads(data)
             for probe in data:
                 if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.RunningSoftwareProbe':
+                    probe_ts = time(probe['TIMESTAMP'])
                     for software in probe['RUNNING_TASKS']:
-                        yield (time(probe['TIMESTAMP']),
+                        yield (probe_ts,
                                software['PACKAGE_NAME'],
                                software['TASK_STACK_INDEX'],
                                software['PACKAGE_CATEGORY'],
+                              )
+class PRSoftwareInformation(_Converter):
+    header = ['time',
+              'package_name',
+              'app_name',
+              'package_version_name',
+              'package_version_code',]
+    desc = "All software installed"
+    device_class = 'PurpleRobot'
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.SoftwareInformationProbe':
+                    probe_ts = time(probe['TIMESTAMP'])
+                    for software in probe['INSTALLED_APPS']:
+                        yield (probe_ts,
+                               software['PACKAGE_NAME'],
+                               software['APP_NAME'],
+                               software.get('PACKAGE_VERSION_NAME'),
+                               software['PACKAGE_VERSION_CODE'],
                               )
 class PRCallHistoryFeature(_Converter):
     header = ['time', 'window_index',
