@@ -25,13 +25,19 @@
 <div class="col-xs-12">
 
 {% if success %}
-<p style="padding-bottom: 25%">Survey successful.  You may close the window.</p>
+<div style="padding-bottom: 25%">
+<p>Survey successful.  You may close the window.</p>
+{% if override_ts %}<p>Submission time was recorded as {{ override_ts }}.</p>{% endif %}
+</div>
 {% else %}
 
 
 {% if form.errors %}
 <div class="errorlist">Please check your answers!</div>
 {% endif %}
+
+{% if override_ts %}<p>Your submission time will be recorded as {{ override_ts }}.</p> {% endif %}
+
 
 <h1>{{survey_name}}</h1>
 <form method="post">

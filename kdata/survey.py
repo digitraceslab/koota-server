@@ -146,6 +146,15 @@ def take_survey(request, token):
     Form = make_form(survey_data['questions'])
     survey_name = c['survey_name'] = survey_data.get('name', survey_class.__name__)
 
+    # Provide a way to override submission time.  This is used when
+    # entering data which is pre-recorded and needs a different
+    # timestamp.  Actual handling is below.
+    if 'override_time' in request.GET:
+        override_ts = forms.DateTimeField().to_python(request.GET['override_time'])
+    else:
+        override_ts = None
+    context['override_ts'] = override_ts
+
     if request.method == 'POST':
         form = c['form'] = Form(request.POST)
         if form.is_valid():
@@ -169,9 +178,19 @@ def take_survey(request, token):
                 order = question_order.get(tag)
                 data['answers'][tag] = dict(q=q, a=a, order=order)
 
+            # This allows us to manually override the timestamp, and
+            # report this survey as being taken at some other time.
+            if override_ts:
+                data['actual_access_time'] = token_row.ts_access
+                data['actual_submit_time'] = token_row.ts_submit
+                data['submit_time'] = override_ts
+                data['access_time'] = override_ts-(
+                                           token_row.ts_submit-token_row.ts_access)
+            else:
+                data['access_time'] = token_row.ts_access
+                data['submit_time'] = token_row.ts_submit
+
             # Save the data
-            data['access_time'] = token_row.ts_access
-            data['submit_time'] = token_row.ts_submit
             #import pprint ; pprint.pprint(data)
             data = json_encode(data)
             views.save_data(data=data, device_id=token_row.device_id,
