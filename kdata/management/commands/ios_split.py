@@ -22,9 +22,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('device_id', nargs='*')
+        parser.add_argument('--live_run')
 
     def handle(self, *args, **options):
         #print(options)
+        live_run = False
+        if 'live_run' in options:
+            if input('Do a live run? [yes/NO] > ') == 'yes':
+                live_run = True
 
         if options['device_id']:  # if any elements in list
             devices = [ Device.get_by_id(id_) for id_ in options['device_id'] ]
@@ -67,17 +72,18 @@ class Command(BaseCommand):
                     i += 1
                 for data2 in new_data:
                     print(len(data2))
-                    # The following rows must be uncommend to run this.
-#                    new_row = Data(device_id=row.device_id,
-#                                   ts=row.ts,
-#                                   ip=row.ip,
-#                                   data=data2,
-#                                   data_length=len(data2))
-#                    new_row.save()
-#                    new_row.ts = row.ts
-#                    new_row.save()
-#                row.device_id = row.device_id+'_orig1'
-#                row.save()
+                    if live_run:
+                        new_row = Data(device_id=row.device_id,
+                                       ts=row.ts,
+                                       ip=row.ip,
+                                       data=data2,
+                                       data_length=len(data2))
+                        new_row.save()
+                        new_row.ts = row.ts
+                        new_row.save()
+                if live_run:
+                    row.device_id = row.device_id+'_orig1'
+                    row.save()
+                    print('committed')
 
-                # Comment this line to run everything
-                break
+                #break
