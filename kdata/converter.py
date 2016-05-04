@@ -314,38 +314,76 @@ class PRScreen(_Converter):
                            int(probe['SCREEN_ACTIVE']),
                           )
 class PRWifi(_Converter):
-    header = ['time', 'essid', 'current', 'strength']
+    """WifiAccessPointsProbe converter.
+
+    This is a bit complex because we handle several cases (and handle
+    them twice).
+    - Current network is handled differently from the list of all
+      networks.
+    - hash if the class attribute "safe" is set.
+    """
+    header = ['time', 'essid', 'bssid', 'current', 'strength']
     desc = "Wifi networks found"
     device_class = 'PurpleRobot'
+    safe = False
     def convert(self, queryset, time=lambda x:x):
+        safe = self.safe
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
                 if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.WifiAccessPointsProbe':
                     ts = time(probe['TIMESTAMP'])
                     # Emit a special row for CURRENT_SSID
-                    if 'CURRENT_SSID' in probe:
+                    if 'CURRENT_BSSID' in probe \
+                       and probe['CURRENT_BSSID'] != '00:00:00:00:00:00':
                         current_ssid = probe['CURRENT_SSID']
+                        # On some devices the current SSID is quoted.
+                        # Json decode it in that case.
                         if current_ssid.startswith('"'):
                             current_ssid = loads(current_ssid)
+                        # Handle hashing if we are in safe mode.  In
+                        # safe mode, hash the things, but *only* if it
+                        # is non-null.  So, this is actually two
+                        # levels of conditional.
+                        if safe:
+                            current_ssid = (safe_hash(current_ssid)
+                                            if current_ssid else current_ssid)
+                            current_bssid = (safe_hash(probe['CURRENT_BSSID'])
+                                             if safe else probe['CURRENT_BSSID'])
                         yield (ts,
                                current_ssid,
-                               #probe['CURRENT_BSSID'],
+                               current_bssid,
                                1,
                                probe['CURRENT_RSSI'],
                            )
                     for ap_info in probe['ACCESS_POINTS']:
+                        # Again, two layers of conditionals because we
+                        # only hash if non-null.
+                        ssid = ap_info['SSID']
+                        bssid = ap_info['BSSID']
+                        if safe:
+                            ssid  = safe_hash(ssid)  if ssid else ssid
+                            bssid = safe_hash(bssid) if bssid else bssid
                         yield (ts,
-                               ap_info['SSID'],
-                               #ap_indo['BSSID']
+                               ssid,
+                               bssid,
                                0,
                                ap_info['LEVEL'],
                                )
+class PRWifiSafe(PRWifi):
+    safe = True
 class PRBluetooth(_Converter):
-    header = ['time', 'bluetooth_name', 'bluetooth_address']
+    header = ['time',
+              'bluetooth_name',
+              'bluetooth_address',
+              'major_class',
+              'minor_class',
+              ]
     desc = "Bluetooth devices found"
     device_class = 'PurpleRobot'
+    safe = False
     def convert(self, queryset, time=lambda x:x):
+        safe = self.safe
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
@@ -358,10 +396,19 @@ class PRBluetooth(_Converter):
                         #  "DEVICE MAJOR CLASS":"0x00000100 Computer",
                         #  "BLUETOOTH_ADDRESS":"6841398ddc6f2cee644a3bcf39b894d2",
                         #  "DEVICE MINOR CLASS":"0x0000010c Laptop"}
+                        name = dev_info.get('BLUETOOTH_NAME', '')
+                        address = dev_info.get('BLUETOOTH_ADDRESS', '')
+                        if safe:
+                            name = safe_hash(name)
+                            address = safe_hash(address)
                         yield (ts,
-                               dev_info.get('BLUETOOTH_NAME', ''),
-                               dev_info.get('BLUETOOTH_ADDRESS', ''),
+                               name,
+                               address,
+                               dev_info.get('DEVICE MAJOR CLASS',''),
+                               dev_info.get('DEVICE MINOR CLASS',''),
                                )
+class PRBluetoothSafe(PRBluetooth):
+    safe = True
 class PRStepCounter(_Converter):
     header = ['time', 'step_count', 'last_boot']
     desc = "Step counter"
