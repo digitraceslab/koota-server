@@ -587,22 +587,31 @@ class PRSunriseSunsetFeature(_Converter):
                     )
 class PRCommunicationEventProbe(_Converter):
     desc = 'Purple Robot Communication Event Probe'
-    header = ['time', 'communication_type', 'communication_direction','number','duration']
+    header = ['time',
+              'communication_type',
+              'communication_direction',
+              'number',
+              'duration']
     desc = "Communication Event Probe"
     device_class = 'PurpleRobot'
+    no_number = False
     def convert(self, queryset, time=lambda x:x):
+        no_number = self.no_number
         for ts, data in queryset:
+            if 'CommunicationEventProbe' not in data:
+                continue
             data = loads(data)
             for probe in data:
                 if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CommunicationEventProbe':
-                    if 'DURATION' not in probe:
-                        probe['DURATION'] = 0
+                    duration = probe.get('DURATION', 0)
                     yield (time(probe['COMM_TIMESTAMP']/1000.),
                            probe['COMMUNICATION_DIRECTION'],
                            probe['COMMUNICATION_TYPE'],
-                           safe_hash(probe['NUMBER']),
-                           probe['DURATION']
+                           '' if no_number else safe_hash(probe['NORMALIZED_HASH']),
+                           duration,
                     )
+class PRCommunicationEventProbeNoNumber(PRCommunicationEventProbe):
+    no_number = True
 
 
 
