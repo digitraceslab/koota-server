@@ -221,7 +221,7 @@ def group_data(request, group_name, converter, format=None):
                             converter_for_errors=converter_for_errors,
                             filter_queryset=filter_queryset,
                             time_converter=time_converter,
-                            row_limit=50 if format else None,
+                            row_limit=None if format else 50,
                             )
     if not format:
         table = itertools.islice(table, 1000)
