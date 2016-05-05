@@ -10,3 +10,4 @@ qrcode
 defusedxml
 pytz
 pycrypto
+ujson (optional)

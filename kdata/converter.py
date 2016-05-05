@@ -84,7 +84,10 @@ import csv
 from datetime import datetime, timedelta
 from hashlib import sha256
 import itertools
-from json import loads, dumps
+try:
+    from ujson import dumps, loads
+except:
+    from json import loads, dumps
 from math import log
 import time
 import time as mod_time
