@@ -101,7 +101,6 @@ def device_data(request, public_id, converter, format):
     queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
     if hasattr(converter_class, 'query'):
         queryset = converter_class.query(queryset)
-    queryset = queryset.defer('data')
 
     # Process the form and apply options
     form = c['select_form'] = DataListForm(request.GET)
@@ -165,17 +164,18 @@ def device_data(request, public_id, converter, format):
     else:
         time_converter = lambda ts: ts
 
+    data = util.optimized_queryset_iterator(data)
     # Make our table object by passing raw data through the converter.
     catch_errors = 1
     if catch_errors:
         converter = c['converter'] \
-                = converter_class(((x.ts, x.data) for x in data.iterator()),
+                = converter_class(((x.ts, x.data) for x in data),
                                   time=time_converter)
         table = c['table'] = \
                 converter.run()
     else:
         converter = c['converter'] = converter_class()
-        table = c['table'] = converter.convert(((x.ts, x.data) for x in data.iterator()),
+        table = c['table'] = converter.convert(((x.ts, x.data) for x in data),
                                                time=time_converter)
 
     # the "data" and "queryset" options are dangerous.  If they are

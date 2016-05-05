@@ -1,12 +1,15 @@
 from base64 import urlsafe_b64encode
 import collections
 import csv
+from datetime import timedelta
 from hashlib import sha256
 import importlib
+import itertools
 from json import dumps
+import six
 from six import StringIO as IO
 
-import six
+import django.db.models
 
 from . import models
 
@@ -142,6 +145,70 @@ def json_iter(table, converter=None, header=None):
         yield 'The following errors were found at unspecified points in processing:\n'
         for error in converter.errors:
             yield str(error)+'\n'
+
+
+
+#class queryset_iterator(object):
+#    def __init__()
+def optimized_queryset_iterator_1(queryset):
+    """Wrapper to read queryset.
+
+    This is the primitive version of the one below.  It defers loading
+    data, so has to do it for every row.  This is inefficient.
+
+    """
+    return queryset.defer('data').iterator()
+def optimized_queryset_iterator(queryset):
+    """Queryset wrapper that optimizes lots of data access.
+
+    Reading django queries is a balance.  If we do nothing, django
+    reads in all data at once, using all memory.  If we
+    .defer('data').iterator(), it will make a new DB query for every
+    row, which is very inefficient and slow.
+
+    This uses different heurestics in order to break up one query into
+    a lot of different parts.  First, it has to use the time index to
+    extract daily our hourly periods.  Then, we use offset within that
+    to not get too many rows at once.  There is no single good way to
+    make sure that don't query too much and get too many rows at once
+    (blowing up memory).
+
+    There are a lot of different parameters here, mainly chunk_size
+    and dt.  They will have to be tuned as time goes on and we learn
+    more.
+    """
+    # Parameters
+    dt = timedelta(hours=1)
+    default_chunk_size = 50
+    #
+    ts_start = queryset[0].ts
+    ts_end = queryset.reverse()[0].ts
+    ts = ts_start
+    while ts < ts_end:
+        ts_next = ts + dt
+        #yield from queryset.filter(ts__gte=ts, ts__lt=ts_next)
+        # Filter for time range
+        qs2 = queryset.filter(ts__gte=ts, ts__lt=ts_next)
+        # Get some aggregate data, in order to possibly better adjust
+        # the heuristics.
+        agg = qs2.aggregate(#bytes=django.db.models.Sum('data_length'),
+                            count=django.db.models.Count('device_id'))
+        #bytes = agg['bytes']
+        count = agg['count']
+        # no rows
+        if not count:
+            ts = ts_next
+            continue
+        # Find optimal chunk size
+        #chunk_size = int(round(default_chunk_size / (bytes/5000000.)))
+        #chunk_size = min(chunk_size, default_chunk_size)
+        chunk_size = default_chunk_size
+        # Go through the chunks.  Yield from each of them.
+        for i in itertools.count():
+            qs3 = qs2[i*chunk_size : chunk_size*(i+1)]
+            if not qs3.exists(): break  # infinite iterator, break here
+            yield from qs3
+        ts = ts_next
 
 
 

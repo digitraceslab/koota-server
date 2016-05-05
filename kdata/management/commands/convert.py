@@ -51,13 +51,14 @@ class Command(BaseCommand):
             rows = Data.objects.filter(device_id=device.device_id, )
         else:
             raise ValueError()
+        rows = rows.order_by('ts')
 
         # Limit to a certain number of days of history.
         if options['history']:
             rows = rows.filter(ts__gt=(timezone.now()-timedelta(days=options['history'])))
 
         # Final transformations
-        rows = rows.defer('data').iterator()
+        rows = util.optimized_queryset_iterator(rows)
         rows = ((d.ts, d.data) for d in rows)
         converter = converter_class(rows=rows, time=time_converter)
         table = converter.run()

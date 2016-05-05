@@ -158,8 +158,8 @@ def iter_group_data(group,
             queryset = filter_queryset(queryset)
 
         # Apply the converter.
-        queryset = queryset.defer('data')
-        rows = ((x.ts, x.data) for x in queryset.iterator())
+        queryset = util.optimized_queryset_iterator(queryset)
+        rows = ((x.ts, x.data) for x in queryset)
         converter = converter_class(rows=rows, time=time_converter)
         converter.errors = converter_for_errors.errors
         converter.errors_dict = converter_for_errors.errors_dict
