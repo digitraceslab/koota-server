@@ -846,22 +846,30 @@ class PRMissingData(_Converter):
         from django.utils import timezone
         now = timezone.now()
         return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
+    def __init__(self, *args, **kwargs):
+        super(PRMissingData, self).__init__(*args, **kwargs)
+        self.ts_list = [ ]
     def convert(self, rows, time=lambda x:x):
-        #import IPython ; IPython.embed()
-        # Get list of all actual data timestamps (using PRTimestamps converter)
-        ts_list = PRTimestamps(rows).run()
+        ts_list = self.ts_list
+        # Get list of all actual data timestamps (using PRTimestamps converter).
+        #
+        # Run through all data.  By the way that "extend" works, if
+        # there is an error in decoding, the previously appended items
+        # will still be tehre.  So, when we restart (from the .run()
+        # method that restarts on exceptions), we continue appending
+        # to the same list, which is good.
+        self.ts_list.extend(x[0] for x in PRTimestamps(rows).run())
         # Avoid all timestamps less than 1e8s (1973).  This avoids
         # times converted from things that weren't unixtimes.
-        ts_list_sorted = sorted(x[0] for x in ts_list if x[0] > 100000000)
+        ts_list_sorted = sorted(t for t in ts_list if t > 100000000)
         ts_list_sorted.append(mod_time.time())
         ts_list_sorted = iter(ts_list_sorted)
         # Simple core: go through, convert all data, any gaps that are
         # greater than self.min_gap seconds, yield that info.
         t_before_gap = next(ts_list_sorted)
-        t_active_start = None
+        t_active_start = t_before_gap
         for t_next in ts_list_sorted:
             if t_next > t_before_gap + self.min_gap:
-
                 yield (time(t_before_gap),
                        time(t_next),
                        t_next-t_before_gap,
@@ -869,6 +877,13 @@ class PRMissingData(_Converter):
                 )
                 t_active_start = t_next
             t_before_gap = t_next
+        yield (time(t_before_gap),
+               time(t_next),
+               t_next-t_before_gap,
+               t_before_gap-t_active_start if t_active_start else '',
+        )
+        del self.ts_list
+        del ts_list
 class PRMissingData7Days(PRMissingData):
     days_ago = 7
     desc = "Report gaps of greater than 3600s in last 7 days of Purple Robot data."
