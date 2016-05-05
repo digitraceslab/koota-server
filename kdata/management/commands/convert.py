@@ -25,6 +25,8 @@ class Command(BaseCommand):
                             action='store_true')
         parser.add_argument('--full', help="Produce all group data?", action='store_true')
         parser.add_argument('--format', '-f', help="Output format")
+        parser.add_argument('--no-handle-errors', action='store_false', default=True,
+                            help="Use converter error handing framework.")
 
     def handle(self, *args, **options):
         #print(options)
@@ -41,7 +43,7 @@ class Command(BaseCommand):
         # Get the converter class
         converter_class = kdata.util.import_by_name(options['converter'])
         if not converter_class:
-            converter_class = getattr('kdata.converter.'+options['converter'])
+            converter_class = getattr(converter, 'kdata.converter.'+options['converter'])
         # Get our device or devices
         if options['device_id'] == 'PR':
             devices = Device.objects.filter(type='PurpleRobot')
@@ -60,8 +62,13 @@ class Command(BaseCommand):
         # Final transformations
         rows = util.optimized_queryset_iterator(rows)
         rows = ((d.ts, d.data) for d in rows)
-        converter = converter_class(rows=rows, time=time_converter)
-        table = converter.run()
+        if options['no_handle_errors']:
+            converter = converter_class(rows=rows, time=time_converter)
+            table = converter.run()
+        else:
+            converter = converter_class(rows=rows, time=time_converter)
+            table = converter.convert(rows,
+                                      time=time_converter)
 
         self.print_rows(table, converter,
                         header=converter.header2(),
