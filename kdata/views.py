@@ -103,11 +103,15 @@ def config(request, device_class=None):
     """
     from django.conf import settings
     from codecs import encode
+    data = { }
+    if 'device_id' in request.GET:
+        pass
+        # Any config by device
     cert_der = encode(open(settings.KOOTA_SSL_CERT_DER,'rb').read(), 'base64')
     cert_pem = encode(open(settings.KOOTA_SSL_CERT_PEM,'rb').read(), 'base64')
-    return JsonResponse(dict(selfsigned_cert_der=cert_der.decode('ascii'),
-                             selfsigned_cert_pem=cert_pem.decode('ascii'),
-                         ))
+    data['selfsigned_cert_der'] = cert_der.decode('ascii')
+    data['selfsigned_cert_pem'] = cert_pem.decode('ascii')
+    return JsonResponse(data)
 
 #
 # User management
@@ -204,10 +208,12 @@ def device_qrcode(request, public_id):
     if not util.has_device_perm(request, device):
         raise PermissionDenied("No permission for device")
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
-    url_base = "{0}://{1}".format(request.scheme, settings.POST_DOMAIN)
-    data = [('post', url_base+reverse('post')),
-            ('config', url_base+'/config'),
-            ('device_id', device.device_id),
+    main_host = "https://{0}".format(settings.MAIN_DOMAIN)
+    post_host = "https://{0}".format(settings.POST_DOMAIN)
+    data = [('post', post_host+reverse('post')+'?device_id=%s'%device.secret_id),
+            ('config', main_host+'/config?device_id=%s&device_type=%s'%(
+                device.secret_id, device.type)),
+            ('device_id', device.secret_id),
             ('public_id', device.public_id),
             ('secret_id', device.secret_id),
             ('device_type', device.type),
