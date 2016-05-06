@@ -88,9 +88,10 @@ try:
     from ujson import dumps, loads
 except:
     from json import loads, dumps
-from math import log
+from math import log, sqrt
 import time
 import time as mod_time
+from time import localtime
 import sys
 
 import logging
@@ -617,8 +618,139 @@ class PRCommunicationEventProbeNoNumber(PRCommunicationEventProbe):
     no_number = True
 
 
+#
+# Daily aggregations
+#
+class PRDayAggregator(_Converter):
+    """Base class for performing server-side aggregation by day.
+
+    This basically provides an on-line sort (actually aggregation)
+    that tries to group data by some timestamp key.  Because we can't
+    store too much in memory at once, we have to use various
+    heurestics and it *will* fail in some cases.  Continued
+    development will be needed.
+
+    """
+    device_class = 'PurpleRobot'
+    ts_func = staticmethod(lambda probe: probe['TIMESTAMP'])
+    filter_func = staticmethod(lambda data: True)
+    paging_disabled = True
+    def __init__(self, *args, **kwargs):
+        super(PRDayAggregator, self).__init__(*args, **kwargs)
+        self.day_dict = collections.defaultdict(list)
+        self.current_day = None
+        self.current_day_ts = None
+        self.current_i = 0
+
+    def convert(self, queryset, time=lambda x:x):
+        probe_type = self.probe_type
+        day_dict = self.day_dict
+        current_day = self.current_day
+        current_day_ts = self.current_day_ts
+        current_i = self.current_i
+        ts_func = self.ts_func
+        filter_func = self.filter_func
+        for packet_ts, data in queryset:
+            if not self.filter_func(data): continue
+            data = loads(data)
+            for probe in data:
+                current_i += 1
+                if probe['PROBE'] == probe_type:
+                    # Get timestamp, local time (TODO: don't use
+                    # system time), and a day tuple (Y, M, D) which we
+                    # use as our key.
+                    ts = ts_func(probe)
+                    ts_tuple = localtime(ts)
+                    day = ts_tuple[:3]
+                    # Setup in the first loop round.
+                    if current_day is None:
+                        current_day = day
+                        current_day_ts = ts
+                    # If we have iterated far enough in the future,
+                    # then we assume that we have all data from the
+                    # current day.  Yield this.
+                    if ts > current_day_ts + 172800: # two days
+                        day_to_return = min(day_dict)
+                        data = day_dict.pop(day_to_return)
+                        for row in self.process(ts_func(data[0]),
+                                                day_to_return,
+                                                data):
+                            yield row
+                        if day_dict:
+                            # we have new data
+                            current_day = self.current_day = min(day_dict)
+                            current_day_ts = self.current_day_ts \
+                                             = ts_func(day_dict[current_day][0])
+                        else:
+                            current_day = day
+                            current_day_ts = ts
+                        self.current_i = current_i
+                    # Some detection for going backwards.
+                    if ts + 3600 < current_day_ts:
+                        #print("backwards in time:", ts, current_day_ts)
+                        continue
+                    # Save this data in the respective list.
+                    day_dict[day].append(probe)
+        # finalize by yielding all remaining days.
+        while day_dict:
+            current_day = min(day_dict)
+            current_ts = ts_func(day_dict[current_day][0])
+            data = day_dict.pop(current_day)
+            for row in self.process(current_ts, current_day, data):
+                yield row
+class PRBatteryDay(PRDayAggregator):
+    header = ['day', 'mean_level', ]
+    probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.BatteryProbe'
+    desc = "PR battery, daily averages (has error)."
+    filter_func = staticmethod(lambda data: 'BatteryProbe' in data)
+    def process(self, ts, day, probes):
+        levels = [ probe['level'] for probe in probes ]
+        yield ('%04d-%02d-%02d'%day,
+               sum(levels)/len(levels),
+        )
+class PRCommunicationEventsDay(PRDayAggregator):
+    header = ['day', 'n_events', 'n_phone', 'n_sms',
+              'n_incoming', 'n_outgoing', 'n_missed',
+              'tot_duration', 'min_duration', 'max_duration', 'mean_duration',
+              'std_pop_duration',
+    ]
+    probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CommunicationEventProbe'
+    desc = "PR commsunication events, aggregate information"
+    ts_func = staticmethod(lambda probe: probe['COMM_TIMESTAMP']//1000)
+    filter_func = staticmethod(lambda data: 'CommunicationEventProbe' in data)
+    def process(self, ts, day, probes):
+        #for p in probes:
+        #    print(p)
+        phone_events = [ p for p in probes if p['COMMUNICATION_TYPE']=='PHONE' ]
+        sms_events   = [ p for p in probes if p['COMMUNICATION_TYPE']=='SMS' ]
+        n_events   = len(probes)
+        n_phone    = len(phone_events)
+        n_sms      = len(sms_events)
+        n_incoming = sum(1 for p in probes if p['COMMUNICATION_DIRECTION']=='INCOMING')
+        n_outgoing = sum(1 for p in probes if p['COMMUNICATION_DIRECTION']=='OUTGOING')
+        n_missed   = sum(1 for p in probes if p['COMMUNICATION_DIRECTION']=='MISSED')
+        tot_duration = sum(p['DURATION'] for p in phone_events)
+        if n_phone:
+            min_duration = min(p['DURATION'] for p in phone_events)
+            max_duration = max(p['DURATION'] for p in phone_events)
+            mean_duration = tot_duration/n_phone
+        else:
+            min_duration = 0
+            max_duration = 0
+            mean_duration = 0
+        var_duration = sum((p['DURATION']-mean_duration)**2 for p in phone_events)
+        std_pop_duration = sqrt(var_duration)
+        yield ('%04d-%02d-%02d'%day,
+               n_events, n_phone, n_sms,
+               n_incoming, n_outgoing, n_missed,
+               tot_duration, min_duration, max_duration, mean_duration,
+               std_pop_duration,
+        )
 
 
+#
+# Generic probes
+#
 class _PRGeneric(_Converter):
     """Generic simple probe
 
