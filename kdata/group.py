@@ -185,7 +185,7 @@ def group_data(request, group_name, converter, format=None):
         pass
     else:
         # Bad data, return early and make the user fix the form
-        return TemplateResponse(request, 'koota/device_data.html', context)
+        return TemplateResponse(request, 'koota/group_data.html', context)
     c['query_params_nopage'] = views_data.replace_page(request, '')
 
     c['group'] = group
