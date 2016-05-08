@@ -686,9 +686,14 @@ class PRDayAggregator(_Converter):
                             current_day_ts = ts
                         self.current_i = current_i
                     # Some detection for going backwards.
-                    if ts + 3600 < current_day_ts:
-                        #print("backwards in time:", ts, current_day_ts)
-                        continue
+                    #if ts + 3600 < current_day_ts:
+                    #    # This is supposed to be some safety against
+                    #    # going backwards too much and ending up using
+                    #    # too much memory.  But I think it is not
+                    #    # necessary.  In the event that this is not
+                    #    # too needed anymore.
+                    #    #print("backwards in time:", ts, current_day_ts)
+                    #    continue
                     # Save this data in the respective list.
                     day_dict[day].append(probe)
         # finalize by yielding all remaining days.
