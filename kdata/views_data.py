@@ -212,7 +212,15 @@ def device_data(request, public_id, converter, format):
 
 
 def handle_format_downloads(table, format, converter, header, filename_base):
-    if format and format.startswith('csv'):
+    if format and format.startswith('csv-aligned'):
+        lines = util.csv_aligned_iter(table, converter=converter, header=header)
+        response = StreamingHttpResponse(lines, content_type='text/plain')
+        # Force download for the '2' options.
+        if format.endswith('2'):
+            filename = filename_base+'.csv'
+            response['Content-Disposition'] = 'attachment; filename="%s"'%filename
+        return response
+    elif format and format.startswith('csv'):
         lines = util.csv_iter(table, converter=converter, header=header)
         response = StreamingHttpResponse(lines, content_type='text/plain')
         # Force download for the '2' options.
