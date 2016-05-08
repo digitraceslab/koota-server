@@ -181,10 +181,12 @@ def optimized_queryset_iterator(queryset):
     dt = timedelta(hours=1)
     default_chunk_size = 50
     #
+    if not queryset.exists():
+        return
     ts_start = queryset[0].ts
     ts_end = queryset.reverse()[0].ts
     ts = ts_start
-    while ts < ts_end:
+    while ts <= ts_end:  # ts_end is a closed interval point
         ts_next = ts + dt
         #yield from queryset.filter(ts__gte=ts, ts__lt=ts_next)
         # Filter for time range
