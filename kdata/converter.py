@@ -752,6 +752,121 @@ class PRCommunicationEventsDay(PRDayAggregator):
                std_pop_duration,
         )
 
+import numpy as np
+#import matplotlib.mlab as mlab
+from geopy.distance import vincenty
+#from scipy.cluster.vq import kmeans, vq
+class PRLocationDay(PRDayAggregator):
+    """Daily movement information.
+
+    This was written by students.  The k-means clustering had to be
+    removed, since it depends on scipy which could not be quickly
+    compiled on Solaris.  This whole thing must be cleaned up
+    eventually.
+
+    - Location variance = log(var_latitude + var_longitude)
+    - Transition time
+    - Total distance per day
+
+    """
+    header = ['day', 'locvar',
+              #'numclust', 'entropy', 'normentropy',
+              'transtime', 'totdist']
+    probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
+    desc = "PRLocation, daily features"
+    filter_func = staticmethod(lambda data: 'LocationProbe' in data)
+    def process(self, ts, day, probes):
+        time_step = 600 # seconds, size of data bins
+        speed_th = 0.28 # m/s, moving threshold
+        max_dist = 500 # m, maximum radius of cluster
+        lat = [ probe['LATITUDE'] for probe in probes ]
+        lon = [ probe['LONGITUDE'] for probe in probes ]
+        times = [ probe['TIMESTAMP'] for probe in probes ]
+        time_bins = range(min(times), max(times) + time_step, time_step)
+        lat_binned = []
+        lon_binned = []
+        dists = []
+
+        # bin data
+        for i in range(0, len(time_bins)):
+#            useInd = mlab.find([time >= time_bins[i] and time < time_bins[i + 1] for time in times])
+            useInd = np.where([time >= time_bins[i] and time < time_bins[i + 1] for time in times])[0]
+            if len(useInd) > 0:
+                lat_binned.append(np.mean([lat[j] for j in useInd]))
+                lon_binned.append(np.mean([lon[j] for j in useInd]))
+            else:
+                lat_binned.append(np.nan)
+                lon_binned.append(np.nan)
+
+        # calculate distances between coordinates
+        for i in range(0, len(time_bins) - 1):
+            if not any(np.isnan([lon_binned[i], lat_binned[i], lon_binned[i + 1], lat_binned[i + 1]])):
+                dists.append(vincenty((lat_binned[i], lon_binned[i]), (lat_binned[i + 1], lon_binned[i + 1])).meters)
+            else:
+                dists.append(np.nan)
+
+        # calculate speeds and categorize points
+        speeds = [dist / time_step for dist in dists]
+        #is_stationary = mlab.find([speed < speed_th for speed in speeds])
+        #is_moving = mlab.find([speed >= speed_th for speed in speeds])
+        is_stationary = np.where([speed < speed_th for speed in speeds])[0]
+        is_moving = np.where([speed >= speed_th for speed in speeds])[0]
+        stat_lat = [lat_binned[j] for j in is_stationary]
+        stat_lon = [lon_binned[j] for j in is_stationary]
+
+        # location variance
+        loc_var = np.log(np.var(stat_lat) + np.var(stat_lon))
+
+        # total distance
+        total_distance = np.nansum(dists)
+
+        # transition time
+        transition_time = np.double(len(is_moving)) / np.double((len(is_stationary) + len(is_moving)))
+
+#        # number of clusters
+#        kmeans_dists = [max_dist + 1] # dummy to enter while loop
+#        k = 0
+#        while any([x > max_dist for x in kmeans_dists]):
+#            k += 1
+#            stat_data = np.transpose(np.array([stat_lat, stat_lon]))
+#            kmeans_res = kmeans(stat_data, k)[0]
+#            kmeans_cat = vq(stat_data, kmeans_res)
+#            kmeans_dists = []
+#            # prevent infinite loop (shouldn't happen anyway)
+#            if k > 20:
+#                break
+#            # calculate distances to centroids
+#            for i in range(0, len(stat_lat)):
+#                if not any(np.isnan([stat_lat[i], stat_lon[i]])):
+#                    kmeans_dists.append(vincenty((stat_lat[i], stat_lon[i]), (kmeans_res[kmeans_cat[0][i]][0], kmeans_res[kmeans_cat[0][i]][1])).meters)
+#                else:
+#                    kmeans_dists.append(np.nan)
+#
+#        # entropy
+#        entropy = 0.
+#        for i in range(0, k):
+#            cur_inds = mlab.find([c == i for c in kmeans_cat[0]])
+#            p = np.double(len(cur_inds)) / np.double(len(stat_lat))
+#            if p != 0:
+#                entropy -= p * np.log(p)
+#
+#        # normalized entropy
+#        if k != 1:
+#            norm_entropy = entropy / np.log(np.double(k))
+#        else:
+#            norm_entropy = 0.
+
+        yield ('%04d-%02d-%02d'%day,
+               loc_var,
+               #k,
+               #entropy,
+               #norm_entropy,
+               transition_time,
+               total_distance
+               )
+
+
+
 
 #
 # Generic probes
