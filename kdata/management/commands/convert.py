@@ -5,10 +5,10 @@ import json
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-import kdata.converter
+from ... import converter as kconverter
 from ... import group as kdata_group
 from ... import models
-from kdata.models import Device, Data
+from ...models import Device, Data
 from ... import util
 
 class Command(BaseCommand):
@@ -41,9 +41,9 @@ class Command(BaseCommand):
             return self.handle_group(time_converter=time_converter, **options)
 
         # Get the converter class
-        converter_class = kdata.util.import_by_name(options['converter'])
+        converter_class = util.import_by_name(options['converter'])
         if not converter_class:
-            converter_class = getattr(converter, 'kdata.converter.'+options['converter'])
+            converter_class = getattr(kconverter, 'kdata.converter.'+options['converter'])
         # Get our device or devices
         if options['device_id'] == 'PR':
             devices = Device.objects.filter(type='PurpleRobot')
@@ -79,7 +79,7 @@ class Command(BaseCommand):
         group = models.Group.objects.get(slug=group_name)
         group_class = group.get_class()
 
-        group_converter_class = kdata.util.import_by_name(options['converter'])
+        group_converter_class = util.import_by_name(options['converter'])
         if not group_converter_class:
             group_converter_class = [ x for x in group_class.converters
                                       if x.name() == options['converter'] ][0]
