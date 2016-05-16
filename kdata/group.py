@@ -121,7 +121,8 @@ def iter_group_data(group,
                     converter_for_errors,
                     filter_queryset=None,
                     row_limit=None,
-                    time_converter=lambda x: x):
+                    time_converter=lambda x: x,
+                    handle_errors=True):
     """Core data iterator: (user, data, converter_data...)
 
     This abstracts out the core iteration of group data.  Basically,
@@ -163,7 +164,10 @@ def iter_group_data(group,
         converter = converter_class(rows=rows, time=time_converter)
         converter.errors = converter_for_errors.errors
         converter.errors_dict = converter_for_errors.errors_dict
-        rows = converter.run()
+        if handle_errors:
+            rows = converter.run()
+        else:
+            rows = converter.convert(rows, time=time_converter)
         # Possibility to limit total data output (for testing purposes).
         if row_limit:
             rows = itertools.islice(rows, row_limit)

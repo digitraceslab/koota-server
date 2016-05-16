@@ -98,6 +98,7 @@ class Command(BaseCommand):
             filter_queryset=None,
             time_converter=time_converter,
             row_limit=None if options['full'] else 50,
+            handle_errors=options['no_handle_errors'],
             )
 
         header = ['user', 'device', ] + converter_class.header2()
