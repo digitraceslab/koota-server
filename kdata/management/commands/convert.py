@@ -11,6 +11,8 @@ from ... import models
 from ...models import Device, Data
 from ... import util
 
+TZ = timezone.LocalTimezone()
+
 class Command(BaseCommand):
     help = 'Run a preprocessor on a device'
 
@@ -18,7 +20,7 @@ class Command(BaseCommand):
         parser.add_argument('converter', nargs=None)
         parser.add_argument('device_id', nargs=None)
         parser.add_argument('--history', help="Number of past days to use for test.", default=14, type=int)
-        parser.add_argument('--realtime', help="Convert unix time?", action='store_true')
+        parser.add_argument('--textdate', help="Convert unix time?", action='store_true')
         parser.add_argument('--group',
                             help="Run a converter on a group? "
                                  "device_id becomes the group name.",
@@ -30,8 +32,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         #print(options)
-        if options['realtime']:
-            time_converter = lambda x: x.strftime('%Y-%m-%d %H:%M:%S')
+        if options['textdate']:
+            time_converter = lambda x: datetime.fromtimestamp(x, TZ).strftime('%Y-%m-%d %H:%M:%S')
         else:
             time_converter = lambda x: x
 
