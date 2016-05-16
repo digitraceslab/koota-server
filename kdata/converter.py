@@ -617,6 +617,37 @@ class PRCommunicationEventProbe(_Converter):
 class PRCommunicationEventProbeNoNumber(PRCommunicationEventProbe):
     no_number = True
 
+import requests
+class PRApplicationLaunchesSafe(_Converter):
+    """ApplicationLaunchEvents - only top apps, others hashed."""
+    header = ['time', 'current_app_pkg']
+    desc = "ApplicationLaunchProbe, when software is started"
+    device_class = 'PurpleRobot'
+    def convert(self, queryset, time=lambda x:x):
+        # TODO: make this configurable
+        link = "https://koota.cs.aalto.fi/static/softinfo.txt"
+        f = requests.get(link).text
+        AppList = f.split('\n')
+        AppList = [k.split(',')[0] for k in AppList]
+        AppList = set(AppList)
+
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                if probe['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.ApplicationLaunchProbe':
+                    if probe['CURRENT_APP_PKG'] not in AppList:
+                        #print(time(probe['TIMESTAMP']),
+                        #   safe_hash(probe['CURRENT_APP_PKG']))
+                        yield (time(probe['TIMESTAMP']),
+                           safe_hash(probe['CURRENT_APP_PKG']))
+                    else:
+                        #print(time(probe['TIMESTAMP']),
+                        #   probe['CURRENT_APP_PKG'])
+                        yield (time(probe['TIMESTAMP']),
+                            probe['CURRENT_APP_PKG'])
+
+
+
 
 #
 # Daily aggregations
