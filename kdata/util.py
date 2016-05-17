@@ -80,7 +80,7 @@ def csv_iter(table, converter=None, header=None):
     csv_writer.writerow(header)
     while True:
         try:
-          for _ in range(1000):
+          for _ in range(10):
             row = next(rows)
             #print row
             csv_writer.writerow(row)
