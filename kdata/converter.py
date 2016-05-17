@@ -784,16 +784,12 @@ class PRCommunicationEventsDay(PRDayAggregator):
         )
 
 import numpy as np
-#import matplotlib.mlab as mlab
 from geopy.distance import vincenty
 #from scipy.cluster.vq import kmeans, vq
 class PRLocationDay(PRDayAggregator):
     """Daily movement information.
 
-    This was written by students.  The k-means clustering had to be
-    removed, since it depends on scipy which could not be quickly
-    compiled on Solaris.  This whole thing must be cleaned up
-    eventually.
+    This was contributed by students.
 
     - Location variance = log(var_latitude + var_longitude)
     - Transition time
@@ -801,7 +797,7 @@ class PRLocationDay(PRDayAggregator):
 
     """
     header = ['day', 'locvar',
-              #'numclust', 'entropy', 'normentropy',
+              'numclust', 'entropy', 'normentropy',
               'transtime', 'totdist']
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
     desc = "PRLocation, daily features"
@@ -819,7 +815,7 @@ class PRLocationDay(PRDayAggregator):
         dists = []
 
         # bin data
-        for i in range(0, len(time_bins)):
+        for i in range(0, len(time_bins)-1):
 #            useInd = mlab.find([time >= time_bins[i] and time < time_bins[i + 1] for time in times])
             useInd = np.where([time >= time_bins[i] and time < time_bins[i + 1] for time in times])[0]
             if len(useInd) > 0:
@@ -830,7 +826,7 @@ class PRLocationDay(PRDayAggregator):
                 lon_binned.append(np.nan)
 
         # calculate distances between coordinates
-        for i in range(0, len(time_bins) - 1):
+        for i in range(0, len(lon_binned) - 1):
             if not any(np.isnan([lon_binned[i], lat_binned[i], lon_binned[i + 1], lat_binned[i + 1]])):
                 dists.append(vincenty((lat_binned[i], lon_binned[i]), (lat_binned[i + 1], lon_binned[i + 1])).meters)
             else:
@@ -846,55 +842,110 @@ class PRLocationDay(PRDayAggregator):
         stat_lon = [lon_binned[j] for j in is_stationary]
 
         # location variance
-        loc_var = np.log(np.var(stat_lat) + np.var(stat_lon))
+        loc_var = -np.inf  # default if can't compute
+        if len(stat_lon) > 0:
+            _loc_var = np.var(stat_lat) + np.var(stat_lon)
+            if _loc_var > 0:
+                loc_var = np.log(_loc_var)
 
         # total distance
         total_distance = np.nansum(dists)
 
         # transition time
-        transition_time = np.double(len(is_moving)) / np.double((len(is_stationary) + len(is_moving)))
+        transition_time = 0.0  # default if no data
+        if len(is_stationary) + len(is_moving) > 0:
+            transition_time = len(is_moving) / float(len(is_stationary) + len(is_moving))
 
-#        # number of clusters
-#        kmeans_dists = [max_dist + 1] # dummy to enter while loop
-#        k = 0
-#        while any([x > max_dist for x in kmeans_dists]):
-#            k += 1
-#            stat_data = np.transpose(np.array([stat_lat, stat_lon]))
-#            kmeans_res = kmeans(stat_data, k)[0]
-#            kmeans_cat = vq(stat_data, kmeans_res)
-#            kmeans_dists = []
-#            # prevent infinite loop (shouldn't happen anyway)
-#            if k > 20:
-#                break
-#            # calculate distances to centroids
-#            for i in range(0, len(stat_lat)):
-#                if not any(np.isnan([stat_lat[i], stat_lon[i]])):
-#                    kmeans_dists.append(vincenty((stat_lat[i], stat_lon[i]), (kmeans_res[kmeans_cat[0][i]][0], kmeans_res[kmeans_cat[0][i]][1])).meters)
-#                else:
-#                    kmeans_dists.append(np.nan)
-#
-#        # entropy
-#        entropy = 0.
-#        for i in range(0, k):
-#            cur_inds = mlab.find([c == i for c in kmeans_cat[0]])
-#            p = np.double(len(cur_inds)) / np.double(len(stat_lat))
-#            if p != 0:
-#                entropy -= p * np.log(p)
-#
-#        # normalized entropy
-#        if k != 1:
-#            norm_entropy = entropy / np.log(np.double(k))
-#        else:
-#            norm_entropy = 0.
+        # number of clusters
+        if len(stat_lat) > 0:
+            kmeans_dists = [max_dist + 1] # dummy to enter while loop
+            k = 0
+            while any([x > max_dist for x in kmeans_dists]):
+                k += 1
+                stat_data = np.transpose(np.array([stat_lat, stat_lon]))
+                [kmeans_cat, kmeans_dists] = kmeans_haversine(stat_data, k,iter=10)
+                # prevent infinite loop (shouldn't happen anyway)
+                if k > 20:
+                    break
+            # entropy
+            entropy = 0.
+            for i in range(0, k):
+                cur_inds = np.where([c == i for c in kmeans_cat])[0]
+                p = np.double(len(cur_inds)) / np.double(len(stat_lat))
+                if p != 0:
+                    entropy -= p * np.log(p)
+
+            # normalized entropy
+            if k != 1:
+                norm_entropy = entropy / np.log(np.double(k))
+            else:
+                norm_entropy = 0.
+        else:
+            # No centroids so can't compute these things
+            k = 0
+            entropy = 0
+            norm_entropy = 0
 
         yield ('%04d-%02d-%02d'%day,
                loc_var,
-               #k,
-               #entropy,
-               #norm_entropy,
+               k,
+               entropy,
+               norm_entropy,
                transition_time,
                total_distance
                )
+# Second implemation of DayConverter - including k-means
+def kmeans_haversine(data, k, iter=20, thresh=1e-05):
+    """Run k-means on a geographic coordinate system.
+
+    For PRLocationDay.
+    """
+    # k-means algorithm using the Haversine distance
+    obs_len = len(data)
+    cat_collection = []
+    dists_collection = []
+    errors = []
+
+    # no need to run many times if only one cluster
+    if k == 1:
+        iter = 1
+
+    for j in range(0, iter):
+        # random initial centroids
+        centroids = data[np.random.permutation(obs_len)[0:k]]
+        old_centroids = np.copy(centroids)
+        old_centroids[0][0] -= thresh * 10 # fix to enter while loop
+        while (np.sum(abs(old_centroids[old_centroids[:,0].argsort()] - centroids[centroids[:,0].argsort()])) > thresh): # arrays are sorted to be able to make a comparison
+            cat = np.zeros(obs_len)
+            dists = np.zeros(obs_len)
+            # calculate distances
+            for i in range(0, obs_len):
+                dist = [haversine(data[i], x) for x in centroids]
+                cat[i] = np.argmin(dist)
+                dists[i] = np.min(dist)
+            old_centroids = np.copy(centroids)
+            # recalculate centroids
+            for i in range(0, k):
+                use_inds = np.where(cat == i)[0]
+                if len(use_inds) > 0:
+                    centroids[i] = np.mean(data[use_inds], axis=0)
+        dists_collection.append(dists)
+        cat_collection.append(cat)
+        errors.append(np.sum(dists))
+
+    # choose best result
+    best_ind = np.argmin(errors)
+    return cat_collection[best_ind], dists_collection[best_ind]
+#from math import asin as arcsin, pi, pow as power, sin, cos
+EARTH_RADIUS = 6371010.
+def haversine(point1, point2):
+    """Haversine spherical coordinate distance.  For PRLocationDay."""
+    # Calculates the distance between two pairs of latitude-longitude coordinates using the Haversine formula
+    lat1 = point1[0] / 180. * np.pi
+    lat2 = point2[0] / 180. * np.pi
+    lon1 = point1[1] / 180. * np.pi
+    lon2 = point2[1] / 180. * np.pi
+    return 2. * EARTH_RADIUS * np.arcsin(np.sqrt(np.power(np.sin((lat2-lat1)/2.),2)+np.cos(lat1)*np.cos(lat2)*np.power(np.sin((lon2-lon1)/2.),2)))
 
 
 
