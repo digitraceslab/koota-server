@@ -214,7 +214,7 @@ class SurveyAnswers(converter._Converter):
     def convert(self, rows, time=lambda x:x):
         for ts, data in rows:
             data = loads(data)
-            for slug, x in data['answers'].items():
+            for slug, x in sorted(data['answers'].items(), key=lambda x: x[1]['order']):
                 yield (slug,
                        time(data['access_time']),
                        time(data['submit_time']),
