@@ -802,6 +802,7 @@ class PRLocationDay(PRDayAggregator):
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
     desc = "PRLocation, daily features"
     filter_func = staticmethod(lambda data: 'LocationProbe' in data)
+    fast_row_limit = 5
     def process(self, ts, day, probes):
         time_step = 600 # seconds, size of data bins
         speed_th = 0.28 # m/s, moving threshold

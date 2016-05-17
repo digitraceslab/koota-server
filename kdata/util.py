@@ -6,6 +6,7 @@ from hashlib import sha256
 import importlib
 import itertools
 from json import dumps
+import time
 import six
 from six import StringIO as IO
 
@@ -213,6 +214,20 @@ def optimized_queryset_iterator(queryset):
         ts = ts_next
 
 
+def time_slice_iterator(it, maxduration):
+    """Time iterator ending after a certain number of seconds.
+
+    This was made so that we could limit the time it takes to render
+    HTML pages with certain data.  The problem is that this only can
+    break after a row is emitted.  In the cases that no rows are
+    emitted (the case it was first made for), it can never break.
+    """
+    time_func = time.time
+    end_time = time_func() + maxduration
+    while True:
+        yield next(it)
+        if time_func() >= end_time:
+            break
 
 
 #

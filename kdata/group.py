@@ -170,7 +170,9 @@ def iter_group_data(group,
             rows = converter.convert(rows, time=time_converter)
         # Possibility to limit total data output (for testing purposes).
         if row_limit:
-            rows = itertools.islice(rows, row_limit)
+            fast_row_limit = getattr(converter, 'fast_row_limit', 500)
+            #rows = util.time_slice_iterator(rows, 10)
+            rows = itertools.islice(rows, min(row_limit, fast_row_limit))
         for row in rows:
             yield (subject_hash, device_hash) + row
 
