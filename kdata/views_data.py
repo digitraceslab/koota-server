@@ -164,7 +164,13 @@ def device_data(request, public_id, converter, format):
     else:
         time_converter = lambda ts: ts
 
-    data = util.optimized_queryset_iterator(data)
+    if format:
+        # More efficient for bulk downloads
+        data = util.optimized_queryset_iterator(data)
+    else:
+        # Can be paged, less efficient.  This must be done in the case
+        # that we are using the HTML paging.
+        data = util.optimized_queryset_iterator_1(data)
     # Make our table object by passing raw data through the converter.
     catch_errors = 1
     if catch_errors:
