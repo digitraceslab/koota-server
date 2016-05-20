@@ -76,7 +76,7 @@ def register_device2(desc=None, default=False):
         register_device(cls, desc=desc, default=default)
         return cls
     return register
-def get_class(name):
+def get_class(name, default=None):
     """Get a device class by (string) name.
 
     Option 1: from this namespace.
@@ -87,8 +87,11 @@ def get_class(name):
         device = globals()[name]
     elif '.' in name:
         modname, clsname = name.rsplit('.', 1)
-        mod = importlib.import_module(modname)
-        device = getattr(mod, clsname)
+        try:
+            mod = importlib.import_module(modname)
+        except:
+            return default
+        device = getattr(mod, clsname, default)
     else:
         device = _Device
     return device

@@ -285,3 +285,5 @@ def get_group_converter(obj):
 class BaseGroup(object):
     converters = [
         ]
+    def __init__(self, dbrow):
+        self.dbrow = dbrow

@@ -111,7 +111,8 @@ class Group(models.Model):
     def n_researchers(self):
         return self.researchers.count()
     def get_class(self):
-        return util.import_by_name(self.pyclass)
+        cls = util.import_by_name(self.pyclass, default=group.BaseGroup)
+        return cls(self)
     def is_subject(self, user):
         """Is given user a subject of this group?"""
         return self.subjects.filter(groupsubject__user=user).exists()
