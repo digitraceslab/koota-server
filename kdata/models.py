@@ -8,6 +8,9 @@ from . import devices
 from . import util
 # Create your models here.
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Data(models.Model):
     class Meta:
         index_together = [
@@ -34,6 +37,7 @@ class Device(models.Model):
                               help_text='How is this device used?  Primary means that you actively use the '
                                         ' device in your life, secondary is used by you sometimes. ')
     comment = models.CharField(max_length=256, null=True, blank=True, help_text='Any other comments to researchers (optional)')
+#    ts_device_create = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         """String representation: Device(public_id)"""

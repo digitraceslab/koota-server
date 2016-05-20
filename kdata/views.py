@@ -238,6 +238,8 @@ class DeviceCreate(CreateView):
 
     @property
     def model(self):
+        """Handle Device classes which have a different DB model.
+        """
         model = self._model
         if self.request.method == 'POST':
             device_class = self.request.POST.get('type', None)
