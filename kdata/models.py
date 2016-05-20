@@ -64,7 +64,8 @@ class Device(models.Model):
             return cls.objects.get(device_id__startswith=public_id)
     def get_class(self):
         """Return the Python class corresponding to this device."""
-        return devices.get_class(self.type)
+        cls = devices.get_class(self.type)
+        return cls(self)
     def human_name(self):
         cls = self.get_class()
         # super object does notwork with .get_FOO_display()

@@ -2,14 +2,16 @@ import hashlib
 import importlib
 import json
 import textwrap
+
 from django.core.urlresolvers import reverse_lazy
 from django.http import JsonResponse
-import logging
-log = logging.getLogger(__name__)
 
 from . import converter
 from . import models
 from . import util
+
+import logging
+log = logging.getLogger(__name__)
 
 
 # Here we define the different types of available devices.  This is
@@ -85,15 +87,8 @@ def get_class(name, default=None):
     """
     if name in globals():
         device = globals()[name]
-    elif '.' in name:
-        modname, clsname = name.rsplit('.', 1)
-        try:
-            mod = importlib.import_module(modname)
-        except:
-            return default
-        device = getattr(mod, clsname, default)
     else:
-        device = _Device
+        device = util.import_by_name(name, default=_Device)
     return device
 
 
@@ -106,7 +101,11 @@ class _Device(object):
     # If dbmodel is given, this overrides the models.Device model when
     # an object is created.  This has to be used _before_ the DB
     # device is created, so needs some hack kind of things in forms.
+    # This is handleded in kdata.views.DeviceCreate.model().
     dbmodel = None
+    def __init__(self, dbrow):
+        """Bind a DB row to this"""
+        self.data = dbrow
     @classmethod
     def name(cls):
         """Human name for this device.

@@ -39,21 +39,21 @@ def check_device_permissions(func):
         return func(request, *args, **kwargs)
     return _decorated
 
-def import_by_name(name):
+def import_by_name(name, default=None):
     """Import a name from a module.  Return object."""
     if not name:
-        return None
+        return default
     modname, objname = name.rsplit('.', 1)
     try:
         mod = importlib.import_module(modname)
     except ImportError:
         logger.error("Custom class import failed: %s (%s)"%(name, modname))
-        return None
+        return default
     try:
         obj = getattr(mod, objname)
     except AttributeError:
         logger.error("Custom class import failed: %s (%s)"%(name, objname))
-        return None
+        return default
     return obj
 
 
