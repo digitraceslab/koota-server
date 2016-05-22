@@ -84,6 +84,8 @@ Device._meta.get_field('type').choices = devices.all_device_choices
 class DeviceLabel(models.Model):
     name = models.CharField(max_length=64, null=True, blank=True)
     description = models.CharField(max_length=256, null=True, blank=True)
+    slug = models.CharField(max_length=64, null=True, blank=True,
+                            unique=True, db_index=True)
     def __str__(self):
         return self.name
 
@@ -101,6 +103,8 @@ class Group(models.Model):
     invite_code = models.CharField(max_length=64)
     otp_required = models.BooleanField(default=False,
                                        help_text="Require OTP auth for researchers?")
+    nonanonymous = models.BooleanField(default=False)
+    managed = models.BooleanField(default=False)
     subjects = models.ManyToManyField(settings.AUTH_USER_MODEL,
                                       through='GroupSubject',
                                       related_name='subject_of_groups',
