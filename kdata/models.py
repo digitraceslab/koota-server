@@ -179,3 +179,28 @@ class SurveyToken(models.Model):
     #ts_notify_sent = models.DateTimeField(blank=True, null=True)
     data = models.CharField(max_length=256, blank=True)
     #admin_note = models.TextField(null=True, blank=True)
+
+
+class OauthDevice(Device):
+    pass
+    # service     # Which service is this: twitter, facebook, etc.
+                  # specifies consumer keys
+    service          = models.CharField(max_length=64)
+    # state       # unlinked, requested, linked, expired, invalid
+    state            = models.CharField(max_length=16)
+    # data for any error
+    error            = models.CharField(max_length=256)
+    # Any free-form text that may need to be associated with this.
+    data             = models.CharField(max_length=265)
+    request_key      = models.CharField(max_length=256)
+    request_secret   = models.CharField(max_length=256)
+    resource_key     = models.CharField(max_length=256)
+    resource_secret  = models.CharField(max_length=256)
+    refresh_token    = models.CharField(max_length=256)
+    ts_create        = models.DateTimeField(auto_now_add=True)
+    # ts_linked   # When initial linking was done
+    ts_linked        = models.BooleanField(default=False)
+    # Last fetch of data
+    ts_last_fetch    = models.DateTimeField(blank=True, null=True)
+    # When token must be refreshed
+    ts_refresh       = models.DateTimeField(blank=True, null=True)

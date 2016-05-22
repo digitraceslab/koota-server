@@ -10,6 +10,7 @@ from kdata import views_funf
 from kdata import devices
 from kdata import survey
 from kdata import group
+from kdata import twitter
 
 urlpatterns = [
     url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post, dict(device_class=devices.PurpleRobot),
@@ -47,6 +48,7 @@ urlpatterns = [
         dict(device_class=views_funf.FunfJournal),
         name='funf-journal-post'),
 
+    url(r'^twitter/', include(twitter.urlpatterns)),
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]
