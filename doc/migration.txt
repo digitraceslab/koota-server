@@ -1,0 +1,21 @@
+
+
+# Converting dump to sqlite
+
+## Users
+cat db.dump | egrep '(INTO|TABLE) "auth_user"' > db.dump.users
+cat db.dump.users | gawk -f redump.awk | sed -e 's/,1,/,1::boolean,/g' -e 's/,0,/,0::boolean,/g' | sed -e 's/,1,/,1::boolean,/g' -e 's/,0,/,0::boolean,/g' | /opt/pgsql/bin/psql koota koota 2>&1 | less
+
+## Devices
+ALTER TABLE kdata_device ADD COLUMN id INT;
+egrep '(INSERT INTO|CREATE TABLE) "kdata_device"' db.dump > db.dump.device
+gawk -f redump.awk db.dump.device | sed -e 's/,1,/,1::boolean,/g' | psql koota koota
+ALTER TABLE kdata_device DROP COLUMN id;
+
+## Data
+cat db.dump | ggrep -A1000000 'INSERT INTO "kdata_data"' > db.dump.data
+ggrep 'CREATE TABLE "kdata_device"' db.dump.data -B10000000 | /usr/gnu/bin/head -n-1 > db.dump.data.2
+cat db.dump.data.2 | psql koota koota 2>&1 | less
+
+## sequence for data
+SELECT setval('kdata_data_id_seq', (select max(id) from kdata_data));

@@ -1,0 +1,23 @@
+Notes for installing on Solaris (actually OmniOS).  Most of these
+relate to Python dependencies in the pkg system.
+
+
+# Compiling pyscopg2 OmniOS
+# pip does not take -R/opt/pgsql/lib/amd64 from LDFLAGS, specify this when compiling.
+LDFLAGS="-L../../../src/common -m64 -L/opt/niksula/lib/amd64 -R/opt/niksula/lib/amd64 -L/usr/lib/amd64 -Wl,-R'/opt/pgsql/lib/amd64'" PATH=/opt/pgsql/bin/:$PATH pip install psycopg2 (--force-reinstall -I)
+
+# simp_le
+# pip install cffi (needed for simp_le)
+CFLAGS="-I/usr/lib/libffi-3.2.1/include/ -m64" LDFLAGS=-m64 pip install cffi
+python ../simp_le/simp_le.py -d koota.zgib.net -d data.koota.zgib.net -d dev.koota.zgib.net -f key.pem -f cert.pem -f chain.pem -f account_key.json --default_root=/opt/nginx/html/ --reuse_key --email rkd@zgib.net
+
+# general flags
+LDFLAGS=-m64 CFLAGS=-m64
+LD_LIBRARY_PATH=/opt/pgsql/lib/amd64/
+
+# pycrypto
+CFLAGS='-I/usr/include/gmp/ -m64' LDFLAGS="-m64 -L/opt/niksula/lib/amd64 -R/opt/niksula/lib/amd64 -L/usr/lib/amd64 -Wl,-R'/opt/pgsql/lib/amd64'" pip install pycrypto
+
+# numpy
+##PATH=/usr/gnu/i386-pc-solaris2.11/bin/:$PATH LDFLAGS=-m64 CFLAGS=-m64 pip install --no-use-wheel --force-reinstall --ignore-installed numpy
+PATH=/usr/xpg4/bin/:$PATH LDFLAGS='-m64' CFLAGS='-m64 -O2' pip install numpy

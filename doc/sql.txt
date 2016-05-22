@@ -1,0 +1,14 @@
+
+Some useful SQL commands
+
+
+Find all data from a given device class in a given group.
+```
+select dev.* from kdata_group g left join kdata_groupsubject gs on (g.id=gs.group_id) left join kdata_device dev on (dev.user_id=gs.user_id) left join auth_user on (gs.user_id=auth_user.id) left join kdata_data using (device_id) where g.slug='TrackingExp1-data1' and dev.type='koota_e3000_2016.PaperSurvey' order by user_id;
+```
+
+Find a user's data from a given device
+```
+select username, dev.type, dev.name, dev.device_id, data.ts, data.id, length(data.data) from kdata_group g left join kdata_groupsubject gs on (g.id=gs.group_id) left join kdata_device dev on (dev.user_id=gs.user_id) left join auth_user on (gs.user_id=auth_user.id) left join kdata_data data using (device_id) where g.slug='TrackingExp1-data1' and dev.type='koota_e3000_2016.WeeklySurvey' and username='xxx' order by username, data.ts;
+
+```
