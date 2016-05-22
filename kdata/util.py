@@ -20,25 +20,6 @@ logger = logging.getLogger(__name__)
 def get_device(request, *args, **kwargs):
     raise NotImplemented
 
-def has_device_perm(request, device):
-    """Test for user having permissions to access device.
-    """
-    if isinstance(device, six.string_types):
-        device = models.Device.objects.get(device_id=device)
-    if request.user.is_superuser and request.user.is_verified():
-        return True
-    if device.user == request.user:
-        return True
-    return False
-
-def check_device_permissions(func):
-    raise NotImplemented
-    def _decorated(request, *args, **kwargs):
-        if not has_device_perm(request, kwargs['device_id']):
-            return Http404
-        return func(request, *args, **kwargs)
-    return _decorated
-
 def import_by_name(name, default=None):
     """Import a name from a module.  Return object."""
     if not name:

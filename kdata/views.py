@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
@@ -5,16 +7,17 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http40
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
-import json
-from . import models
 from . import devices
+from . import models
+from . import permissions
 from . import util
 
 import logging
 log = logging.getLogger(__name__)
 
-# Create your views here.
 
+
+# Create your views here.
 
 @csrf_exempt
 def post(request, device_id=None, device_class=None):
@@ -181,7 +184,7 @@ class DeviceConfig(UpdateView):
     def get_object(self):
         """Get device model object, testing permissions"""
         obj = self.model.get_by_id(self.kwargs['public_id'])
-        if not util.has_device_perm(self.request, obj):
+        if not permissions.has_device_permission(self.request, obj):
             raise PermissionDenied("No permission for device")
         return obj
     def get_context_data(self, **kwargs):
@@ -205,7 +208,7 @@ from six.moves.urllib.parse import quote as url_quote
 from django.conf import settings
 def device_qrcode(request, public_id):
     device = models.Device.get_by_id(public_id)
-    if not util.has_device_perm(request, device):
+    if not permissions.has_device_permission(request, device):
         raise PermissionDenied("No permission for device")
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     main_host = "https://{0}".format(settings.MAIN_DOMAIN)

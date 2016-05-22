@@ -17,6 +17,7 @@ from django.template.response import TemplateResponse
 from . import converter
 from . import devices
 from . import models
+from . import permissions
 from . import util
 from . import views
 from . import views_data
@@ -74,7 +75,7 @@ def group_join(request):
 def group_view(request, group_name):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
-    if not has_group_researcher_permission(group, request.user):
+    if not permissions.has_group_researcher_permission(group, request.user):
         raise PermissionDenied("No permission for device")
     group_class = group.get_class()
     G = group.get_class()
@@ -87,15 +88,6 @@ def group_view(request, group_name):
 
 
 
-def has_group_researcher_permission(group, user):
-    group_class = group.get_class()
-    if hasattr(group_class, 'is_researcher'):
-        if group_class.is_researcher(user):
-            return True
-    else:
-        if group.is_researcher(user):
-            return True
-    return False
 def iter_subjects(group, group_class):
     """Iterate through all subjects in group"""
     if hasattr(group_class, 'subjects_iter'):
@@ -182,7 +174,7 @@ def group_data(request, group_name, converter, format=None):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     group_class = group.get_class()
-    if not has_group_researcher_permission(group, request.user):
+    if not permissions.has_group_researcher_permission(group, request.user):
         raise PermissionDenied("No permission for device")
 
     # Process the form and apply options

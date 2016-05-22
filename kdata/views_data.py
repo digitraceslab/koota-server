@@ -1,28 +1,29 @@
 from datetime import datetime
+import json
+from json import dumps, loads
+import time
 
 from django.shortcuts import render
+import django.contrib.auth as auth
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import InvalidPage, Paginator
 from django.core.urlresolvers import reverse
+from django import forms
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.http import StreamingHttpResponse
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
-import json
-from json import dumps, loads
-import time
-from . import models
 from . import devices
+from . import models
+from . import permissions
 from . import util
 
 import logging
 logger = logging.getLogger(__name__)
 
-from django import forms
-from django.contrib.auth.models import User
-import django.contrib.auth as auth
 
 
 class DeviceDetail(DetailView):
@@ -33,7 +34,7 @@ class DeviceDetail(DetailView):
     def get_object(self):
         """Get device model object, testing permissions"""
         device = self.model.get_by_id(public_id=self.kwargs['public_id'])
-        if not util.has_device_perm(self.request, device):
+        if not permissions.has_device_permission(self.request, device):
             raise PermissionDenied("No permission for device")
         return device
     def get_context_data(self, **kwargs):
@@ -90,7 +91,7 @@ def device_data(request, public_id, converter, format):
     context = c = { }
     # Get devices and other data
     device = c['device'] = models.Device.get_by_id(public_id=public_id)
-    if not util.has_device_perm(request, device):
+    if not permissions.has_device_permission(request, device):
         raise PermissionDenied("No permission for device")
     device_class = c['device_class'] = device.get_class()
     converter_class = c['converter_class'] = \
