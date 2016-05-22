@@ -208,3 +208,7 @@ class OauthDevice(Device):
     ts_last_fetch    = models.DateTimeField(blank=True, null=True)
     # When token must be refreshed
     ts_refresh       = models.DateTimeField(blank=True, null=True)
+
+
+# These at bottom to avoid circular import problems
+from . import group
