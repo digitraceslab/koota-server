@@ -3,8 +3,27 @@
 {% block body %}
 
 {% if not request.user.is_anonymous %}
-<p><a href="{% url 'device-list' %}">Device list</a></p>
+<p><a href="{% url 'device-list' %}">Your device list</a></p>
 {% endif %}
+
+{% if user.subject_of_groups.exists %}
+<p>You are a subject of the following groups:
+<ul>{% for group in user.subject_of_groups.all %}
+  <li>{{group.name}}</li>{% endfor %}
+</ul>
+</p>
+{% endif %}
+
+{% if user.researcher_of_groups.exists %}
+<p>You are a researcher of the following groups:
+<ul>{% for group in user.researcher_of_groups.all %}
+  <li><a href="{% url 'group-view' group_name=group.slug %}">{{group.name}}</a></li>{% endfor %}
+</ul>
+</p>
+{% endif %}
+
+
+<h1>Documentation</h1>
 
 <p><a href="https://github.com/CxAalto/koota-server/wiki/UserGuide">User Guide</a> (and general wiki)</p>
 
@@ -12,12 +31,5 @@
 
 <p><a href="https://github.com/CxAalto/koota-server/issues">Issue tracker</a></p>
 
-{% if user.subject_of_groups.exists %}
-<p>You are a member of the following groups:
-<ul>{% for group in user.subject_of_groups.all %}
-  <li>{{group.name}}</li>{% endfor %}
-</ul>
-</p>
-{% endif %}
 
 {% endblock%}
