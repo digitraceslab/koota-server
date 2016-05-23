@@ -6,7 +6,7 @@ from django.contrib.auth import views as auth_views
 from kdata import views as kviews
 from kdata import views_data
 from kdata import views_admin
-from kdata import views_funf
+from kdata import funf
 from kdata import devices
 from kdata import survey
 from kdata import group
@@ -71,9 +71,9 @@ urlpatterns = [
     #    group.GroupSubjectDetail.as_view(), name='group-subject-data'),
 
     # Funf
-    url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.config_funf, name='funf-journal-config'),
+    url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', funf.config_funf, name='funf-journal-config'),
     url(r'^funf/post1/(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post,
-        dict(device_class=views_funf.FunfJournal),
+        dict(device_class=funf.FunfJournal),
         name='funf-journal-post'),
 
     # Twitter and other social sites

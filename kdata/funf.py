@@ -6,6 +6,7 @@ import textwrap
 import time
 
 from django.shortcuts import render
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
@@ -22,6 +23,8 @@ from . import util
 import logging
 logger = logging.getLogger(__name__)
 
+CONFIG_DOMAIN = settings.MAIN_DOMAIN
+POST_DOMAIN = settings.POST_DOMAIN
 
 @devices.register_device2(default=True)
 class FunfJournal(devices._Device):
@@ -159,11 +162,11 @@ config_v2 = """\
      "goodEnoughAccuracy": 80,
      "maxWaitTime": 60}
    ],
- "upload": { "url": "%(domain)s%(post_path)s",
+ "upload": { "url": "%(post_domain)s%(post_path)s",
              "@schedule": {"interval": 600},
              "wifiOnly": true
     },
- "update": {"url": "%(domain)s%(config_path)s",
+ "update": {"url": "%(config_domain)s%(config_path)s",
             "@schedule": {"interval": 3600}
            }
 }
@@ -182,10 +185,10 @@ def config_funf(request, device_id=None):
             return JsonResponse(dict(ok=False, error='Invalid device_id checkdigits',
                                      device_id=device_id),
                                 status=400, reason="Invalid device_id checkdigits")
-    domain = "https://dev.koota.zgib.net"
     post_path = reverse('funf-journal-post', kwargs=dict(device_id=device_id))
     config_path = reverse('funf-journal-config', kwargs=dict(device_id=device_id))
-    config = config_v2%dict(domain=domain,
+    config = config_v2%dict(config_domain='https://'+CONFIG_DOMAIN,
+                            post_domain='https://'+POST_DOMAIN,
                             post_path=post_path,
                             config_path=config_path,
                             device_id=device_id,
