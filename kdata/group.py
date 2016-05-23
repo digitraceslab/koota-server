@@ -363,45 +363,6 @@ class GroupSubjectDetail(views.DeviceListView):
 
 
 
-#class GroupSubjectDeviceConfig(views.DeviceConfig):
-#    template_name = 'koota/device_config.html'
-#    model = models.Device
-#    fields = ['name', 'type', 'label', 'comment']
-#
-#    def get_object(self):
-#        request = self.request
-#        group_name = self.kwargs['group_name']
-#        gs_id = self.kwargs['gs_id']
-#        device = self.model.get_by_id(self.kwargs['public_id'])
-#
-#        context = c = { }
-#        # User must be researcher for group.
-#        group = models.Group.objects.get(slug=group_name)
-#        if not permissions.has_device_manager_permission(request, group, device):
-#            raise PermissionDenied("No permission for group")
-#        # Group subject must be in this group and it must be a managed group.
-#        groupsubject = models.GroupSubject.objects.get(id=gs_id)
-#        if groupsubject.group != group:
-#            raise "not correct group"
-#        return device
-#
-#    def get_context_data(self, **kwargs):
-#        context = super(GroupSubjectDeviceConfig, self).get_context_data(**kwargs)
-#        group_name = self.kwargs['group_name']
-#        group = models.Group.objects.get(slug=group_name)
-#        context['group'] = group.get_class()
-#        return context
-#    def get_success_url(self):
-#        return '' #reverse('device-config', kwargs=dict(public_id=self.object.public_id))
-
-
-
-    #import IPython ; IPython.embed()
-    #return TemplateResponse(request, 'koota/device_config.html',
-    #                        context=context)
-
-
-
 class GroupUserCreateForm(forms.Form):
     username = forms.CharField()
 import django.contrib.auth

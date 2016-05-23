@@ -56,38 +56,6 @@ has_group_manager_permission = has_group_researcher_permission
 
 
 
-#def has_device_manager_permission(request, device):
-#    """Test for user having permissions to access device.
-#    """
-#    raise NotImplemented
-#    #import IPython ; IPython.embed()
-#    device_user = device.user
-#    rows = models.GroupResearcher.objects.filter(
-#        user=request.user,
-#        group__managed=True,
-#        group__subjects=device_user,
-#        )
-#    if rows.exists():
-#        return True
-#    return False
-#def has_device_manager_permission(request, group, device):
-#    """Test for user having permissions to access device.
-#    """
-#    #import IPython ; IPython.embed()
-#    if not has_group_researcher_permission(request, group):
-#        return False
-#    if not models.GroupResearcher.objects.filter(
-#            group=group,
-#            user=request.user,
-#            group__managed=True,
-#            ).exists():
-#        return False
-#    if not models.GroupSubject.objects.filter(
-#            group=group,
-#            user=device.user
-#            ):
-#        return False
-#    return True
 def has_device_manager_permission(request, device):
     """Test for user having permissions to access device.
     """
