@@ -1226,6 +1226,61 @@ class PRMissingData7Days(PRMissingData):
     days_ago = 7
     desc = "Report gaps of greater than 3600s in last 7 days of Purple Robot data."
 
+class PRRecentDataCounts(_Converter):
+    device_class = 'PurpleRobot'
+    per_page = None
+    header = ['']
+    desc = "Data points per day, for the last 7 days"
+    days_ago = 7
+    @classmethod
+    def query(cls, queryset):
+        """Do necessary filtering on the django QuerySet.
+
+        In this case, restrict to the last N days."""
+        # This method depends on django, but that is OK since it used
+        # Queryset semantics, which itself depend on django.  This
+        # method only makes sent to call in the server itself.
+        from django.utils import timezone
+        now = timezone.now()
+        return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
+    def __init__(self, *args, **kwargs):
+        super(PRRecentDataCounts, self).__init__(*args, **kwargs)
+        self.counts = collections.defaultdict(int)
+    def convert(self, rows, time=lambda x:x):
+        import pytz
+        from django.conf import settings
+        TZ = pytz.timezone(settings.TIME_ZONE)
+        #import IPython ; IPython.embed()
+
+        counts = self.counts
+        # Operating like PRMissingData
+        for ts in PRTimestamps(rows).run():
+            ts = ts[0]
+            if ts < 100000000: continue  # skip bad timestamps
+            ts = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)
+            #ts = TZ.normalize(ts.astimezone(TZ))
+            ts = TZ.normalize(ts)
+            date = ts.strftime('%Y-%m-%d')
+            counts[date] += 1
+
+        all_dates = self.dates()
+        day_counts = tuple( counts[date] for date in all_dates )
+        day_counts = tuple( (x if x else '_') for x in day_counts )
+
+        yield day_counts
+        del self.counts, counts
+    @classmethod
+    def dates(cls):
+        """List of dates we are analyzing"""
+        from django.utils import timezone
+        now = timezone.now()
+        dates = [ (now-timedelta(days=x)).strftime('%Y-%m-%d') for x in range(cls.days_ago-1, -1, -1)]
+        return dates
+    @classmethod
+    def header2(cls):
+        return cls.dates()
+
+
 
 
 class IosLocation(_Converter):
