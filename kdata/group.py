@@ -377,12 +377,15 @@ def group_user_create(request, group_name):
             username = form.cleaned_data['username']
             email = None
             password = None
-            User = django.contrib.auth.User
+            User = django.contrib.auth.get_user_model()
+            if User.objects.filter(username=username).exists():
+                raise forms.ValidationError("Username already taken")
             user = User.objects.create_user(username,
                                             email,
                                             password)
             user.save()
-            group.setup_user(user)
+            group_class = group.get_class()
+            group_class.setup_user(user)
             models.GroupSubject.objects.create(user=user, group=group)
             c['success'] = True
     else:

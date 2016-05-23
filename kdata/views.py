@@ -127,6 +127,7 @@ class RegisterForm(forms.Form):
     password2 = forms.CharField(widget=forms.PasswordInput, label='Confirm password')
     email = forms.EmailField()
     def clean(self):
+        User = auth.get_user_model()
         if self.cleaned_data['password'] != self.cleaned_data['password2']:
             raise forms.ValidationError("Passwords don't match")
         # TODO: test for username alreay existing
