@@ -68,5 +68,8 @@ def has_device_manager_permission(request, device):
         managed=True)
     if not group.exists():
         return False
+    # If ANY group requires OTP
+    if all(g.otp_required for g in group) and not researcher.is_verified():
+        return False
     return True
 
