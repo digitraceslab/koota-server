@@ -18,25 +18,87 @@ def has_device_permission(request, device):
     if device.user == request.user:
         return True
     return False
+def has_device_config_permission(request, device):
+    if has_device_permission(request, device):
+        return True
+    if has_device_manager_permission(request, device):
+        return True
+    return False
 
 
 
-def has_group_researcher_permission(group, user):
+def has_group_researcher_permission(request, group):
     """Test a researcher's permission to access a group's data.
     """
+    researcher = request.user
     group_class = group.get_class()
+    # is_verified tests for 2FA (OTP).
+    if researcher.is_superuser and researcher.is_verified():
+        return True
     # If the group requires researchers to use 2FA, deny if they don't
     # have it enabled.
-    if group.otp_required and not request.user.is_verified():
+    if group.otp_required and not researcher.is_verified():
         return False
     # We can delegate our logic to the group class, if it defines the
     # is_researcher method.
     if hasattr(group_class, 'is_researcher'):
-        if group_class.is_researcher(user):
+        if group_class.is_researcher(researcher):
             return True
         return False
     # Normal test.
-    if group.is_researcher(user):
+    if group.is_researcher(researcher):
         return True
     # Default deny
     return False
+
+# Has permission to view/adjust user's devices
+has_group_manager_permission = has_group_researcher_permission
+
+
+
+#def has_device_manager_permission(request, device):
+#    """Test for user having permissions to access device.
+#    """
+#    raise NotImplemented
+#    #import IPython ; IPython.embed()
+#    device_user = device.user
+#    rows = models.GroupResearcher.objects.filter(
+#        user=request.user,
+#        group__managed=True,
+#        group__subjects=device_user,
+#        )
+#    if rows.exists():
+#        return True
+#    return False
+#def has_device_manager_permission(request, group, device):
+#    """Test for user having permissions to access device.
+#    """
+#    #import IPython ; IPython.embed()
+#    if not has_group_researcher_permission(request, group):
+#        return False
+#    if not models.GroupResearcher.objects.filter(
+#            group=group,
+#            user=request.user,
+#            group__managed=True,
+#            ).exists():
+#        return False
+#    if not models.GroupSubject.objects.filter(
+#            group=group,
+#            user=device.user
+#            ):
+#        return False
+#    return True
+def has_device_manager_permission(request, device):
+    """Test for user having permissions to access device.
+    """
+    #import IPython ; IPython.embed()
+    researcher = request.user
+    subject = device.user
+    group = models.Group.objects.filter(
+        subjects=subject,
+        researchers=researcher,
+        managed=True)
+    if not group.exists():
+        return False
+    return True
+

@@ -38,16 +38,45 @@ urlpatterns = [
 
     url(r'^survey/take/(?P<token>[\w]*)', survey.take_survey, name='survey-take'),
 
+    # groups
+    # /group/
     url(r'^group/$', group.group_join, name='group-join'),
-    url(r'^group/(?P<group_name>[\w]+)/?$', group.group_view, name='group-view'),
-    url(r'^group/(?P<group_name>[\w]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?',
+    # /group/name/
+    url(r'^group/(?P<group_name>[\w]+)/$', group.group_detail, name='group-detail'),
+    # /group/name/converter(.ext)
+    url(r'^group/(?P<group_name>[\w]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
         group.group_data, name='group-data'),
+    # /group/name/converter(.ext)
+    url(r'^group/(?P<group_name>[\w]+)/user-create/$',
+        group.group_user_create, name='group-user-create'),
+    # Subject related
+    # /group/name/subjNN/
+    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/$',
+        group.group_subject_detail, name='group-subject-detail'),
+    # /group/name/subjNN/public_id/config
+    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/config/$',
+        kviews.DeviceConfig.as_view(), name='group-subject-device-config'),
+    # /group/name/subjNN/converter(.ext)         Subject's data
+    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
+        group.group_data, name='group-subject-data'),
+    # /group/name/subjNN/create/                 Add subject device
+    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/create/$',
+        kviews.DeviceCreate.as_view(), name='group-subject-device-create'),
 
+    # /group/name/subjNN/public_id/
+    #url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/$',
+    #    group.GroupSubjectDeviceDetail.as_view(), name='group-subject-device'),
+    # /group/name/subjNN/public_id/              Subject's device detail
+    #url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/$',
+    #    group.GroupSubjectDetail.as_view(), name='group-subject-data'),
+
+    # Funf
     url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', views_funf.config_funf, name='funf-journal-config'),
     url(r'^funf/post1/(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post,
         dict(device_class=views_funf.FunfJournal),
         name='funf-journal-post'),
 
+    # Twitter and other social sites
     url(r'^twitter/', include(twitter.urlpatterns)),
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),

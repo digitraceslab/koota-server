@@ -50,11 +50,13 @@ def group_join(request):
                 # last round, so now do the actual addition.
                 c['round'] = 'done'
                 for group in groups:
+                    group_class = group.get_class()
                     #group.subjects.add(request.user)
                     if group.subjects.filter(id=user.id).exists():
                         continue
                     models.GroupSubject.objects.create(user=user, group=group)
-                    print("added %s to %s"%(user, group))
+                    #print("added %s to %s"%(user, group))
+                    group_class.setup_user(user)
             else:
                 # First stage.  User entered invite code.  We have to
                 # present the data again, so that user can verify the
@@ -71,19 +73,19 @@ def group_join(request):
                             context=context)
 
 
+
+
 @login_required
-def group_view(request, group_name):
+def group_detail(request, group_name):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
-    if not permissions.has_group_researcher_permission(group, request.user):
+    if not permissions.has_group_researcher_permission(request, group):
         raise PermissionDenied("No permission for device")
-    group_class = group.get_class()
-    G = group.get_class()
-    c['group'] = group
-    c['G'] = G
+    group = c['group'] = group.get_class()
     # effective number of subjects: can be overridden
-    c['n_subjects'] = sum(1 for _ in iter_subjects(group, group_class))
-    return TemplateResponse(request, 'koota/group_view.html',
+    c['n_subjects'] = sum(1 for _ in iter_subjects(group.dbrow, group))
+    #import IPython ; IPython.embed()
+    return TemplateResponse(request, 'koota/group_detail.html',
                             context=context)
 
 
@@ -114,7 +116,8 @@ def iter_group_data(group,
                     filter_queryset=None,
                     row_limit=None,
                     time_converter=lambda x: x,
-                    handle_errors=True):
+                    handle_errors=True,
+                    gs_id=None):
     """Core data iterator: (user, data, converter_data...)
 
     This abstracts out the core iteration of group data.  Basically,
@@ -135,6 +138,15 @@ def iter_group_data(group,
     hash_device  = util.safe_hash
 
     for subject, device in iter_users_devices(group, group_class, group_converter_class):
+        # We can request group data from only one subject.  In that
+        # case, ignore anyone except that subject.  Subjects are
+        # speciffied by the GroupSubject.id, abbreviated gs_id.
+        if gs_id is not None:
+            if not models.GroupSubject.objects.filter(group=group,
+                                                      user=subject,
+                                                      id=gs_id).exists():
+                continue
+
         subject_hash = hash_subject(subject.username)
         device_hash  = hash_device(device.public_id)
 
@@ -170,11 +182,11 @@ def iter_group_data(group,
 
 
 @login_required
-def group_data(request, group_name, converter, format=None):
+def group_data(request, group_name, converter, format=None, gs_id=None):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     group_class = group.get_class()
-    if not permissions.has_group_researcher_permission(group, request.user):
+    if not permissions.has_group_researcher_permission(request, group):
         raise PermissionDenied("No permission for device")
 
     # Process the form and apply options
@@ -220,6 +232,7 @@ def group_data(request, group_name, converter, format=None):
                             filter_queryset=filter_queryset,
                             time_converter=time_converter,
                             row_limit=None if format else 50,
+                            gs_id=gs_id, # limits to one subject if needed
                             )
     if not format:
         table = itertools.islice(table, 1000)
@@ -255,8 +268,17 @@ def group_data(request, group_name, converter, format=None):
                             context=context)
 
 
+
+#
+# Converters
+#
 class _GroupConverter(object):
-    pass
+    """A generic group converter.
+
+    This wraps a regular converter, and includes information about
+    what device clases a converter applies to.
+
+    """
     @classmethod
     def name(cls):
         return cls.__name__
@@ -264,6 +286,12 @@ class _GroupConverter(object):
     converter = None
     device_class = None
 def get_group_converter(obj):
+    """Getter function to get group converter.
+
+    If the object is already a group converter, just return it.  If it
+    is not, then create a new GroupConverter which wraps the Converter
+    and return that.
+    """
     if issubclass(obj, converter._Converter):
         attrs = {
             'desc': obj.desc,
@@ -274,8 +302,133 @@ def get_group_converter(obj):
     return obj
 
 
+
+#
+# Base group class
+#
 class BaseGroup(object):
     converters = [
         ]
     def __init__(self, dbrow):
         self.dbrow = dbrow
+    def setup_user(self, user):
+        """Initial user setup, such as creating devices.
+
+        This method should be idempotent because it can be re-run to
+        apply new settings.
+        """
+        pass
+
+
+
+#
+# Manager functions
+#
+@login_required
+def group_subject_detail(request, group_name, gs_id):
+    context = c = { }
+    group = models.Group.objects.get(slug=group_name)
+    if not permissions.has_group_manager_permission(request, group):
+        raise PermissionDenied("No permission for device")
+    group = c['group'] = group.get_class()
+    groupsubject = c['groupsubject'] = models.GroupSubject.objects.get(id=gs_id)
+    #import IPython ; IPython.embed()
+    return TemplateResponse(request, 'koota/group_subject_detail.html',
+                            context=context)
+
+
+class GroupSubjectDetail(views.DeviceListView):
+    """Device list of subject's devices"""
+    template_name = 'koota/device_list.html'
+    model = models.Device
+    allow_empty = True
+
+    def get_queryset(self):
+        group_name = self.kwargs['group_name']
+        group = models.Group.objects.get(slug=group_name)
+        gs_id = self.kwargs['gs_id']
+        groupsubject = models.GroupSubject.objects.get(id=gs_id)
+        if not permissions.has_group_manager_permission(self.request, group):
+            raise PermissionDenied("No permission for device")
+
+        queryset = self.model.objects.filter(user=groupsubject.user).order_by('type', '_public_id')
+        return queryset
+    def get_context_data(self, **kwargs):
+        kwargs = self.kwargs
+        context = super(GroupSubjectDetail, self).get_context_data(**kwargs)
+        context['device_create_url'] = reverse('group-subject-device-create',
+                                               kwargs=dict(group_name=kwargs['group_name'],
+                                                           gs_id=kwargs['gs_id']))
+        return context
+
+
+
+#class GroupSubjectDeviceConfig(views.DeviceConfig):
+#    template_name = 'koota/device_config.html'
+#    model = models.Device
+#    fields = ['name', 'type', 'label', 'comment']
+#
+#    def get_object(self):
+#        request = self.request
+#        group_name = self.kwargs['group_name']
+#        gs_id = self.kwargs['gs_id']
+#        device = self.model.get_by_id(self.kwargs['public_id'])
+#
+#        context = c = { }
+#        # User must be researcher for group.
+#        group = models.Group.objects.get(slug=group_name)
+#        if not permissions.has_device_manager_permission(request, group, device):
+#            raise PermissionDenied("No permission for group")
+#        # Group subject must be in this group and it must be a managed group.
+#        groupsubject = models.GroupSubject.objects.get(id=gs_id)
+#        if groupsubject.group != group:
+#            raise "not correct group"
+#        return device
+#
+#    def get_context_data(self, **kwargs):
+#        context = super(GroupSubjectDeviceConfig, self).get_context_data(**kwargs)
+#        group_name = self.kwargs['group_name']
+#        group = models.Group.objects.get(slug=group_name)
+#        context['group'] = group.get_class()
+#        return context
+#    def get_success_url(self):
+#        return '' #reverse('device-config', kwargs=dict(public_id=self.object.public_id))
+
+
+
+    #import IPython ; IPython.embed()
+    #return TemplateResponse(request, 'koota/device_config.html',
+    #                        context=context)
+
+
+
+class GroupUserCreateForm(forms.Form):
+    username = forms.CharField()
+import django.contrib.auth
+def group_user_create(request, group_name):
+    context = c = { }
+    group = models.Group.objects.get(slug=group_name)
+    if not permissions.has_group_manager_permission(request, group):
+        raise PermissionDenied("Not a group manager")
+    if request.method == 'POST':
+        form = GroupUserCreateForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            email = None
+            password = None
+            User = django.contrib.auth.User
+            user = User.objects.create_user(username,
+                                            email,
+                                            password)
+            user.save()
+            group.setup_user(user)
+            models.GroupSubject.objects.create(user=user, group=group)
+            c['success'] = True
+    else:
+        # Initial, present box for invite code.
+        form = GroupUserCreateForm(initial=request.GET)
+    c['form'] = form
+    c['group'] = group
+    return TemplateResponse(request, 'koota/group_user_create.html',
+                            context=context)
+

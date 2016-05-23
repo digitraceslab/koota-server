@@ -120,7 +120,6 @@ def config(request, device_class=None):
 # User management
 #
 from django import forms
-from django.contrib.auth.models import User
 import django.contrib.auth as auth
 class RegisterForm(forms.Form):
     username = forms.CharField()
@@ -143,6 +142,7 @@ class RegisterView(FormView):
     def form_valid(self, form):
         # This method is called when valid form data has been POSTed.
         # It should return an HttpResponse.
+        User = auth.get_user_model()
 
         user = User.objects.create_user(form.cleaned_data['username'],
                                         form.cleaned_data['email'],
@@ -168,6 +168,10 @@ class DeviceListView(ListView):
         if request.user.is_anonymous():
             return HttpResponseRedirect(reverse('main'))
         return super(DeviceListView, self).dispatch(request, *args, **kwargs)
+    def get_context_data(self, **kwargs):
+        context = super(DeviceListView, self).get_context_data(**kwargs)
+        context['device_create_url'] = reverse('device-create')
+        return context
     def get_queryset(self):
         # fixme: return "not possible" if not logged in
         if self.request.user.is_superuser:
@@ -184,7 +188,7 @@ class DeviceConfig(UpdateView):
     def get_object(self):
         """Get device model object, testing permissions"""
         obj = self.model.get_by_id(self.kwargs['public_id'])
-        if not permissions.has_device_permission(self.request, obj):
+        if not permissions.has_device_config_permission(self.request, obj):
             raise PermissionDenied("No permission for device")
         return obj
     def get_context_data(self, **kwargs):
@@ -200,6 +204,8 @@ class DeviceConfig(UpdateView):
             context['data_latest_data'] = device_data.order_by('-ts').first().data
         return context
     def get_success_url(self):
+        if 'gs_id' in self.kwargs:
+            return ''
         return reverse('device-config', kwargs=dict(public_id=self.object.public_id))
 
 import qrcode
@@ -208,7 +214,7 @@ from six.moves.urllib.parse import quote as url_quote
 from django.conf import settings
 def device_qrcode(request, public_id):
     device = models.Device.get_by_id(public_id)
-    if not permissions.has_device_permission(request, device):
+    if not permissions.has_device_config_permission(request, device):
         raise PermissionDenied("No permission for device")
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     main_host = "https://{0}".format(settings.MAIN_DOMAIN)
@@ -280,6 +286,7 @@ class DeviceCreate(CreateView):
         """Get the form and override device choices based on user.
         """
         form = super(DeviceCreate, self).get_form(*args, **kwargs)
+        user = self.get_user()
 
         # This gets only the standard choices, that all users should
         # have.
@@ -287,7 +294,7 @@ class DeviceCreate(CreateView):
         # Extend to extra devices that this user should have.  TODO:
         # make this user-dependent.
         #choices.extend([('kdata.survey.TestSurvey1', 'Test Survey #1'),])
-        for group in self.request.user.subject_of_groups.all():
+        for group in user.subject_of_groups.all():
             cls = group.get_class()
             if hasattr(cls, 'group_devices'):
                 for dev in cls.group_devices:
@@ -302,7 +309,7 @@ class DeviceCreate(CreateView):
         return form
     def form_valid(self, form):
         """Create the device."""
-        user = self.request.user
+        user = self.get_user()
         if user.is_authenticated():
             form.instance.user = user
         else:
@@ -316,3 +323,15 @@ class DeviceCreate(CreateView):
         self.object.refresh_from_db()
         #print 'id'*5, self.object.device_id
         return reverse('device-config', kwargs=dict(public_id=self.object.public_id))
+    def get_user(self):
+        """Get the user for hich we are creating a device for.
+
+        If we have 'gs_id' in our kwargs, we are making a device for a
+        user who isn't us.
+
+        """
+        if 'gs_id' in self.kwargs:
+            groupsubject = models.GroupSubject.objects.get(id=self.kwargs['gs_id'])
+            return groupsubject.user
+        else:
+            return self.request.user

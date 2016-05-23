@@ -1,0 +1,26 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+<h2>Basic information</h2>
+<ul>
+<li>Group Name: {{ group.dbrow.name }}</li>
+<li>Subject: {{ groupsubject.hash_if_needed }}</li>
+<li>Subject hash: {{ groupsubject.hash }}</li>
+</ul>
+
+
+<h2>Available analyzes</h2>
+
+<ul>
+  {% for converter in group.converters %}
+  <li><a href="{% url 'group-subject-data' group_name=group.dbrow.slug gs_id=groupsubject.id converter=converter.name %}">{{converter.name}}</a>
+      {{converter.desc}}
+  </li>
+  {% endfor %}
+</ul>
+
+
+
+
+{% endblock %}

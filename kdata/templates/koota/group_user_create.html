@@ -1,0 +1,20 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+{% if not success %}
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="Create user" />
+</form>
+
+{% else %}
+
+User was created.  <a href="{% url 'group-detail' group_name=group.slug%}">Return</a>
+
+{% endif %}
+
+
+{% endblock %}

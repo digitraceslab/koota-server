@@ -136,12 +136,22 @@ class GroupSubject(models.Model):
     active = models.BooleanField(default=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
+    #nonanonymous = NullBoolean
+    def hash(self):
+        return util.safe_hash(self.user.username)
+    def hash_if_needed(self):
+        """Subject ID, hashed if necessary"""
+        if self.group.nonanonymous:
+            return self.user.username
+        else:
+            return util.safe_hash(self.user.username)
 class GroupResearcher(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
+    #manager = Bool
 
 
 

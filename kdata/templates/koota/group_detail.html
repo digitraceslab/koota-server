@@ -1,0 +1,63 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+<h2>Basic information</h2>
+<ul>
+<li>Name: {{ group.name }}</li>
+</ul>
+
+<h2>Statistics</h2>
+<ul>
+<li>Number of subjects: {{ group.dbrow.subjects.count }}</li>
+<li>Effective number of subjects: {{ n_subjects }}</li>
+<li>Start time: {{ group.dbrow.ts_start|date:"c" }}</li>
+<li>End time: {{ group.dbrow.ts_end|date:"c" }}</li>
+</ul>
+
+
+<h2>Available analyzes</h2>
+
+<ul>
+  {% for converter in group.converters %}
+  <li><a href="{% url 'group-data' group_name=group.dbrow.slug converter=converter.name %}">{{converter.name}}</a>
+      {{converter.desc}}
+  </li>
+  {% endfor %}
+</ul>
+
+
+
+{% if group.dbrow.managed %}
+
+<h2>Add a user</h2>
+<a href="{% url 'group-user-create' group_name=group.dbrow.slug %}">Add a user to this group</a>
+
+<h2>Group users</h2>
+This is a managed group, users are below.
+<table>
+{% for groupsubject in group.dbrow.groupsubject_set.all %}
+  <tr>
+    <th>{{ groupsubject.hash }}</th>
+    <td>{{ groupsubject.hash_if_needed }}</td>
+    <td colspan="5">
+      [<a href="{% url 'group-subject-detail' group_name=group.dbrow.slug gs_id=groupsubject.id %}">Subject data</a>,
+       <a href="{% url 'group-subject-device-create' group_name=group.dbrow.slug gs_id=groupsubject.id %}">Create device for subject</a>]</td>
+    {% for device in groupsubject.user.device_set.all %}
+      <tr><td></td><td></td>
+        <td>{{ device.public_id }}</td>
+        <td><a href="{% url 'group-subject-device-config' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Config</a></td>
+        {# <td><a href="{% url 'group-subject-device-detail' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Data</a></td> #}
+        <td>{% if device.label.name == "Primary personal device" %}<b>{% endif %}{{device.human_name}}{% if device.label.name == "Primary personal device" %}</b>{% endif %}</td>
+        <td>{{ device.label.name }}</td>
+      </tr>
+    {% endfor %}
+  </tr>
+{% endfor %}
+</table>
+
+{% endif %}
+
+
+
+{% endblock %}

@@ -10,7 +10,7 @@
 <li>Device public id: {{ object.public_id }}</li>
 <li>Device secret id (used for configuration): <b>{{ object.secret_id }}</b></li>
 <li>Device type: {{ object.get_type_display }}</li>
-{% if user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
+{% if user.is_superuser %}<li>User: {{ object.user }}</li>{% endif %}
 </ul>
 
 <h2>Data</h2>
