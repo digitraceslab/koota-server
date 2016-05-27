@@ -144,7 +144,7 @@ def take_survey(request, token):
     survey_data = survey_class.get_survey(data=token_row.data, device=device)
 
     Form = make_form(survey_data['questions'])
-    survey_name = c['survey_name'] = survey_data.get('name', survey_class.__name__)
+    survey_name = c['survey_name'] = survey_data.get('name', survey_class.name())
 
     # Provide a way to override submission time.  This is used when
     # entering data which is pre-recorded and needs a different
@@ -163,7 +163,7 @@ def take_survey(request, token):
             #import IPython ; IPython.embed()
             data = { }
             data['survey_data'] = dict(survey_data)
-            data['survey_name'] = survey_data.get('name', survey_class.__name__)
+            data['survey_name'] = survey_data.get('name', survey_class.name())
             data['token'] = token
             data['answers'] = { }
             # Make a 'question order' lookup to get question order of
