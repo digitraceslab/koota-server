@@ -18,8 +18,10 @@ class Command(BaseCommand):
                             help="Rowid to edit")
         parser.add_argument('--json', action='store_true',
                             help="Validate new data is valid json.")
-        parser.add_argument('--timestamp', type=int,
+        parser.add_argument('--timestamp', action='store_true',
                             help="Update timestamp of the data, do not edit data.")
+        parser.add_argument('--new-timestamp', type=int,
+                            help="The new timestamp.  Used only with --timestamp. (optional)")
         parser.add_argument('--commit', action='store_true',
                             help="Commit the new data (must be given).")
 
@@ -29,15 +31,22 @@ class Command(BaseCommand):
 
         # Update timestamp if --timestamp is given.
         if options['timestamp']:
+            old_ts = row.ts.timestamp()
             print('old timestamp is', row.ts)
             print('old timestamp is', row.ts.timestamp())
-            new_ts = float(input('enter new timestamp (unixtime) > '))
-            print(new_ts)
-            new_ts = timezone.datetime.fromtimestamp(new_ts, tz=timezone.UTC())
+            if options['new_timestamp'] is not None:
+                new_ts_ut = options['new_timestamp']
+            else:
+                new_ts_ut = float(input('enter new timestamp (unixtime) > '))
+            print(new_ts_ut)
+            new_ts = timezone.datetime.fromtimestamp(new_ts_ut, tz=timezone.UTC())
             print('new timestamp is', repr(new_ts))
             if options['commit'] and input('Commit new data? [y/N] > ') == 'y':
+                if row.ts_received is None:
+                    row.ts_received = row.ts
                 row.ts = new_ts
                 row.save()
+                open('log.txt', 'a').write("editdata.py: update_ts row_id=%s old_ts=%s new_ts=%s\n"%(row.id, old_ts, new_ts_ut))
                 print("New data committed.")
             return
 

@@ -16,8 +16,14 @@ class Data(models.Model):
         index_together = [
             ["device_id", "ts"],
             ]
+    id = models.AutoField(primary_key=True)
     device_id = models.CharField(max_length=64)
-    ts = models.DateTimeField(auto_now_add=True)
+    ts = models.DateTimeField(auto_now_add=True,
+                              help_text="Time the data referrs to, defaults to received timestamp.")
+    # Column is nullable since it is added later, remove null=True
+    # later.
+    ts_received = models.DateTimeField(auto_now_add=True, null=True,
+                                       help_text="Time packet received (never updated)")
     ip = models.GenericIPAddressField()
     data_length = models.IntegerField(blank=True, null=True)
     data = models.TextField(blank=True)

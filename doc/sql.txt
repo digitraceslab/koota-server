@@ -12,3 +12,14 @@ Find a user's data from a given device
 select username, dev.type, dev.name, dev.device_id, data.ts, data.id, length(data.data) from kdata_group g left join kdata_groupsubject gs on (g.id=gs.group_id) left join kdata_device dev on (dev.user_id=gs.user_id) left join auth_user on (gs.user_id=auth_user.id) left join kdata_data data using (device_id) where g.slug='TrackingExp1-data1' and dev.type='koota_e3000_2016.WeeklySurvey' and username='xxx' order by username, data.ts;
 
 ```
+
+Data rows from a given group and device class
+```
+select username, device_id, kd.label_id, kdata_data.id, ts,
+ts_received, data_length from kdata_group kg left join
+kdata_groupsubject kgs on (kg.id=kgs.group_id) left join kdata_device
+kd on (kgs.user_id=kd.user_id) left join kdata_data using(device_id)
+left join auth_user au on (au.id=kgs.user_id) where
+kg.slug='TrackingExp1-data1' and type like '%WeeklySurvey' order by
+username, kdata_data.id;
+```
