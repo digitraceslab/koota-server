@@ -221,7 +221,12 @@ class BaseDevice(object):
 class Ios(BaseDevice):
     desc = "iOS (our app)"
     converters = BaseDevice.converters + [
+                  converter.IosProbes,
+                  converter.IosTimestamps,
+                  converter.IosDataSize,
+                  converter.IosRecentDataCounts,
                   converter.IosLocation,
+                  converter.IosScreen,
                  ]
     @classmethod
     def configure(cls, device):

@@ -201,7 +201,10 @@ class Raw(_Converter):
 
     def convert(self, queryset, time=lambda x:x):
         for dt, data in queryset:
-            yield time(timegm(dt.utctimetuple())), data
+            yield (time(timegm(dt.utctimetuple())),
+                   data,
+                  )
+
 class PacketSize(_Converter):
     header = ['time', 'data_length']
     desc = "Data packet sizes"
@@ -291,7 +294,7 @@ class MurataBSNSafe(MurataBSN):
 
 class PRProbes(_Converter):
     header = ['time', 'packet_time', 'probe', 'data']
-    desc = "Purple Robot raw JSON data, divided into each probe"
+    desc = "Raw JSON data, divided into each probe"
     device_class = 'PurpleRobot'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
@@ -674,8 +677,11 @@ class PRDayAggregator(_Converter):
     """
     device_class = 'PurpleRobot'
     ts_func = staticmethod(lambda probe: probe['TIMESTAMP'])
+    ts_bin_func = staticmethod(lambda ts: localtime(ts)[:3]) #Y-M-D.  FIXME: timezone
     filter_func = staticmethod(lambda data: True)
-    paging_disabled = True
+    # Following must be copied in each subclass (and remove self.)
+    filter_row_func = staticmethod(lambda row: row['PROBE'] == self.probe_type)
+    paging_disabled = True  # Used in HTML browsing
     def __init__(self, *args, **kwargs):
         super(PRDayAggregator, self).__init__(*args, **kwargs)
         self.day_dict = collections.defaultdict(list)
@@ -690,19 +696,20 @@ class PRDayAggregator(_Converter):
         current_day_ts = self.current_day_ts
         current_i = self.current_i
         ts_func = self.ts_func
+        ts_bin_func = self.ts_bin_func
         filter_func = self.filter_func
+        filter_row_func = self.filter_row_func
         for packet_ts, data in queryset:
             if not self.filter_func(data): continue
             data = loads(data)
             for probe in data:
                 current_i += 1
-                if probe['PROBE'] == probe_type:
+                if filter_row_func(probe):
                     # Get timestamp, local time (TODO: don't use
                     # system time), and a day tuple (Y, M, D) which we
                     # use as our key.
                     ts = ts_func(probe)
-                    ts_tuple = localtime(ts)
-                    day = ts_tuple[:3]
+                    day = ts_bin_func(ts)
                     # Setup in the first loop round.
                     if current_day is None:
                         current_day = day
@@ -744,11 +751,19 @@ class PRDayAggregator(_Converter):
             data = day_dict.pop(current_day)
             for row in self.process(current_ts, current_day, data):
                 yield row
+class IosDay(PRDayAggregator):
+    """Day aggregator extended to iOS"""
+    device_class = 'Ios'
+    ts_func = staticmethod(lambda probe: probe['timestamp'])
+    filter_func = staticmethod(lambda data: True)
+    filter_row_func = staticmethod(lambda row: 'probe' not in row)
+
 class PRBatteryDay(PRDayAggregator):
     header = ['day', 'mean_level', ]
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.BatteryProbe'
     desc = "PR battery, daily averages (has error)."
     filter_func = staticmethod(lambda data: 'BatteryProbe' in data)
+    filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.BatteryProbe')
     def process(self, ts, day, probes):
         levels = [ probe['level'] for probe in probes ]
         yield ('%04d-%02d-%02d'%day,
@@ -764,6 +779,7 @@ class PRCommunicationEventsDay(PRDayAggregator):
     desc = "PR commsunication events, aggregate information"
     ts_func = staticmethod(lambda probe: probe['COMM_TIMESTAMP']//1000)
     filter_func = staticmethod(lambda data: 'CommunicationEventProbe' in data)
+    filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CommunicationEventProbe')
     def process(self, ts, day, probes):
         #for p in probes:
         #    print(p)
@@ -812,15 +828,19 @@ class PRLocationDay(PRDayAggregator):
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
     desc = "PRLocation, daily features"
     filter_func = staticmethod(lambda data: 'LocationProbe' in data)
+    filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe')
     fast_row_limit = 5
+    def get_lat_lon_times(self, probes):
+        lat = [ probe['LATITUDE'] for probe in probes ]
+        lon = [ probe['LONGITUDE'] for probe in probes ]
+        times = [ probe['TIMESTAMP'] for probe in probes ]
+        return lat, lon, times
     def process(self, ts, day, probes):
         time_step = 600 # seconds, size of data bins
         speed_th = 0.28 # m/s, moving threshold
         max_dist = 500 # m, maximum radius of cluster
-        lat = [ probe['LATITUDE'] for probe in probes ]
-        lon = [ probe['LONGITUDE'] for probe in probes ]
-        times = [ probe['TIMESTAMP'] for probe in probes ]
-        time_bins = range(min(times), max(times) + time_step, time_step)
+        lat, lon, times = self.get_lat_lon_times(probes)
+        time_bins = range(int(min(times)), int(max(times)) + time_step, time_step)
         lat_binned = []
         lon_binned = []
         dists = []
@@ -905,6 +925,12 @@ class PRLocationDay(PRDayAggregator):
                transition_time,
                total_distance
                )
+class IosLocationDay(IosDay, PRLocationDay):
+    def get_lat_lon_times(self, probes):
+        lat = [ probe['lat'] for probe in probes ]
+        lon = [ probe['lon'] for probe in probes ]
+        times = [ probe['timestamp'] for probe in probes ]
+        return lat, lon, times
 # Second implemation of DayConverter - including k-means
 def kmeans_haversine(data, k, iter=20, thresh=1e-05):
     """Run k-means on a geographic coordinate system.
@@ -1101,6 +1127,7 @@ class PRProximity(_PRGenericArray):
                     ('DISTANCE',), ]
 
 
+
 class PRDataSize(_Converter):
     device_class = 'PurpleRobot'
     per_page = None
@@ -1292,26 +1319,54 @@ class PRRecentDataCounts(_Converter):
 
 
 
-
-class IosLocation(_Converter):
+class BaseIosConverter(_Converter):
+    device_class = 'Ios'
+class IosProbes(BaseIosConverter, PRProbes):
+    pass
+class IosTimestamps(BaseIosConverter, _Converter):
+    desc = 'All actual data timestamps of all iOS probes'
+    header = ['time',
+              'packet_time',
+              'probe',]
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for probe in data:
+                yield (time(probe['TIMESTAMP'] if 'TIMESTAMP' in probe else probe['timestamp']),
+                       time(timegm(ts.utctimetuple())),
+                       probe['probe'].rsplit('.',1)[-1])
+class IosDataSize(BaseIosConverter, PRDataSize):
+    pass
+class IosRecentDataCounts(BaseIosConverter, PRRecentDataCounts):
+    pass
+class _IosGeneric(BaseIosConverter, _PRGeneric):
+    pass
+# Real data
+class IosLocation(BaseIosConverter):
     header = ['time', 'lat', 'lon', 'alt', 'speed']
     desc = "Location data"
     per_page = 1
-    device_class = 'Ios'
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
             for row in data:
-                try:
+                if 'probe' not in row or row['probe'] == 'Location':
                     yield (time(row['timestamp']),
                        float(row['lat']),
                        float(row['lon']),
                        float(row['alt']),
                        float(row['speed']),
                        )
-                except:
-                    pass
-
+class IosScreen(_IosGeneric):
+    header = ['time', 'onoff']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            for row in data:
+                if row['probe'] == 'Screen':
+                    yield (time(row['timestamp']),
+                           row['state'],
+                          )
 
 
 
