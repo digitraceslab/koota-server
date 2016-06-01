@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 CONFIG_DOMAIN = settings.MAIN_DOMAIN
 POST_DOMAIN = settings.POST_DOMAIN
 
-@devices.register_device2(default=True)
-class FunfJournal(devices._Device):
+@devices.register_device_decorator(default=True)
+class FunfJournal(devices.BaseDevice):
     desc = 'Funf-journal device'
-    converters = devices._Device.converters + [ ]
+    converters = devices.BaseDevice.converters + [ ]
     @classmethod
     def post(self, request):
         data = process_post(request)

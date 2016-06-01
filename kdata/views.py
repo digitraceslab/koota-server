@@ -264,7 +264,7 @@ class DeviceCreate(CreateView):
     #    The whole point of this is that not every device should be a
     #    models.Device.  For example, surveys are instances of
     #    models.SurveyDevice.  Instead of needing to create this
-    #    ourselves in the devices._Device.create_hook, and link them,
+    #    ourselves in the devices.BaseDevice.create_hook, and link them,
     #    we can create from the start.
     #    """
     #    from django.forms import modelform_factory

@@ -25,10 +25,10 @@ request_token_url = 'https://api.twitter.com/oauth/request_token'
 base_authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
 
-@devices.register_device2(default=False)
-class Twitter(devices._Device):
+@devices.register_device_decorator(default=False)
+class Twitter(devices.BaseDevice):
     dbmodel = models.OauthDevice
-    converters = [converter.Raw,
+    converters = devices.BaseDevice.converters + [
                  ]
     raw_instructions = (
         """Current state: {device.oauthdevice.state}.  Please link this """

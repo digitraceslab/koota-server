@@ -77,9 +77,11 @@ class Device(models.Model):
         cls = devices.get_class(self.type)
         return cls(self)
     def human_name(self):
-        cls = self.get_class()
-        # super object does notwork with .get_FOO_display()
-        #return super(Device, self).get_type_display()
+        # We have to import the class here to make sure that the
+        # device is registered.
+        if self.type not in devices.registered_devices:
+            self.get_class()
+        # djnago's internal "human name" functionality.
         return self.get_type_display()
 # See comment in kdata.devices.register_device to know why this is
 # here. It is a hack to work around a circular import.

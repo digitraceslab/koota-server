@@ -20,20 +20,35 @@ logger = logging.getLogger(__name__)
 def get_device(request, *args, **kwargs):
     raise NotImplemented
 
-def import_by_name(name, default=None):
-    """Import a name from a module.  Return object."""
+def import_by_name(name, default=None, raise_if_none=False):
+    """Import a name from a module.  Return object.
+
+
+    name: name of class to import and return
+    default: if name not found, return this as default.
+    raise_if_none: if name not found, return this by default."""
     if not name:
+        return default
+    if '.' not in name:
+        # If desired, don't let errors pass silently
+        logger.error("Custom class import failed: %s"%name)
+        if raise_if_none:
+            raise ValueError("import_by_name: can not import `%s`"%name)
         return default
     modname, objname = name.rsplit('.', 1)
     try:
         mod = importlib.import_module(modname)
     except ImportError:
         logger.error("Custom class import failed: %s (%s)"%(name, modname))
+        if raise_if_none:
+            raise ValueError("import_by_name: can not import `%s`"%name)
         return default
     try:
         obj = getattr(mod, objname)
     except AttributeError:
         logger.error("Custom class import failed: %s (%s)"%(name, objname))
+        if raise_if_none:
+            raise ValueError("import_by_name: can not import `%s`"%name)
         return default
     return obj
 

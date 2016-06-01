@@ -1,6 +1,7 @@
 import hashlib
 import importlib
 import json
+import six
 import textwrap
 
 from django.core.urlresolvers import reverse_lazy
@@ -11,7 +12,7 @@ from . import models
 from . import util
 
 import logging
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 # Here we define the different types of available devices.  This is
@@ -21,17 +22,14 @@ log = logging.getLogger(__name__)
 # forms, because sometimes some devices will only be available to
 # certain users.
 # Standard device choices: What should always be in forms.
-standard_device_choices = [
-    ('Android', 'Android'),
-    ('PurpleRobot', 'Purple Robot (Android)'),
-    ('Ios', 'IOS'),
-    ('MurataBSN', 'Murata Bed Sensor'),
-    #('kdata.survey.TestSurvey1', 'Test Survey #1'),
-    #('', ''),
-    #('', ''),
-    ]
+standard_device_choices = [ ]
 # All device choices: what should validate in DB.
-all_device_choices = list(standard_device_choices)
+all_device_choices = [ ]
+# All registered devices.  Used as an efficient lookup to see what
+# needs to be found.
+registered_devices = { }
+# This is used to remap short names to classes.
+device_class_lookup = { }
 
 def get_choices(all=False):
     """Get the device classes.
@@ -41,22 +39,34 @@ def get_choices(all=False):
     if all:
         return list(x[:2] for x in all_device_choices)
     return list(x[:2] for x in standard_device_choices)
-def register_device(cls, desc=None, default=False):
+def register_device(cls, desc=None, default=False,
+                    alias=None):
     """Allow us to dynamically register devices.
 
     This dynamically changes the models.Device.type.choices when
     things are registered.  It is a hack but can be improved later...
 
-    If description is not given, use the class methods .name() and
-    .pyclass_name() (vi _devicechocies_row()) to automatically find
-    the necessary data.
+    cls: class to register
+    description: human description of class (for django form fields).
+                 If not given, use cls.desc.
+    default: if true, this device will be available to all users by
+             default.
+    alias: if given, this short name will be used in the database,
+           instead of the full importable name.
     """
-    if desc:
-        name = '%s.%s'%(cls.__module__, cls.__name__)
-        row = name, desc
-    else:
-        row = cls._devicechoices_row()
+    name = cls.pyclass_name()
+    # If alias is provided, use this as a fast lookup.
+    if alias is not None:
+        name = alias
+        device_class_lookup[alias] = cls
+    # description: description in the form field
+    if desc is None:
+        desc = getattr(cls, 'desc', cls.name())
+    # The actula django choices tuple
+    row = name, desc
+    # Add it to list of all possible device choices
     all_device_choices.append(row)
+    registered_devices = name
     if default:
         standard_device_choices.append(row)
     # This is an epic hack and deserves fixing eventually.  We must
@@ -73,31 +83,69 @@ def register_device(cls, desc=None, default=False):
     if hasattr(models, 'Device'):
         models.Device._meta.get_field('type').choices \
             = all_device_choices
-def register_device2(desc=None, default=False):
+
+# Class decorator for the above function
+def register_device_decorator(desc=None, default=False, alias=None):
+    """Register devices (as class decorator)
+
+    Similar signature as register_device()"""
     def register(cls):
-        register_device(cls, desc=desc, default=default)
+        register_device(cls, desc=desc, default=default, alias=alias)
         return cls
     return register
+
+
+
 def get_class(name, default=None):
     """Get a device class by (string) name.
 
-    Option 1: from this namespace.
+    Option 1: from this device_class_lookup
     Option 2: import it, if it contains a '.'.
-    Option 3: return generice device _Device.
+    Option 3: return generic device BaseDevice.
     """
-    if name in globals():
-        device = globals()[name]
+    if name in device_class_lookup:
+        device = device_class_lookup[name]
     else:
-        device = util.import_by_name(name, default=_Device)
+        device = util.import_by_name(name, default=BaseDevice)
+        if device is BaseDevice:
+            logger.warning("Device not found: %s", name)
     return device
 
 
 
+# Metaclass for survey device.
+class DeviceMetaclass(type):
+    """Automatically register new devices
+
+    This metaclass will call devices.register_device automatically
+    upon class definition, if the _register_device attribute is True.
+    This is an alternative method to the register_device_decorator()
+    decorator.
+
+    In the future this could do other automatic setup.
+    """
+    def __new__(mcs, name, bases, dict):
+        cls = type.__new__(mcs, name, bases, dict)
+        if (not cls.__name__.startswith('Base')
+            and not cls.__name__.startswith('_')
+            and dict.get('_register_device', True)
+           ):
+            register_device(cls, getattr(cls, 'desc', None),
+                            default=cls._register_default)
+        return cls
+
+
+# Basic device class
 import random, string
-class _Device(object):
+@six.add_metaclass(DeviceMetaclass)
+class BaseDevice(object):
     """Standard device object."""
+    # if true, then automanically register this device.
+    _register_device = False
+    _register_default = False
     # Converters are special data processors.
-    converters = [converter.Raw]
+    converters = [converter.Raw,
+                  converter.PacketSize]
     # If dbmodel is given, this overrides the models.Device model when
     # an object is created.  This has to be used _before_ the DB
     # device is created, so needs some hack kind of things in forms.
@@ -169,17 +217,23 @@ class _Device(object):
 
 
 
-class Ios(_Device):
-    converters = [converter.Raw,
-                  converter.IosLocation]
+@register_device_decorator(default=True, alias='Ios')
+class Ios(BaseDevice):
+    desc = "iOS (our app)"
+    converters = BaseDevice.converters + [
+                  converter.IosLocation,
+                 ]
     @classmethod
     def configure(cls, device):
         """Special options for configuration
         """
         return dict(qr=True)
 
-class Android(_Device):
-    converters = [converter.Raw,
+
+
+@register_device_decorator(default=True, alias='Android')
+class Android(BaseDevice):
+    converters = BaseDevice.converters + [
                   ]
     @classmethod
     def configure(cls, device):
@@ -188,10 +242,12 @@ class Android(_Device):
         return dict(qr=True)
 
 
-class PurpleRobot(_Device):
+
+@register_device_decorator(default=True, alias='PurpleRobot')
+class PurpleRobot(BaseDevice):
     post_url = reverse_lazy('post-purple')
     config_url = reverse_lazy('config-purple')
-    converters = [converter.Raw,
+    converters = BaseDevice.converters + [
                   converter.PRProbes,
                   converter.PRTimestamps,
                   converter.PRScreen,
@@ -316,8 +372,9 @@ class PurpleRobot(_Device):
 
 
 from defusedxml.ElementTree import fromstring as xml_fromstring
-class MurataBSN(_Device):
-    converters = [converter.Raw,
+@register_device_decorator(default=True, alias='MurataBSN')
+class MurataBSN(BaseDevice):
+    converters = BaseDevice.converters + [
                   converter.MurataBSN,
                   converter.MurataBSNDebug,
                   converter.MurataBSNSafe,
@@ -341,10 +398,10 @@ class MurataBSN(_Device):
         return dict(raw_instructions=cls.raw_instructions.format(device=device),
                     )
 
-@register_device2()
-class Actiwatch(_Device):
+@register_device_decorator(default=True)
+class Actiwatch(BaseDevice):
     desc = "Philips Actiwatch"
-    converters = [converter.Raw,
+    converters = BaseDevice.converters + [
                   ]
     raw_instructions = textwrap.dedent("""\
     Write down the "device secret ID" you can see above.

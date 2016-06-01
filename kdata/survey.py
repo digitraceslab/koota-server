@@ -236,28 +236,13 @@ class SurveyMeta(converter._Converter):
 
 
 
-# Below we have the survey devices.  These are auto-registering
-# subclasses of devices._Device.
-class _SurveyMetaclass(type):
-    """Automatically register new devices
-
-    This metaclass will call devices.register_device automatically
-    upon class creation.
-    """
-    def __new__(mcs, name, bases, dict):
-        cls = type.__new__(mcs, name, bases, dict)
-        if (cls.__name__ != 'BaseSurvey'
-            and not cls.__name__.startswith('_')
-            and dict.get('_register_device', True)
-           ):
-            devices.register_device(cls, getattr(cls, 'desc', None))
-        return cls
 
 from . import converter
-@six.add_metaclass(_SurveyMetaclass)
-class BaseSurvey(devices._Device):
+class BaseSurvey(devices.BaseDevice):
     dbmodel = models.SurveyDevice
-    converters = [converter.Raw,
+    _register_device = True
+
+    converters = devices.BaseDevice.converters + [
                   SurveyAnswers,
                   SurveyMeta,
                  ]
@@ -332,4 +317,3 @@ class TestSurvey1(BaseSurvey):
                    }
 
         return survey_data
-#devices.register_device(TestSurvey1, "Test Survey #1")

@@ -202,6 +202,16 @@ class Raw(_Converter):
     def convert(self, queryset, time=lambda x:x):
         for dt, data in queryset:
             yield time(timegm(dt.utctimetuple())), data
+class PacketSize(_Converter):
+    header = ['time', 'data_length']
+    desc = "Data packet sizes"
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            yield (time(timegm(ts.utctimetuple())),
+                   len(data),
+                  )
+
+
 
 class MurataBSN(_Converter):
     _header = ['time',
