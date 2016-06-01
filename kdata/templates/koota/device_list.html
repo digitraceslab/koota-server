@@ -13,7 +13,7 @@ Device list
   </tr>
   {% for device in object_list %}
   <tr>
-    <td>{% if device.label.name == "Primary personal device" %}<b>{% endif %}{{device.human_name}}{% if device.label.name == "Primary personal device" %}</b>{% endif %}</td>
+    <td>{% if device.label.slug == "primary" %}<b>{% endif %}{{device.human_name}}{% if device.label.slug == "primary" %}</b>{% endif %}</td>
     <td>{{device.public_id}}</td>
     <td>{{device.name}}</td>
     <td>{{device.user}}</td>

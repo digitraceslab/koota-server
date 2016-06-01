@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
         devices = Device.objects.filter(
             user__subject_of_groups=G,
-            label__name='Primary personal device',
+            label__slug='primary',
         )
 
 

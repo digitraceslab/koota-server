@@ -48,7 +48,7 @@ This is a managed group, users are below.
         <td>{{ device.public_id }}</td>
         <td><a href="{% url 'group-subject-device-config' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Config</a></td>
         {# <td><a href="{% url 'group-subject-device-detail' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Data</a></td> #}
-        <td>{% if device.label.name == "Primary personal device" %}<b>{% endif %}{{device.human_name}}{% if device.label.name == "Primary personal device" %}</b>{% endif %}</td>
+        <td>{% if device.label.slug == "primary" %}<b>{% endif %}{{device.human_name}}{% if device.label.slug == "primary" %}</b>{% endif %}</td>
         <td>{{ device.label.name }}</td>
       </tr>
     {% endfor %}
