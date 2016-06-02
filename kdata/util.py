@@ -6,6 +6,7 @@ from hashlib import sha256
 import importlib
 import itertools
 from json import dumps
+import os
 import time
 import six
 from six import StringIO as IO
@@ -61,12 +62,18 @@ def safe_hash(data):
         data = data.encode('utf8')
     return urlsafe_b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
 
+def random_salt_b64(nbytes=18):
+    """Random """
+    return urlsafe_b64encode(os.urandom(nbytes))
+
 class IntegerMap(object):
     """Map objects to integers"""
     def __init__(self):
         self.map = { }
     def __call__(self, value):
         return self.map.setdefault(value, len(self.map))
+
+
 
 
 def csv_iter(table, converter=None, header=None):

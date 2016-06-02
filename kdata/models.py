@@ -113,6 +113,8 @@ class Group(models.Model):
                                        help_text="Require OTP auth for researchers?")
     nonanonymous = models.BooleanField(default=False)
     managed = models.BooleanField(default=False)
+    salt = models.CharField(max_length=128,
+                            default=util.random_salt_b64, blank=True)
     subjects = models.ManyToManyField(settings.AUTH_USER_MODEL,
                                       through='GroupSubject',
                                       related_name='subject_of_groups',
@@ -159,6 +161,7 @@ class GroupResearcher(models.Model):
     active = models.BooleanField(default=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
+    manager = models.NullBooleanField(blank=True, null=True)
     #manager = Bool
 
 

@@ -98,6 +98,7 @@ def iter_subjects(group, group_class):
         subjects = group.subjects.all()
     subjects = list(subjects)
     random.shuffle(subjects)
+    #subjects.sort(key=lambda user: user.id)
     for subject in subjects:
         yield subject
 def iter_users_devices(group, group_class, group_converter_class):
@@ -136,6 +137,7 @@ def iter_group_data(group,
     #hash_device  = util.IntegerMap()
     hash_subject = util.safe_hash
     hash_device  = util.safe_hash
+    salt = group.salt
 
     for subject, device in iter_users_devices(group, group_class, group_converter_class):
         # We can request group data from only one subject.  In that
@@ -147,8 +149,8 @@ def iter_group_data(group,
                                                       id=gs_id).exists():
                 continue
 
-        subject_hash = hash_subject(subject.username)
-        device_hash  = hash_device(device.public_id)
+        subject_hash = hash_subject(salt+subject.username)
+        device_hash  = hash_device(salt+device.public_id)
 
         # Fetch all relevant data
         queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
