@@ -1,4 +1,6 @@
+from hashlib import sha256
 import json
+import six
 
 from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
@@ -13,7 +15,7 @@ from . import permissions
 from . import util
 
 import logging
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 
@@ -47,44 +49,56 @@ def post(request, device_id=None, device_class=None):
     try:
         int(device_id, 16)
     except:
-        logging.warning("Invalid device_id: %r"%device_id)
+        logger.warning("Invalid device_id: %r"%device_id)
         return JsonResponse(dict(ok=False, error="Invalid device_id",
                                  device_id=device_id),
                             status=400, reason="Invalid device_id")
+    device_id = device_id.lower()
     # Return an error if device checkdigits do not work out.  Since
     # the server may not have a complete list of all registered
     # devices, we need some way early-reject invalid device IDs.
     # Purpose is to protect against user misentering it, but not
     # attacks.
     if not util.check_checkdigits(device_id):
-        logging.warning("Invalid device_id checkdigits: %r"%device_id)
+        logger.warning("Invalid device_id checkdigits: %r"%device_id)
         return JsonResponse(dict(ok=False, error='Invalid device_id checkdigits',
                                  device_id=device_id),
                             status=400, reason="Invalid device_id checkdigits")
 
     # Find the data to store
     if 'data' in results:  # results from custom device code
-        json_data = results['data']
+        data = results['data']
     elif 'data' in request.POST:
-        json_data = request.POST['data']
+        data = request.POST['data']
     else:
-        json_data = request.body
+        data = request.body
+    # Encode everything to utf8.  the body is bytes, but request.POST
+    # is decoded.  We need to encode in order to checksum and compute
+    # len() properly.  TODO: make more efficient by not first decoding
+    # the POST data.
+    if not isinstance(data, six.binary_type):
+        data = data.encode('utf8')
 
     # Store data in DB.  (Uses django models for now, but should
     # be made more efficient later).
-    row = models.Data(device_id=device_id, ip=request.META['REMOTE_ADDR'], data=json_data)
-    row.data_length = len(json_data)
-    row.save()
-    logging.debug("Saved data from device_id=%r"%device_id)
+    rowid = save_data(data=data, device_id=device_id, request=request)
+    logger.debug("Saved data from device_id=%r"%device_id)
 
     # HTTP response
     if 'response' in results:
         return results['response']
-    return JsonResponse(dict(ok=True))
+    response = dict(ok=True,
+                    data_sha256=sha256(data).hexdigest(),
+                    bytes=len(data),
+                    #rowid=rowid,
+                    )
+    return JsonResponse(response)
+
 def save_data(data, device_id, request=None):
     """Save data programatically, as in not in a HTTP request.
 
     This is a stripped down copy of POST."""
+    device_id = device_id.lower()
     if not util.check_checkdigits(device_id):
         raise ValueError("Invalid device ID: checkdigits invalid.")
     remote_ip = '127.0.0.1'
@@ -93,10 +107,16 @@ def save_data(data, device_id, request=None):
     row = models.Data(device_id=device_id, ip=remote_ip, data=data)
     row.data_length = len(data)
     row.save()
+    return row.id
+
+
 
 @csrf_exempt
 def log(request, device_id=None, device_class=None):
+    """PR-support function: test function to accept and discard log data."""
     return JsonResponse(dict(status='success'))
+
+
 
 @csrf_exempt
 def config(request, device_class=None):
