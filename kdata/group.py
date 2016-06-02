@@ -105,7 +105,7 @@ def iter_users_devices(group, group_class, group_converter_class):
     for subject in iter_subjects(group, group_class):
         for device in models.Device.objects.filter(user=subject,
                                          type=group_converter_class.device_class,
-                                         label__sulg='primary'):
+                                         label__slug='primary'):
             yield subject, device
 
 def iter_group_data(group,
