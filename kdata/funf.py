@@ -49,7 +49,7 @@ class FunfJournal(devices.BaseDevice):
     @classmethod
     def configure(cls, device):
         url = reverse('funf-journal-config', kwargs=dict(device_id=device.device_id))
-        url = 'https://dev.koota.zgib.net'+url
+        url = 'https://koota.cs.aalto.fi'+url
         return dict(qr=False,
                     raw_instructions=cls.raw_instructions.format(config_url=url),
                     )
