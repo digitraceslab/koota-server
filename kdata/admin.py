@@ -4,12 +4,23 @@ from django.contrib import admin
 
 from . import models
 
+class DeviceAttrInline(admin.TabularInline):
+    model = models.DeviceAttr
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ('device_id', 'user', 'name', 'type', 'active')
+    inlines = [
+        DeviceAttrInline,
+        ]
 admin.site.register(models.Device, DeviceAdmin)
+
+
+
 class DataAdmin(admin.ModelAdmin):
     pass
 admin.site.register(models.Data, DataAdmin)
+
+
+
 class DeviceLabelAdmin(admin.ModelAdmin):
     pass
 admin.site.register(models.DeviceLabel, DeviceLabelAdmin)

@@ -28,6 +28,8 @@ class Data(models.Model):
     data_length = models.IntegerField(blank=True, null=True)
     data = models.TextField(blank=True)
 
+
+
 class Device(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     name = models.CharField(max_length=64,
@@ -45,6 +47,10 @@ class Device(models.Model):
     comment = models.CharField(max_length=256, null=True, blank=True, help_text='Any other comments to researchers (optional)')
 #    ts_device_create = models.DateTimeField(auto_now_add=True)
 
+    def __init__(self, *args, **kwargs):
+        super(Device, self).__init__(*args, **kwargs)
+        # Set up dict-like object for accessing key-value attributes
+        self.attrs = AttrInterface(self.deviceattr_set)
     def __str__(self):
         """String representation: Device(public_id)"""
         return 'Device(%s)'%self.public_id
@@ -89,6 +95,59 @@ Device._meta.get_field('type').choices = devices.all_device_choices
 
 
 
+class DeviceAttr(models.Model):
+    """Arbitrary attributes for devices"""
+    class Meta:
+        index_together = [
+            ("device", "name"),
+            ("name", "value"),
+            ]
+        unique_together = [
+            ("device", "name"),
+            ]
+    device = models.ForeignKey(Device)
+    name = models.CharField(max_length=64,
+                            help_text='Attribute name')
+    value = models.CharField(max_length=128,
+                            help_text='Attribute value')
+    ts = models.DateTimeField(auto_now=True)
+
+
+
+class AttrInterface(object):
+    """Dictionary-like interface to DeviceAttr (and others)
+
+    This provides a dictionary-like interface to device attributes
+    (and others).  This allows arbitrary metadata on each device
+    object.  This is initialized in the __init__ method of each object
+    (like Device.__init__).
+    """
+    def __init__(self, attrset):
+        self.attrset = attrset
+    def __contains__(self, name):
+        return self.attrset.filter(name=name).exists()
+    def __getitem__(self, name):
+        qs = self.attrset.filter(name=name)
+        if qs.exists():
+            return qs.get().value
+        raise KeyError("Device does not have attr %s"%(name))
+    def get(self, name, default=None):
+        qs = self.attrset.filter(name=name)
+        if qs.exists():
+            return qs.get().value
+        return default
+    def __setitem__(self, name, value):
+        qs = self.attrset.filter(name=name)
+        if qs.exists():
+            return qs.update(value=value)
+        return self.attrset.create(name=name, value=value)
+    def __delitem__(self, name):
+        return self.attrset.filter(name=name).delete()
+    def items(self):
+        return self.attrset.values_list('name', 'value')
+
+
+
 class DeviceLabel(models.Model):
     name = models.CharField(max_length=64, null=True, blank=True)
     description = models.CharField(max_length=256, null=True, blank=True)
@@ -96,6 +155,7 @@ class DeviceLabel(models.Model):
                             unique=True, db_index=True)
     def __str__(self):
         return self.name
+
 
 
 class Group(models.Model):
@@ -140,6 +200,7 @@ class Group(models.Model):
         return self.researchers.filter(groupresearcher__user=user).exists()
 
 
+
 class GroupSubject(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
@@ -181,6 +242,7 @@ class SurveyDevice(Device):
                               help_text="How to send survey to person?")
 
 
+
 class SurveyToken(models.Model):
     token = models.CharField(max_length=32, primary_key=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
@@ -206,6 +268,7 @@ class SurveyToken(models.Model):
     #admin_note = models.TextField(null=True, blank=True)
 
 
+
 class OauthDevice(Device):
     pass
     # service     # Which service is this: twitter, facebook, etc.
@@ -229,6 +292,7 @@ class OauthDevice(Device):
     ts_last_fetch    = models.DateTimeField(blank=True, null=True)
     # When token must be refreshed
     ts_refresh       = models.DateTimeField(blank=True, null=True)
+
 
 
 # These at bottom to avoid circular import problems
