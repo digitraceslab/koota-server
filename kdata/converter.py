@@ -1218,9 +1218,11 @@ class PRMissingData(_Converter):
         # that is OK since it used Queryset semantics, which itself
         # depend on django.  This method only makes sent to call in
         # the server itself.
-        from django.utils import timezone
-        now = timezone.now()
-        return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
+        if cls.days_ago is not None:
+            from django.utils import timezone
+            now = timezone.now()
+            return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
+        return queryset
     def __init__(self, *args, **kwargs):
         super(PRMissingData, self).__init__(*args, **kwargs)
         self.ts_list = [ ]
@@ -1261,6 +1263,9 @@ class PRMissingData(_Converter):
         del ts_list
 class PRMissingData7Days(PRMissingData):
     days_ago = 7
+    desc = "Report gaps of greater than 3600s in last 7 days of Purple Robot data."
+class PRMissingDataUnlimited(PRMissingData):
+    days_ago = None
     desc = "Report gaps of greater than 3600s in last 7 days of Purple Robot data."
 
 class PRRecentDataCounts(_Converter):
