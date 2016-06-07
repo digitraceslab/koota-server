@@ -321,6 +321,11 @@ class BaseGroup(object):
         """
         pass
 
+class TestersGroup(BaseGroup):
+    converters = [
+        ]
+    group_devices = devices.all_device_classes
+
 
 
 #
