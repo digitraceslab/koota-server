@@ -79,7 +79,7 @@ class Device(models.Model):
     def human_name(self):
         # We have to import the class here to make sure that the
         # device is registered.
-        if self.type not in devices.registered_devices:
+        if self.type not in devices.device_class_lookup:
             self.get_class()
         # djnago's internal "human name" functionality.
         return self.get_type_display()

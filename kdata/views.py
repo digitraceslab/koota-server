@@ -325,6 +325,7 @@ class DeviceCreate(CreateView):
                     # grow too large.
                     if row not in choices:
                         choices.append(row)
+        choices = sorted(choices, key=lambda row: row[1].lower())
         form.fields['type'].choices = choices
         form.fields['type'].widget.choices = choices
         return form

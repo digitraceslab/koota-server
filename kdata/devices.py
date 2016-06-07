@@ -27,9 +27,11 @@ standard_device_choices = [ ]
 all_device_choices = [ ]
 # All registered devices.  Used as an efficient lookup to see what
 # needs to be found.
-registered_devices = { }
+#registered_devices = { }
 # This is used to remap short names to classes.
 device_class_lookup = { }
+# List with each actual class object.
+all_device_classes = [ ]
 
 def get_choices(all=False):
     """Get the device classes.
@@ -58,7 +60,7 @@ def register_device(cls, desc=None, default=False,
     # If alias is provided, use this as a fast lookup.
     if alias is not None:
         name = alias
-        device_class_lookup[alias] = cls
+    device_class_lookup[name] = cls
     # description: description in the form field
     if desc is None:
         desc = getattr(cls, 'desc', cls.name())
@@ -66,7 +68,8 @@ def register_device(cls, desc=None, default=False,
     row = name, desc
     # Add it to list of all possible device choices
     all_device_choices.append(row)
-    registered_devices = name
+    #registered_devices[name] = cls  # TODO: use this for lookups!
+    all_device_classes.append(cls)
     if default:
         standard_device_choices.append(row)
     # This is an epic hack and deserves fixing eventually.  We must
