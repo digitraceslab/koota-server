@@ -15,7 +15,7 @@
   <a href="{% url 'login2' %}">Login</a> <a href="{% url 'register-user' %}">Register</a><br/>
   {% endif %}
   {% for breadcrumb in request.breadcrumbs %}
-    {% if breadcrumb.1 %}<a href="{{ breadcrumb.1 }}">{{ breadcrumb.0 }}</a>{%else%} {{ breadcrumb.0 }}{% endif %} {% if not forloop.last %} &raquo; {% endif %}
+    {% if breadcrumb.1 and not forloop.last %}<a href="{{ breadcrumb.1 }}">{{ breadcrumb.0 }}</a>{%else%} {{ breadcrumb.0 }}{% endif %} {% if not forloop.last %} &raquo; {% endif %}
   {% endfor %}
   </div><br>
 
