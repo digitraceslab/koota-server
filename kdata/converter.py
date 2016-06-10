@@ -92,6 +92,7 @@ from math import log, sqrt
 import time
 import time as mod_time
 from time import localtime
+import re
 import sys
 
 import logging
@@ -1002,6 +1003,7 @@ class _PRGeneric(_Converter):
     """
     device_class = 'PurpleRobot'
     @classmethod
+    #fields = ['X_MIN', 'X_MAX']
     def convert(self, queryset, time=lambda x:x):
         """Iterate through all data, extract the probes, take the probes we
         want, then yield timestamp+the requested fields.
@@ -1376,6 +1378,127 @@ class IosScreen(_IosGeneric):
 
 
 
+import io
+from dateutil.parser import parse as dateutil_parse
+class ActiwatchFull(_Converter):
+    desc = "Actiwatch full data"
+    header = [#'line',
+              'time',
+              'time_str',
+              'line',
+              'activity',
+              'marker',
+              'white light',
+              'sleepwake',
+              'intervalstatus',]
+
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            if '---- Subject Properties------' not in data:
+                continue
+
+            tzoffset = re.search(r'"Time Zone Offset:","([-+\d:]+)","hours:minutes"', data).group(1)
+            m = re.search(r'--- Epoch-by-Epoch Data -+"\s+.*?("Line",.*)',
+                          data, re.DOTALL)
+            f = io.StringIO(m.group(1))
+            reader = csv.reader(f)
+
+            for line in reader:
+                if not line: continue
+                if line[0] == 'Line': continue
+                dt = dateutil_parse("%s %s %s"%(line[1], line[2], tzoffset))
+                time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                ts = dt.timestamp()
+                #print(line)
+
+                yield (time(ts),
+                       time_str,
+                       int(line[0]),
+                       int(line[3]),
+                       int(line[4]),
+                       float(line[5]),
+                       float(line[6]),
+                       line[7],
+                       )
+class ActiwatchStatistics(_Converter):
+    desc = "Actiwatch intervals"
+    header = ['time_start',
+              'time_end',
+              'interval_type',
+              'interval_num',
+              'start_date',
+              'start_time',
+              'end_date',
+              'end_time',
+              'duration',
+              'percent_invalid_sw',
+              'efficiency',
+              'wake_time',
+              'percent_wake',
+              'sleep_time',
+              'percent_sleep',
+              'exposure_white',
+              'avg_white',
+              'max_white',
+              'talt_white',
+              'percent_invalid_white']
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            if '---- Subject Properties------' not in data:
+                continue
+
+            tzoffset = re.search(r'"Time Zone Offset:","([-+\d:]+)","hours:minutes"', data).group(1)
+            m = re.search(r'--- Statistics -+"\s+.*?("Interval Type",.*?)\r\n\r\n\r\n',
+                          data, re.DOTALL)
+            f = io.StringIO(m.group(1))
+            reader = csv.reader(f)
+
+            for line in reader:
+                if not line: continue
+                if line[0] == 'Interval Type': continue
+                if line[0] == '': continue
+
+                if 'Summary' not in line[0]:
+                    start_dt = dateutil_parse("%s %s %s"%(line[2], line[3], tzoffset))
+                    #start_time_str = start_dt.strftime('%Y-%m-%d %H:%M:%S')
+                    start_ts = time(start_dt.timestamp())
+                    end_dt = dateutil_parse("%s %s %s"%(line[4], line[5], tzoffset))
+                    #end_time_str = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+                    end_ts = time(end_dt.timestamp())
+                else:
+                    start_ts = end_ts = ''
+
+                yield (start_ts, end_ts) + tuple(line[:-1]) # last one is empty
+class ActiwatchMarkers(_Converter):
+    desc = "Actiwatch button pushes"
+    header = ['time',
+              'time_str',
+              'line',
+              'date',
+              'time_of_day',
+              'marker',
+              'interval Status', '']
+
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            if '---- Subject Properties------' not in data:
+                continue
+
+            tzoffset = re.search(r'"Time Zone Offset:","([-+\d:]+)","hours:minutes"', data).group(1)
+            m = re.search(r'--- Marker/Score List -+"\s+.*?("Line","Date",.*?)\r\n\r\n\r\n',
+                          data, re.DOTALL)
+            f = io.StringIO(m.group(1))
+            reader = csv.reader(f)
+
+            for line in reader:
+                if not line: continue
+                if line[0] == 'Line': continue
+                if line[0] == '': continue
+                dt = dateutil_parse("%s %s %s"%(line[1], line[2], tzoffset))
+                time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                ts = dt.timestamp()
+
+                yield (time(ts), time_str,) + tuple(line[:-1]) # last one is empty
 
 
 

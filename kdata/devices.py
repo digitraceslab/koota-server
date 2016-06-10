@@ -411,6 +411,9 @@ class MurataBSN(BaseDevice):
 class Actiwatch(BaseDevice):
     desc = "Philips Actiwatch"
     converters = BaseDevice.converters + [
+        converter.ActiwatchFull,
+        converter.ActiwatchStatistics,
+        converter.ActiwatchMarkers,
                   ]
     raw_instructions = textwrap.dedent("""\
     Write down the "device secret ID" you can see above.
