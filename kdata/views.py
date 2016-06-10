@@ -311,21 +311,29 @@ class DeviceCreate(CreateView):
 
         # This gets only the standard choices, that all users should
         # have.
-        choices = devices.get_choices()
+        choices = [(None, '----(select one)----') ]
+        std_choices = devices.get_choices()
+        std_choices = sorted(std_choices, key=lambda row: row[1].lower())
+        choices.extend(std_choices)
         # Extend to extra devices that this user should have.  TODO:
         # make this user-dependent.
         #choices.extend([('kdata.survey.TestSurvey1', 'Test Survey #1'),])
         for group in user.subject_of_groups.all():
             cls = group.get_class()
             if hasattr(cls, 'group_devices'):
+                group_choices = [ ]
+                #import IPython ; IPython.embed()
                 for dev in cls.group_devices:
                     row = dev._devicechoices_row()
                     # This is O(N^2) but deal with it later since
                     # number of devices for any one person should not
                     # grow too large.
-                    if row not in choices:
-                        choices.append(row)
-        choices = sorted(choices, key=lambda row: row[1].lower())
+                    #if row not in choices:
+                    #    choices.append(row)
+                    group_choices.append(row)
+                group_choices = sorted(group_choices, key=lambda row: row[1].lower())
+                choices.append((group.desc, group_choices))
+        #choices = sorted(choices, key=lambda row: row[1].lower())
         form.fields['type'].choices = choices
         form.fields['type'].widget.choices = choices
         return form
