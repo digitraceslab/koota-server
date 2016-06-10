@@ -69,6 +69,8 @@ ALLOWED_HOSTS = [
     'koota.cs.aalto.fi',
     'nossl.koota.cs.aalto.fi',
     'ss1.koota.cs.aalto.fi',
+    'dev.koota.zgib.net',
+    'aware.koota.zgib.net',
     # Raw hostname
     'koota.cs.hut.fi',
     # Legacy hostnames
@@ -76,7 +78,6 @@ ALLOWED_HOSTS = [
     'koota.zgib.net',
     'nossl.koota.zgib.net',
     'ss1.koota.zgib.net',
-    'dev.koota.zgib.net',
 ]
 
 

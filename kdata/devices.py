@@ -131,7 +131,7 @@ class DeviceMetaclass(type):
         cls = type.__new__(mcs, name, bases, dict)
         if (not cls.__name__.startswith('Base')
             and not cls.__name__.startswith('_')
-            and dict.get('_register_device', True)
+            and getattr(cls, '_register_device', True)
            ):
             register_device(cls, getattr(cls, 'desc', None),
                             default=cls._register_default)
@@ -201,6 +201,7 @@ class BaseDevice(object):
                 break
         instance.device_id = id_
         instance._public_id = id_[:6]
+        instance._secret_id = id_
 
     @classmethod
     def configure(cls, device):

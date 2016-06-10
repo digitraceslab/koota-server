@@ -1376,6 +1376,148 @@ class IosScreen(_IosGeneric):
 
 
 
+
+
+
+class BaseAwareConverter(_Converter):
+    device_class = 'kdata.aware.AwareDevice'
+    #table = 'screen'
+    #desc = "Generic Aware converter"
+    #ts_column = 'timestamp'
+    #fields = ['screen_status',
+    #          ]
+    def header2(cls):
+        """Return table header"""
+        if hasattr(cls, 'header') and cls.header:
+            return cls.header
+        return ['time', ] + [x.lower() for x in cls.fields]
+    def convert(self, queryset, time=lambda x:x):
+        table = self.table
+        fields = self.fields
+        ts_column = self.ts_column
+
+        for ts, data in queryset:
+            data = loads(data)
+            if data['table'] != table:
+                continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                yield (time(row[ts_column]/1000.),
+                       ) + tuple(row.get(colname,'') for colname in fields)
+class AwareUploads(BaseAwareConverter):
+    header = ['packet_time', 'table', 'len_data']
+    desc = "Uploaded tables and times"
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            yield (time(timegm(ts.utctimetuple())),
+                   data['table'],
+                   len(data['data']),
+                   )
+class AwareTableData(BaseAwareConverter):
+    header = ['time', 'table', 'data']
+    desc = "Uploaded data, by table."
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            yield (time(timegm(ts.utctimetuple())),
+                   data['table'],
+                   data['data'],
+                   )
+class AwareScreen(BaseAwareConverter):
+    desc = "Screen on/off"
+    table = 'screen'
+    ts_column = 'timestamp'
+    fields = ['screen_status',
+              ]
+class AwareBattery(BaseAwareConverter):
+    desc = "Battery"
+    table = 'battery'
+    ts_column = 'timestamp'
+    fields = ['battery_level',
+              'battery_status',
+              'battery_health',
+              'battery_adaptor',
+              ]
+class AwareLight(BaseAwareConverter):
+    desc = "Light sensor"
+    table = 'light'
+    ts_column = 'timestamp'
+    fields = ['double_light_lux',
+              'accuracy',
+              ]
+class AwareWifi(BaseAwareConverter):
+    desc = "Wifi scans"
+    table = 'wifi'
+    ts_column = 'timestamp'
+    fields = ['ssid',
+              'bssid',
+              'mac_address',
+              'rssi',
+              ]
+class AwareSensorWifi(BaseAwareConverter):
+    desc = "Wifi scans"
+    table = 'sensor_wifi'
+    ts_column = 'timestamp'
+    fields = ['ssid',
+              'bssid',
+              'mac_address',
+              ]
+class AwareLocation(BaseAwareConverter):
+    desc = "Location"
+    table = 'locations'
+    ts_column = 'timestamp'
+    fields = ['double_latitude',
+              'double_longitude',
+              'double_altitude',
+              'accuracy',
+              'double_speed',
+              'double_bearing',
+              'provider',
+              'label',
+              ]
+class AwareNetwork(BaseAwareConverter):
+    desc = "Networks"
+    table = 'network'
+    ts_column = 'timestamp'
+    fields = ['network_state',
+              'network_type',
+              'network_subtype',
+              ]
+class AwareCalls(BaseAwareConverter):
+    desc = "Calls (incoming=1, outgoing=2, missed=3)"
+    header = ['time', 'call_type', 'call_duration', 'trace', ]
+    def convert(self, queryset, time=lambda x:x):
+        types = {"1": "incoming", "2":"outgoing", "3":"missed"}
+        for ts, data in queryset:
+            data = loads(data)
+            if data['table'] != 'calls': continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                yield (time(row['timestamp']/1000.),
+                       types[row.get('call_type', '')],
+                       row.get('call_duration', ''),
+                       safe_hash(row['trace']) if 'trace' in row else '',
+                       )
+class AwareMessages(BaseAwareConverter):
+    desc = "Messages"
+    header = ['time', 'message_type', 'trace', ]
+    def convert(self, queryset, time=lambda x:x):
+        types = {"1": "incoming", "2":"outgoing"}
+        for ts, data in queryset:
+            data = loads(data)
+            if data['table'] != 'messages': continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                yield (time(row['timestamp']/1000.),
+                       types[row.get('message_type', '')],
+                       safe_hash(row['trace']) if 'trace' in row else '',
+                       )
+
+
+
+
+
 if __name__ == "__main__":
     import argparse
     description = """\

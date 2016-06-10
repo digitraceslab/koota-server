@@ -6,10 +6,11 @@ from django.contrib.auth import views as auth_views
 from kdata import views as kviews
 from kdata import views_data
 from kdata import views_admin
-from kdata import funf
+from kdata import aware
 from kdata import devices
-from kdata import survey
+from kdata import funf
 from kdata import group
+from kdata import survey
 from kdata import twitter
 
 urlpatterns = [
@@ -78,6 +79,10 @@ urlpatterns = [
 
     # Twitter and other social sites
     url(r'^twitter/', include(twitter.urlpatterns)),
+
+    # Aware
+#    url(r'^aware/', include(aware.urlpatterns)),
+    url(r'^(?:(?P<indexphp>index.php)/)?aware/', include(aware.urlpatterns)),
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]

@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
-from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.db import models
+from django.utils import timezone
 
 from . import devices
 from . import util
@@ -78,6 +79,11 @@ class Device(models.Model):
             return cls.objects.get(_public_id=public_id)
         except cls.DoesNotExist:
             return cls.objects.get(device_id__startswith=public_id)
+    @classmethod
+    def get_by_secret_id(cls, secret_id):
+        if len(secret_id) < 10:
+            raise Http404
+        return cls.objects.get(_secret_id=secret_id)
     def get_class(self):
         """Return the Python class corresponding to this device."""
         cls = devices.get_class(self.type)
@@ -139,7 +145,7 @@ class AttrInterface(object):
     def __setitem__(self, name, value):
         qs = self.attrset.filter(name=name)
         if qs.exists():
-            return qs.update(value=value)
+            return qs.update(value=value, ts=timezone.now())
         return self.attrset.create(name=name, value=value)
     def __delitem__(self, name):
         return self.attrset.filter(name=name).delete()
