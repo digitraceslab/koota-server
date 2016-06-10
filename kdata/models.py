@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 
 from . import devices
+from . import exceptions
 from . import util
 # Create your models here.
 
@@ -74,7 +75,7 @@ class Device(models.Model):
         # First check public_id column, if that is not found return
         # device that has device_id beginning with public_id.
         if len(public_id) < 6:
-            raise Http404
+            raise exceptions.NoDevicePermission(log="device ID too short")
         try:
             return cls.objects.get(_public_id=public_id)
         except cls.DoesNotExist:
@@ -82,7 +83,7 @@ class Device(models.Model):
     @classmethod
     def get_by_secret_id(cls, secret_id):
         if len(secret_id) < 10:
-            raise Http404
+            raise exceptions.InvalidDeviceID(log="device ID too short")
         return cls.objects.get(_secret_id=secret_id)
     def get_class(self):
         """Return the Python class corresponding to this device."""

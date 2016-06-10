@@ -21,8 +21,9 @@ from django.template.response import TemplateResponse
 #import floppyforms as forms
 
 from . import converter
-from . import models
 from . import devices
+from . import exceptions
+from . import models
 from . import util
 from . import views
 
@@ -250,8 +251,8 @@ class BaseSurvey(devices.BaseDevice):
     @classmethod
     def get_survey(cls, data, device):
         """This method should be overwritten to return the survey data."""
-        raise NotImplementedError("This survey is not yet configured, "
-                                  "define get_survey().")
+        raise exceptions.NotImplemented("This survey is not yet configured, "
+                                        "define get_survey().")
 
     @classmethod
     def create_hook(cls, instance, user):

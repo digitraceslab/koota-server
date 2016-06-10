@@ -17,6 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
 from . import devices
+from . import exceptions
 from . import models
 from . import permissions
 from . import util
@@ -35,7 +36,7 @@ class DeviceDetail(DetailView):
         """Get device model object, testing permissions"""
         device = self.model.get_by_id(public_id=self.kwargs['public_id'])
         if not permissions.has_device_permission(self.request, device):
-            raise PermissionDenied("No permission for device")
+            raise exceptions.NoDevicePermission()
         return device
     def get_context_data(self, **kwargs):
         """Override template context data with special instructions from the DeviceType object."""
@@ -92,7 +93,7 @@ def device_data(request, public_id, converter, format):
     # Get devices and other data
     device = c['device'] = models.Device.get_by_id(public_id=public_id)
     if not permissions.has_device_permission(request, device):
-        raise PermissionDenied("No permission for device")
+        raise exceptions.NoDevicePermission("No permission for device")
     device_class = c['device_class'] = device.get_class()
     converter_class = c['converter_class'] = \
         [ x for x in device_class.converters if x.name() == converter ][0]
@@ -254,4 +255,4 @@ def handle_format_downloads(table, format, converter, header, filename_base):
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
     else:
-        raise ValueError("Unknown format: %s"%format)
+        raise exceptions.BaseMessageKootaException(message="Unknown format: %s"%format)

@@ -1,0 +1,10 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+<h1><font color="red">Error: {{exception.status}}: {{exception.message}}</font></h1>
+{% if exception.id_ %}
+trace: {{ exception.id_ }}
+{% endif %}
+
+{% endblock %}

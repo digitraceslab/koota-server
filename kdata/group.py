@@ -16,6 +16,7 @@ from django.template.response import TemplateResponse
 
 from . import converter
 from . import devices
+from . import exceptions
 from . import models
 from . import permissions
 from . import util
@@ -37,7 +38,8 @@ def group_join(request):
     context = c = { }
     user = request.user
     if not user.is_authenticated():
-        raise Http404 # should never get here, we have login_required
+        # should never get here, we have login_required
+        raise exceptions.NoDevicePermission()
     if request.method == 'POST':
         form = JoinGroupForm(request.POST)
         if form.is_valid():
@@ -80,7 +82,7 @@ def group_detail(request, group_name):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     if not permissions.has_group_researcher_permission(request, group):
-        raise PermissionDenied("No permission for device")
+        raise exceptions.NoGroupPermission()
     group = c['group'] = group.get_class()
     # effective number of subjects: can be overridden
     c['n_subjects'] = sum(1 for _ in iter_subjects(group.dbrow, group))
@@ -189,7 +191,7 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
     group = models.Group.objects.get(slug=group_name)
     group_class = group.get_class()
     if not permissions.has_group_researcher_permission(request, group):
-        raise PermissionDenied("No permission for device")
+        raise exceptions.NoGroupPermission()
 
     # Process the form and apply options
     form = c['select_form'] = views_data.DataListForm(request.GET)
@@ -336,7 +338,7 @@ def group_subject_detail(request, group_name, gs_id):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     if not permissions.has_group_manager_permission(request, group):
-        raise PermissionDenied("No permission for device")
+        raise exceptions.NoGroupPermission()
     group = c['group'] = group.get_class()
     groupsubject = c['groupsubject'] = models.GroupSubject.objects.get(id=gs_id)
     #import IPython ; IPython.embed()
@@ -356,7 +358,7 @@ class GroupSubjectDetail(views.DeviceListView):
         gs_id = self.kwargs['gs_id']
         groupsubject = models.GroupSubject.objects.get(id=gs_id)
         if not permissions.has_group_manager_permission(self.request, group):
-            raise PermissionDenied("No permission for device")
+            raise exceptions.NoGroupPermission()
 
         queryset = self.model.objects.filter(user=groupsubject.user).order_by('type', '_public_id')
         return queryset
@@ -377,7 +379,7 @@ def group_user_create(request, group_name):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     if not permissions.has_group_manager_permission(request, group):
-        raise PermissionDenied("Not a group manager")
+        raise exceptions.NoGroupPermission("Not a group manager.")
     if request.method == 'POST':
         form = GroupUserCreateForm(request.POST)
         if form.is_valid():

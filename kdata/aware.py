@@ -11,8 +11,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from . import devices
-from . import models
 from . import converter
+from . import exceptions
+from . import models
 from . import permissions
 from . import views as kviews
 
@@ -247,7 +248,7 @@ def register_qrcode(request, public_id, indexphp=None):
     """HTTP endpoint for aware QR codes."""
     device = models.Device.get_by_id(public_id)
     if not permissions.has_device_config_permission(request, device):
-        raise PermissionDenied("No permission for device")
+        raise exceptions.NoDevicePermission()
     device_class = device.get_class()
     url = device_class.qrcode_url()
     data = url

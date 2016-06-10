@@ -18,8 +18,6 @@ from . import models
 import logging
 logger = logging.getLogger(__name__)
 
-def get_device(request, *args, **kwargs):
-    raise NotImplemented
 
 def import_by_name(name, default=None, raise_if_none=False):
     """Import a name from a module.  Return object.

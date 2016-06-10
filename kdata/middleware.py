@@ -1,7 +1,11 @@
 from django.core.urlresolvers import reverse
+from django.template.response import TemplateResponse
+from django.utils.safestring import mark_safe
+
 from . import views as kviews
 from . import models
 from . import group
+from . import exceptions
 
 import logging
 log = logging.getLogger(__name__)
@@ -59,4 +63,14 @@ class KdataMiddleware(object):
         # Device list
         if view_name == 'device-list': #getattr(view_func, 'view_class', None) == kviews.DeviceListView:
             breadcrumbs.append(('All Devices', reverse('device-list')))
+
+
+
+    def process_exception(self, request, exception):
+        if isinstance(exception, exceptions.BaseMessageKootaException):
+            response = TemplateResponse(request, 'koota/exception.html',
+                                        context=dict(exception=exception),
+                                        status=exception.status)
+            response.reason_phrase = exception.message
+            return response
 

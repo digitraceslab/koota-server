@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
 from . import devices
+from . import exceptions
 from . import models
 from . import permissions
 from . import util
@@ -100,7 +101,7 @@ def save_data(data, device_id, request=None):
     This is a stripped down copy of POST."""
     device_id = device_id.lower()
     if not util.check_checkdigits(device_id):
-        raise ValueError("Invalid device ID: checkdigits invalid.")
+        raise exceptions.InvalidDeviceID("Invalid device ID: checkdigits invalid.")
     remote_ip = '127.0.0.1'
     if request is not None:
         remote_ip = request.META['REMOTE_ADDR']
@@ -210,7 +211,7 @@ class DeviceConfig(UpdateView):
         """Get device model object, testing permissions"""
         obj = self.model.get_by_id(self.kwargs['public_id'])
         if not permissions.has_device_config_permission(self.request, obj):
-            raise PermissionDenied("No permission for device")
+            raise exceptions.NoDevicePermission("No permission for device")
         return obj
     def get_context_data(self, **kwargs):
         """Override template context data with special instructions from the DeviceType object."""
@@ -236,7 +237,7 @@ from django.conf import settings
 def device_qrcode(request, public_id):
     device = models.Device.get_by_id(public_id)
     if not permissions.has_device_config_permission(request, device):
-        raise PermissionDenied("No permission for device")
+        raise exceptions.NoPermissionDenied("No permission for device")
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     main_host = "https://{0}".format(settings.MAIN_DOMAIN)
     post_host = "https://{0}".format(settings.POST_DOMAIN)
@@ -343,7 +344,7 @@ class DeviceCreate(CreateView):
         if user.is_authenticated():
             form.instance.user = user
         else:
-            raise Http404   # XXX
+            raise exceptions.LoginRequired()
         device_class = devices.get_class(form.cleaned_data['type'])
         device_class.create_hook(form.instance, user=user)
         return super(DeviceCreate, self).form_valid(form)
