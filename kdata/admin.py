@@ -48,3 +48,14 @@ admin.site.register(models.SurveyDevice, SurveyDeviceAdmin)
 class SurveyTokenAdmin(admin.ModelAdmin):
     pass
 admin.site.register(models.SurveyToken, SurveyTokenAdmin)
+
+
+# For Mosquitto authentication.
+class MosquittoAclInline(admin.TabularInline):
+    model = models.MosquittoAcl
+class MosquittoUserAdmin(admin.ModelAdmin):
+    list_display = ['username', 'superuser']
+    inlines = [
+        MosquittoAclInline
+        ]
+admin.site.register(models.MosquittoUser, MosquittoUserAdmin)

@@ -231,6 +231,20 @@ def time_slice_iterator(it, maxduration):
             break
 
 
+
+# For Mosquitto server passwords
+from django.contrib.auth.hashers import PBKDF2PasswordHasher
+import base64
+def hash_mosquitto_password(passwd):
+    salt = base64.b64encode(os.urandom(15)).decode('ascii')
+    passwd = PBKDF2PasswordHasher().encode(passd, salt, iterations=50000)
+    # Following two lines to put it in MQTT format
+    passwd = passwd.replace('_', '$', 1)
+    passwd = passwd.replace('pbkdf2', 'PBKDF2')
+    return passwd
+
+
+
 #
 # The following functions deal with device checkdigits.
 #

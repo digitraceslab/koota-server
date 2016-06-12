@@ -302,5 +302,37 @@ class OauthDevice(Device):
 
 
 
+# To set a password:
+#   import kdata.models
+#   u = kdata.models.MosquittoUser.objects.get(username='ramcli')
+#   u.passwd = 'test'
+#   u.save()
+class MosquittoUser(models.Model):
+    """Mosquetto usernames/passwords.
+
+    This is used for MQTT users, but *not* for normal devices - those
+    are in device attributes.
+    """
+    username = models.CharField(max_length=64, db_index=True, unique=True)
+    _passwd = models.CharField(db_column='passwd', max_length=256,
+                              help_text="hashed password")
+    superuser = models.BooleanField(default=False,
+                                    help_text="Is a superuser?")
+    @property
+    def passwd(self):
+        return self._passwd
+    @passwd.setter
+    def passwd(self, passwd):
+        passwd = util.hash_mqtt_passwd(passwd)
+        self._passwd = passwd
+class MosquittoAcl(models.Model):
+    user = models.ForeignKey(MosquittoUser, on_delete=models.CASCADE)
+    topic = models.CharField(max_length=256, db_index=True,
+                             help_text="mosquitto topic filter, including + and #.")
+    rw = models.IntegerField(default=1,
+                             help_text="1=ro, 2=rw")
+
+
+
 # These at bottom to avoid circular import problems
 from . import group
