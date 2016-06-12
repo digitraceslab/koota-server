@@ -1593,6 +1593,12 @@ class AwareDataSize(BaseDataSize):
             sizes[table] += len(data)
             counts[table] += 1
         return total_days
+class AwareDeviceInfo(BaseAwareConverter):
+    # {"table": "aware_device", "data":
+    # "[{\"device\":\"hammerhead\",\"build_id\":\"MOB30H\",\"sdk\":\"23\",\"release_type\":\"user\",\"release\":\"6.0.1\",\"timestamp\":1465242186982,\"board\":\"hammerhead\",\"device_id\":\"UID\",\"brand\":\"google\",\"label\":\"\",\"serial\":\"NNNNNN\",\"manufacturer\":\"LGE\",\"hardware\":\"hammerhead\",\"product\":\"hammerhead\",\"model\":\"Nexus
+    # 5\"}]"}
+    desc = "Hardware info"
+    fields = ['device', 'label', 'sdk', 'device_id', 'brand']
 class AwareScreen(BaseAwareConverter):
     desc = "Screen on/off"
     table = 'screen'

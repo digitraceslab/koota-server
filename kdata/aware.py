@@ -20,14 +20,17 @@ from . import views as kviews
 import logging
 logger = logging.getLogger(__name__)
 
+AWARE_DOMAIN = 'https://aware.koota.zgib.net'
 
 
 class AwareDevice(devices.BaseDevice):
+    """Basic Python class handling Aware devices"""
     _register_device = True
     desc = 'Aware device'
     converters = devices.BaseDevice.converters + [
         converter.AwareUploads,
         converter.AwareTableData,
+        converter.AwareDataSize,
         converter.AwareScreen,
         converter.AwareBattery,
         converter.AwareLight,
@@ -47,9 +50,6 @@ class AwareDevice(devices.BaseDevice):
     <ol>
     <li>See the <a href="https://github.com/CxAalto/koota-server/wiki/Aware">instructions on the github wiki</a>.
     <li>URL is {study_url}</li>
-    <li></li>
-    <li></li>
-    <li></li>
     </ol>
 
     <img src="{qrcode_img_path}"></img>
@@ -73,9 +73,9 @@ class AwareDevice(devices.BaseDevice):
         secret_id = self.data.secret_id
         url = reverse('aware-register', kwargs=dict(indexphp='index.php',
                                                     secret_id=secret_id,
-                                                    rest=''))
+                                                    ))
         # TODO: http or https?
-        url = 'https://aware.koota.zgib.net'+url
+        url = AWARE_DOMAIN+url
         return url
 
 #config = 
@@ -92,6 +92,9 @@ class AwareDevice(devices.BaseDevice):
 #$decode->{'sensors'}[] = array('setting' => 'webservice_server', 'value' => base_url().'index.php/webservice/index/'.$study_id.'/'.$api_key);
 #$decode->{'sensors'}[] = array('setting' => 'status_webservice', 'value' => 'true');
 
+# This is the JSON returned when a device is registered.
+# Sensor settings:
+# https://github.com/denzilferreira/aware-server/blob/master/aware_dashboard.sql#L298
 base_config = dict(
     sensors=dict(
         status_mqtt='true',
@@ -105,22 +108,23 @@ base_config = dict(
         #study_id='none',
         #study_start=0,
         #webservice_server='https://aware.koota.zgib.net/'+xxx,
-
+        #status_webservice=True,
 
         # per-sensor config
         status_battery=True,
-
-        status_bluetooth=False,
+        #status_bluetooth=False,
         #frequency_bluetooth=600,
     ))
 def get_user_config(device):
+    """Get a device's remote configuration"""
     import copy
     config = copy.deepcopy(base_config)
     config['sensors']['mqtt_username'] = device.data.public_id
     config['sensors']['mqtt_password'] = device.data.secret_id
     #config['sensors']['study_id'] = 'none'
     #config['study_start'] = timezone.now().timestamp()*1000
-    #config['webservice_server'] = device.qrcode_url()
+    config['sensors']['webservice_server'] = device.qrcode_url()
+    config['sensors']['status_webservice'] = True
     # Aware requires it as a list of dicts.
     config['sensors'] = [dict(setting=k, value=v)
                          for k,v in config['sensors'].items()]
@@ -133,111 +137,98 @@ def get_user_config(device):
 
 
 
+#
+# AWARE API
+#
+@csrf_exempt
+def register(request, secret_id, indexphp=None):
+    """Initial URL that a device hits to register."""
+    device = models.Device.get_by_secret_id(secret_id)
+    device_cls = device.get_class()
+    config = get_user_config(device_cls)
 
-
+    # We have no other operation, basic study configuration.
+    data = request.POST
+    if 'device_id' in data:
+        return JsonResponse(dict(error="You should scan this with the Aware app.",
+                                 config=config))
+    passwd = util.hash_mqtt_passwd(device.secret_id)
+    device.attrs['aware-device-uuid'] = data['device_id']
+    device.attrs['aware-device-passwd_pbkdf2'] = passwd
+    return JsonResponse(config, safe=False)
 
 @csrf_exempt
-def register(request, secret_id=None, rest=None, indexphp=None):
-    if rest is None:
-        rest = ''
-    # Parse the extra operation stuff we have.
-    rest = rest.split('/')
-    table = rest[0]  # this is the type of data
-    operation = None
-    if len(rest) > 1:
-        operation = rest[1]
+def create_table(request, secret_id, table, indexphp=None):
+    """AWARE client creating table.  This is nullop for us."""
+    # {'device_id': ['2e66087d-4afb-4a64-9316-67d737e21998'],
+    #  'fields': ["_id integer primary key autoincrement,timestamp real default 0,device_id text default '',topic text default '',message text default '',status integer default 0,UNIQUE(timestamp,device_id)"]}
+    data = request.POST
+    return HttpResponse(status=200, reason="We don't sync tables")
 
+@csrf_exempt
+def latest(request, secret_id, table, indexphp=None):
+    """AWARE client getting most recent data point.
+
+    Unlike the AWARE server, we don't return the latest row (that
+    would send data out), but we get the stored timestamp of latest
+    data and return that.
+    """
     device = models.Device.get_by_secret_id(secret_id)
     device_cls = device.get_class()
 
-    if table == '':
-        # We have no other operation, basic study configuration.
-        data = request.POST
-        #if 'device_id' not in data:
-        #    return JsonResponse(dict(error="You should scan this with the Aware app."))
-        import os
-        from django.contrib.auth.hashers import PBKDF2PasswordHasher
-        import base64
-        salt = base64.b64encode(os.urandom(15)).decode('ascii')
-        passwd = PBKDF2PasswordHasher().encode(device.secret_id, salt, iterations=50000)
-        # Following two lines to put it in MQTT format
-        passwd = passwd.replace('_', '$', 1)
-        passwd = passwd.replace('pbkdf2', 'PBKDF2')
-        device.attrs['aware-device-uuid'] = data['device_id']
-        device.attrs['aware-device-passwd_pbkdf2'] = passwd
-        config = get_user_config(device_cls)
-        return JsonResponse(config, safe=False)
-        return JsonResponse({})
+    # Return the latest timestamp in our database.  Aware uses
+    # this to know what data needs to be sent.
+    ts = device.attrs.get('aware-last-ts-%s'%table, 0)
+    return JsonResponse([dict(timestamp=ts,
+                              double_end_timestamp=ts,
+                              double_esm_user_answer_timestamp=ts)],
+                        safe=False)
 
-    elif operation == 'create_table':
-        # {'device_id': ['2e66087d-4afb-4a64-9316-67d737e21998'],
-        #  'fields': ["_id integer primary key autoincrement,timestamp real default 0,device_id text default '',topic text default '',message text default '',status integer default 0,UNIQUE(timestamp,device_id)"]}
-        data = request.POST
-        #logger.error("fields for %s: %s"%(table, data['fields']))
-        return HttpResponse(status=200, reason="We don't sync tables")
-        #logger.debug(request.path_info)
+@csrf_exempt
+def insert(request, secret_id, table, indexphp=None):
+    """AWARE client requesting data to be saved."""
+    device = models.Device.get_by_secret_id(secret_id)
+    device_cls = device.get_class()
 
-    elif operation == 'latest':
-        # Return the latest timestamp in our database.  Aware uses
-        # this to know what data needs to be sent.
-        ts = device.attrs.get('aware-last-ts-%s'%table, 0)
-        #logger.error("latest: %s %s", table, time.strftime('%F %T', time.localtime(float(ts)/1000.)))
-        return JsonResponse([dict(timestamp=ts,
-                                  double_end_timestamp=ts,
-                                  double_esm_user_answer_timestamp=ts)],
-                            safe=False)
+    data = request.POST['data']  # data is bytes JSON data
+    data_decoded = loads(data)
 
-    elif operation == 'insert':
-        #logger.error(request.body[:80])
-        device_uuid = request.POST['device_id']  # not used
-        data = request.POST['data']  # data is bytes JSON data
-        #logger.error("The data: %r"%data[:80])
-        data_decoded = loads(data)
+    timestamp_column_name = 'timestamp'
+    if 'double_end_timestamp' in data_decoded[0]:
+        timestamp_column_name = 'double_end_timestamp'
+    if 'double_esm_user_answer_timestamp' in data_decoded[0]:
+        timestamp_column_name = 'double_esm_user_answer_timestamp'
 
-        timestamp_column_name = 'timestamp'
-        if 'double_end_timestamp' in data_decoded[0]:
-            timestamp_column_name = 'double_end_timestamp'
-        if 'double_esm_user_answer_timestamp' in data_decoded[0]:
-            timestamp_column_name = 'double_esm_user_answer_timestamp'
+    max_ts = max(float(row[timestamp_column_name]) for row in data_decoded)
+    data_with_probe = dumps(dict(table=table, data=data))
 
-        max_ts = max(float(row[timestamp_column_name]) for row in data_decoded)
-        data_with_probe = dumps(dict(table=table, data=data))
-        #logger.error("insert: %s %s", table, time.strftime('%F %T', time.localtime(float(max_ts)/1000.)))
+    kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
+    device.attrs['aware-last-ts-%s'%table] = max_ts
+    return HttpResponse()
 
-        kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
-        device.attrs['aware-last-ts-%s'%table] = max_ts
-        return HttpResponse()
-
-    elif operation == 'clear_table':
-        pass
-        return HttpResponse(reason="Not handled")
-
-    else:
-        logger.error("Unknown aware request: %s", rest)
+@csrf_exempt
+def clear_table(request, secret_id, table, indexphp=None):
+    """AWARE client requesting to clear a table.  Nullop for us."""
+    return HttpResponse(reason="Not handled")
 
 
-    return HttpResponse(status=400, reason="We don't know how to handle this request")
-
-def create_table(request, secret_id, table, indexphp=None):
-    return HttpRespnse(reason="Not handled")
 
 
 # /index.php/webservice/client_get_study_info/  # supposed to have API key
-def study_info(request):
-    response = dict(study_name='study name',
-                    study_description='study_desc',
-                    researcher_first='firstname',  # researcher email
-                    researcher_last='listname',
-                    researcher_contact='noone@koota.cs.aalto.fi',
+def study_info(request, secret_id, indexphp=None):
+    """Returns "study info" that is presented when QR scanned."""
+    response = dict(study_name='Koota',
+                    study_description='Link your deviece to',
+                    researcher_first='Aalto Complex Systems',  # researcher name
+                    researcher_last='',
+                    researcher_contact='noreply@koota.cs.aalto.fi',
+                    device_id='11'
                 )
+    if secret_id:
+        device = models.Device.get_by_secret_id(secret_id)
+        response['public_id'] = device.public_id
     return JsonResponse(response)
 
-
-def aware_config(request, public_id=None):
-    """Config dict data.
-
-    This is a dummy URL that has no content, but at least will not 404.
-    """
 
 
 import qrcode
@@ -245,7 +236,7 @@ import io
 from six.moves.urllib.parse import quote as url_quote
 from django.conf import settings
 def register_qrcode(request, public_id, indexphp=None):
-    """HTTP endpoint for aware QR codes."""
+    """Produce png AWARE qr code."""
     device = models.Device.get_by_id(public_id)
     if not permissions.has_device_config_permission(request, device):
         raise exceptions.NoDevicePermission()
@@ -264,9 +255,13 @@ def register_qrcode(request, public_id, indexphp=None):
 urlpatterns = [
     url(r'^v1/(?P<public_id>[0-9a-f]+)/qr.png$', register_qrcode,
         name='aware-register-qr'),
-    url(r'^v1/(?P<secret_id>[0-9a-f]+)?(?:/(?P<rest>.*))?$', register,
+
+    # Main registratioon link
+    # AWARE has: 'index.php/webservice/index/$study_id/$api_key
+    url(r'^v1/(?P<secret_id>[0-9a-f]+)/?$', register,
         name='aware-register'),
 
+    # Various table operations
     url(r'^v1/(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/create_table$', create_table,
         name='aware-create-table'),
     url(r'^v1/(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/latest$', latest,
@@ -275,4 +270,13 @@ urlpatterns = [
         name='aware-insert'),
     url(r'^v1/(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/clear_table$', clear_table,
         name='aware-clear-table'),
+]
+
+# these urlpatters are hard-coded rooted at /index.php/.* so need to
+# be handled specially.
+urlpatterns_fixed = [
+    # /index.php/webservice/client_get_study_info/  # supposed to have API key
+    url(r'^webservice/client_get_study_info/(?P<secret_id>.*)',
+        study_info,
+        name='aware-study-info'),
 ]

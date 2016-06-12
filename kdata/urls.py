@@ -82,7 +82,8 @@ urlpatterns = [
 
     # Aware
 #    url(r'^aware/', include(aware.urlpatterns)),
-    url(r'^(?:(?P<indexphp>index.php)/)?aware/', include(aware.urlpatterns)),
+    url(r'^(?:(?P<indexphp>index\.php)/)?aware/', include(aware.urlpatterns)),
+    url(r'^(?P<indexphp>index\.php)/', include(aware.urlpatterns_fixed)),
 
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]
