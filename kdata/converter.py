@@ -1411,6 +1411,7 @@ class IosScreen(_IosGeneric):
 import io
 from dateutil.parser import parse as dateutil_parse
 class ActiwatchFull(_Converter):
+    device_class = 'kdata.devices.Actiwatch'
     desc = "Actiwatch full data"
     header = [#'line',
               'time',
@@ -1451,6 +1452,7 @@ class ActiwatchFull(_Converter):
                        line[7],
                        )
 class ActiwatchStatistics(_Converter):
+    device_class = 'kdata.devices.Actiwatch'
     desc = "Actiwatch intervals"
     header = ['time_start',
               'time_end',
@@ -1500,6 +1502,7 @@ class ActiwatchStatistics(_Converter):
 
                 yield (start_ts, end_ts) + tuple(line[:-1]) # last one is empty
 class ActiwatchMarkers(_Converter):
+    device_class = 'kdata.devices.Actiwatch'
     desc = "Actiwatch button pushes"
     header = ['time',
               'time_str',

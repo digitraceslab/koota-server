@@ -323,7 +323,7 @@ class MosquittoUser(models.Model):
         return self._passwd
     @passwd.setter
     def passwd(self, passwd):
-        passwd = util.hash_mqtt_passwd(passwd)
+        passwd = util.hash_mosquitto_password(passwd)
         self._passwd = passwd
 class MosquittoAcl(models.Model):
     user = models.ForeignKey(MosquittoUser, on_delete=models.CASCADE)
