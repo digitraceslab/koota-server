@@ -15,6 +15,7 @@ from . import converter
 from . import exceptions
 from . import models
 from . import permissions
+from . import util
 from . import views as kviews
 
 import logging
@@ -30,6 +31,7 @@ class AwareDevice(devices.BaseDevice):
     converters = devices.BaseDevice.converters + [
         converter.AwareUploads,
         converter.AwareTableData,
+        converter.AwarePacketTimeRange,
         converter.AwareDataSize,
         converter.AwareScreen,
         converter.AwareBattery,
@@ -97,42 +99,61 @@ class AwareDevice(devices.BaseDevice):
 # https://github.com/denzilferreira/aware-server/blob/master/aware_dashboard.sql#L298
 base_config = dict(
     sensors=dict(
-        status_mqtt='true',
+        status_mqtt=True,
         mqtt_server='aware.koota.zgib.net',
         mqtt_port=8883,
         mqtt_keep_alive=600,
         mqtt_qos=2,
-        status_esm='true',
         #mqtt_username='x',
         #mqtt_password='y',
-        #study_id='none',
-        #study_start=0,
+        study_start=1464728400000,  # 1 june 2016 00:00
         #webservice_server='https://aware.koota.zgib.net/'+xxx,
         #status_webservice=True,
 
-        # per-sensor config
+
+        # meta-options
+        frequency_clean_old_data=4,  # (0 = never, 1 = weekly, 2 = monthly)
+        #study_id=1,            # If this is set to anything, not user modifiable
+        status_crashes=True,
+        status_esm=True,
+
+        # Sensor config
         status_battery=True,
+        status_screen=True,
         #status_bluetooth=False,
         #frequency_bluetooth=600,
+        status_light=True,
+        status_accelerometer=False,
+        frequency_accelerometer=10000000, #microseconds
+        frequency_light=10000000,  # microseconds
+        #frequency_timezone=43200  # seconds
     ))
+def aware_to_string(value):
+    """AWARE requires setting values to be string.  Convert them"""
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
 def get_user_config(device):
-    """Get a device's remote configuration"""
+    """Get a device's remote configuration.
+
+    return value: Python dict object."""
     import copy
     config = copy.deepcopy(base_config)
     config['sensors']['mqtt_username'] = device.data.public_id
     config['sensors']['mqtt_password'] = device.data.secret_id
-    #config['sensors']['study_id'] = 'none'
     #config['study_start'] = timezone.now().timestamp()*1000
     config['sensors']['webservice_server'] = device.qrcode_url()
     config['sensors']['status_webservice'] = True
-    # Aware requires it as a list of dicts.
-    config['sensors'] = [dict(setting=k, value=v)
-                         for k,v in config['sensors'].items()]
 
-    #config = {0: {'sensors':config['sensors']},
-    #          #1: {'plugins':config['plugins']},
-    #          }
-    config = [{'sensors': config['sensors']}]
+    # This is the difference between a user being able to edit a
+    # config themselves and not.
+    #config['sensors']['study_id'] = 1
+
+    # Aware requires it as a list of dicts.
+    sensors = [dict(setting=k, value=aware_to_string(v))
+               for k,v in config['sensors'].items()]
+
+    config = [{'sensors': sensors}]
     return config
 
 
@@ -150,19 +171,21 @@ def register(request, secret_id, indexphp=None):
     # We have no other operation, basic study configuration.
     data = request.POST
     if 'device_id' in data:
-        return JsonResponse(dict(error="You should scan this with the Aware app.",
-                                 config=config))
-    passwd = util.hash_mqtt_passwd(device.secret_id)
-    device.attrs['aware-device-uuid'] = data['device_id']
-    device.attrs['aware-device-passwd_pbkdf2'] = passwd
-    return JsonResponse(config, safe=False)
+        passwd = util.hash_mosquitto_password(device.secret_id)
+        device.attrs['aware-device-uuid'] = data['device_id']
+        device.attrs['aware-device-passwd_pbkdf2'] = passwd
+        return JsonResponse(config, safe=False)
+    # error return.
+    return JsonResponse(dict(error="You should scan this with the Aware app.",
+                             config=config),
+                        status=400, reason="Scan with app")
 
 @csrf_exempt
 def create_table(request, secret_id, table, indexphp=None):
     """AWARE client creating table.  This is nullop for us."""
     # {'device_id': ['2e66087d-4afb-4a64-9316-67d737e21998'],
     #  'fields': ["_id integer primary key autoincrement,timestamp real default 0,device_id text default '',topic text default '',message text default '',status integer default 0,UNIQUE(timestamp,device_id)"]}
-    data = request.POST
+    #data = request.POST
     return HttpResponse(status=200, reason="We don't sync tables")
 
 @csrf_exempt
@@ -179,6 +202,9 @@ def latest(request, secret_id, table, indexphp=None):
     # Return the latest timestamp in our database.  Aware uses
     # this to know what data needs to be sent.
     ts = device.attrs.get('aware-last-ts-%s'%table, 0)
+    if ts == 0:
+        return JsonResponse([], safe=False)
+    ts = int(float(ts))
     return JsonResponse([dict(timestamp=ts,
                               double_end_timestamp=ts,
                               double_esm_user_answer_timestamp=ts)],
@@ -190,6 +216,7 @@ def insert(request, secret_id, table, indexphp=None):
     device = models.Device.get_by_secret_id(secret_id)
     device_cls = device.get_class()
 
+    #device_uuid = request.POST['device_id']
     data = request.POST['data']  # data is bytes JSON data
     data_decoded = loads(data)
 
@@ -216,17 +243,23 @@ def clear_table(request, secret_id, table, indexphp=None):
 
 # /index.php/webservice/client_get_study_info/  # supposed to have API key
 def study_info(request, secret_id, indexphp=None):
-    """Returns "study info" that is presented when QR scanned."""
+    """Returns "study info" that is presented when QR scanned.
+
+    This function has no effect on config locking."""
+    public_id = None
+    if not secret_id:
+        return JsonResponse({ })
+
+    device = models.Device.get_by_secret_id(secret_id)
+    public_id = device.public_id
     response = dict(study_name='Koota',
-                    study_description='Link your deviece to',
+                    study_description=('Your device is linked to Koota. '
+                                       'device_id=%s'%public_id),
                     researcher_first='Aalto Complex Systems',  # researcher name
                     researcher_last='',
                     researcher_contact='noreply@koota.cs.aalto.fi',
                     device_id='11'
                 )
-    if secret_id:
-        device = models.Device.get_by_secret_id(secret_id)
-        response['public_id'] = device.public_id
     return JsonResponse(response)
 
 

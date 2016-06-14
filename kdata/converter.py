@@ -1554,6 +1554,7 @@ class BaseAwareConverter(_Converter):
 
         for ts, data in queryset:
             data = loads(data)
+            if not isinstance(data, dict): continue
             if data['table'] != table:
                 continue
             table_data = loads(data['data'])
@@ -1579,6 +1580,19 @@ class AwareTableData(BaseAwareConverter):
             yield (time(timegm(ts.utctimetuple())),
                    data['table'],
                    data['data'],
+                   )
+class AwarePacketTimeRange(BaseAwareConverter):
+    header = ['packet_time', 'table', 'start_time', 'end_time', 'n_rows']
+    desc = "Time ranges covered by each data packet."
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            data_decoded = loads(data['data'])
+            yield (time(timegm(ts.utctimetuple())),
+                   data['table'],
+                   time(data_decoded[ 0]['timestamp']/1000),
+                   time(data_decoded[-1]['timestamp']/1000),
+                   len(data_decoded),
                    )
 class AwareDataSize(BaseDataSize):
     device_class = 'PurpleRobot'
@@ -1669,6 +1683,7 @@ class AwareCalls(BaseAwareConverter):
         types = {"1": "incoming", "2":"outgoing", "3":"missed"}
         for ts, data in queryset:
             data = loads(data)
+            if not isinstance(data, dict): continue
             if data['table'] != 'calls': continue
             table_data = loads(data['data'])
             for row in table_data:
