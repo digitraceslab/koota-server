@@ -1732,6 +1732,87 @@ class AwareAmbientNoise(BaseAwareConverter):
               'double_frequency',
               'blob_raw',
               ]
+class AwareAccelerometer(BaseAwareConverter):
+    desc = "Accelerometer"
+    table = 'accelerometer'
+    ts_column = 'timestamp'
+    fields = ['double_values_0',
+              'double_values_1',
+              'double_values_2',
+              ]
+class AwareGravity(BaseAwareConverter):
+    desc = "gravity"
+    table = 'gravity'
+    ts_column = 'timestamp'
+    fields = ['double_values_0',
+              'double_values_1',
+              'double_values_2',
+              'accuracy',
+              ]
+class AwareGyroscope(BaseAwareConverter):
+    desc = "gyroscope"
+    table = 'gyroscope'
+    ts_column = 'timestamp'
+    fields = ['axis_z',
+              'axis_y',
+              'axis_x',
+              'accuracy',
+              ]
+class AwareLinearAccelerometer(BaseAwareConverter):
+    desc = "linear_accelerometer"
+    table = 'linear_accelerometer'
+    ts_column = 'timestamp'
+    fields = ['double_values_0',
+              'double_values_1',
+              'double_values_2',
+              ]
+class AwareMagnetometer(BaseAwareConverter):
+    desc = "magnetometer"
+    table = 'magnetometer'
+    ts_column = 'timestamp'
+    fields = ['double_values_0',
+              'double_values_1',
+              'double_values_2',
+              'accuracy',
+              ]
+class AwareRotation(BaseAwareConverter):
+    desc = "rotation"
+    table = 'rotation'
+    ts_column = 'timestamp'
+    fields = ['double_values_0',
+              'double_values_1',
+              'double_values_2',
+              'accuracy',
+              ]
+class AwareNetworkTraffic(BaseAwareConverter):
+    desc = "network_traffic"
+    table = 'network_traffic'
+    ts_column = 'timestamp'
+    fields = ['double_sent_bytes',
+              'double_received_bytes',
+              'network_type',
+              'double_sent_packets',
+              'double_received_packets',
+              ]
+class AwareAppNotifications(BaseAwareConverter):
+    desc = "applications_notifications"
+    table = 'applications_notifications'
+    ts_column = 'timestamp'
+    fields = ['application_name',
+              'sound',
+              'vibrate',
+              'double_sent_packets',
+              'double_received_packets',
+              ]
+class AwareTelephony(BaseAwareConverter):
+    desc = "telephony"
+    table = 'telephony'
+    ts_column = 'timestamp'
+    fields = ['network_type',
+              'phone_type',
+              'data_enabled',
+              'sim_state',
+              ]
 class AwareCalls(BaseAwareConverter):
     desc = "Calls (incoming=1, outgoing=2, missed=3)"
     header = ['time', 'call_type', 'call_duration', 'trace', ]
@@ -1762,7 +1843,6 @@ class AwareMessages(BaseAwareConverter):
                        types[row.get('message_type', '')],
                        safe_hash(row['trace']) if 'trace' in row else '',
                        )
-
 class AwareRecentDataCounts(BaseDataCounts):
     device_class = 'PurpleRobot'
     timestamp_converter = AwareTimestamps
