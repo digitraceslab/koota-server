@@ -289,6 +289,7 @@ class PurpleRobot(BaseDevice):
                   converter.PRDataSize,
                   converter.PRMissingData7Days,
                   converter.PRMissingData,
+                  converter.PRRecentDataCounts,
                   ]
     @classmethod
     def configure(cls, device):

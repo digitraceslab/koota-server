@@ -279,6 +279,58 @@ class BaseDataSize(_Converter):
             now = timezone.now()
             total_days = (now-ts).total_seconds() / (3600*24)
         return total_days
+class BaseDataCounts(_Converter):
+    per_page = None
+    header = ['']
+    desc = "Data points per day, for the last 7 days"
+    days_ago = 7
+    @classmethod
+    def query(cls, queryset):
+        """Do necessary filtering on the django QuerySet.
+
+        In this case, restrict to the last N days."""
+        # This method depends on django, but that is OK since it used
+        # Queryset semantics, which itself depend on django.  This
+        # method only makes sent to call in the server itself.
+        from django.utils import timezone
+        now = timezone.now()
+        return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
+    def __init__(self, *args, **kwargs):
+        super(BaseDataCounts, self).__init__(*args, **kwargs)
+        self.counts = collections.defaultdict(int)
+    def convert(self, rows, time=lambda x:x):
+        import pytz
+        from django.conf import settings
+        TZ = pytz.timezone(settings.TIME_ZONE)
+        #import IPython ; IPython.embed()
+
+        counts = self.counts
+        # Operating like PRMissingData
+        for ts in self.timestamp_converter(rows).run():
+            ts = ts[0]
+            if ts < 100000000: continue  # skip bad timestamps
+            ts = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)
+            #ts = TZ.normalize(ts.astimezone(TZ))
+            ts = TZ.normalize(ts)
+            date = ts.strftime('%Y-%m-%d')
+            counts[date] += 1
+
+        all_dates = self.dates()
+        day_counts = tuple( counts[date] for date in all_dates )
+        day_counts = tuple( (x if x else '_') for x in day_counts )
+
+        yield day_counts
+        del self.counts, counts
+    @classmethod
+    def dates(cls):
+        """List of dates we are analyzing"""
+        from django.utils import timezone
+        now = timezone.now()
+        dates = [ (now-timedelta(days=x)).strftime('%Y-%m-%d') for x in range(cls.days_ago-1, -1, -1)]
+        return dates
+    @classmethod
+    def header2(cls):
+        return cls.dates()
 
 
 
@@ -1300,62 +1352,14 @@ class PRMissingDataUnlimited(PRMissingData):
     days_ago = None
     desc = "Report gaps of greater than 3600s in last 7 days of Purple Robot data."
 
-class PRRecentDataCounts(_Converter):
+class PRRecentDataCounts(BaseDataCounts):
     device_class = 'PurpleRobot'
-    per_page = None
-    header = ['']
-    desc = "Data points per day, for the last 7 days"
-    days_ago = 7
-    @classmethod
-    def query(cls, queryset):
-        """Do necessary filtering on the django QuerySet.
-
-        In this case, restrict to the last N days."""
-        # This method depends on django, but that is OK since it used
-        # Queryset semantics, which itself depend on django.  This
-        # method only makes sent to call in the server itself.
-        from django.utils import timezone
-        now = timezone.now()
-        return queryset.filter(ts__gt=now-timedelta(days=cls.days_ago))
-    def __init__(self, *args, **kwargs):
-        super(PRRecentDataCounts, self).__init__(*args, **kwargs)
-        self.counts = collections.defaultdict(int)
-    def convert(self, rows, time=lambda x:x):
-        import pytz
-        from django.conf import settings
-        TZ = pytz.timezone(settings.TIME_ZONE)
-        #import IPython ; IPython.embed()
-
-        counts = self.counts
-        # Operating like PRMissingData
-        for ts in PRTimestamps(rows).run():
-            ts = ts[0]
-            if ts < 100000000: continue  # skip bad timestamps
-            ts = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)
-            #ts = TZ.normalize(ts.astimezone(TZ))
-            ts = TZ.normalize(ts)
-            date = ts.strftime('%Y-%m-%d')
-            counts[date] += 1
-
-        all_dates = self.dates()
-        day_counts = tuple( counts[date] for date in all_dates )
-        day_counts = tuple( (x if x else '_') for x in day_counts )
-
-        yield day_counts
-        del self.counts, counts
-    @classmethod
-    def dates(cls):
-        """List of dates we are analyzing"""
-        from django.utils import timezone
-        now = timezone.now()
-        dates = [ (now-timedelta(days=x)).strftime('%Y-%m-%d') for x in range(cls.days_ago-1, -1, -1)]
-        return dates
-    @classmethod
-    def header2(cls):
-        return cls.dates()
+    timestamp_converter = PRTimestamps
 
 
-
+#
+# iOS converters (our app)
+#
 class BaseIosConverter(_Converter):
     device_class = 'Ios'
 class IosProbes(BaseIosConverter, PRProbes):
@@ -1571,6 +1575,19 @@ class AwareUploads(BaseAwareConverter):
                    data['table'],
                    len(data['data']),
                    )
+class AwareTimestamps(BaseAwareConverter):
+    header = ['time', 'packet_time', 'table']
+    desc = "Timestamps of each collected data point"
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            data = loads(data)
+            if not isinstance(data, dict): continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                yield (time(row['timestamp']/1000.),
+                       time(timegm(ts.utctimetuple())),
+                       data['table'],
+                       )
 class AwareTableData(BaseAwareConverter):
     header = ['time', 'table', 'data']
     desc = "Uploaded data, by table."
@@ -1582,17 +1599,22 @@ class AwareTableData(BaseAwareConverter):
                    data['data'],
                    )
 class AwarePacketTimeRange(BaseAwareConverter):
-    header = ['packet_time', 'table', 'start_time', 'end_time', 'n_rows']
+    header = ['packet_time', 'table', 'start_time', 'end_time', 'n_rows',
+              'packet_size', 'rows_per_s']
     desc = "Time ranges covered by each data packet."
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
             data_decoded = loads(data['data'])
+            time_range = (data_decoded[-1]['timestamp']
+                          -data_decoded[0]['timestamp']) / 1000
             yield (time(timegm(ts.utctimetuple())),
                    data['table'],
                    time(data_decoded[ 0]['timestamp']/1000),
                    time(data_decoded[-1]['timestamp']/1000),
                    len(data_decoded),
+                   len(data['data']),
+                   len(data_decoded)/float(time_range) if time_range else '',
                    )
 class AwareDataSize(BaseDataSize):
     device_class = 'PurpleRobot'
@@ -1676,6 +1698,26 @@ class AwareNetwork(BaseAwareConverter):
               'network_type',
               'network_subtype',
               ]
+class AwareApplicationNotifications(BaseAwareConverter):
+    desc = "Notifications"
+    table = 'applications_notifications'
+    ts_column = 'timestamp'
+    fields = ['application_name',
+              'defaults',
+              'sound',
+              'vibrate',
+              ]
+class AwareApplicationCrashes(BaseAwareConverter):
+    desc = "Notifications"
+    table = 'applications_crashes'
+    ts_column = 'timestamp'
+    fields = ['error_short',
+              'error_long',
+              'application_name',
+              'package_name',
+              'application_version',
+              'error_condition',
+              ]
 class AwareCalls(BaseAwareConverter):
     desc = "Calls (incoming=1, outgoing=2, missed=3)"
     header = ['time', 'call_type', 'call_duration', 'trace', ]
@@ -1706,6 +1748,12 @@ class AwareMessages(BaseAwareConverter):
                        types[row.get('message_type', '')],
                        safe_hash(row['trace']) if 'trace' in row else '',
                        )
+
+class AwareRecentDataCounts(BaseDataCounts):
+    device_class = 'PurpleRobot'
+    timestamp_converter = AwareTimestamps
+
+
 
 
 

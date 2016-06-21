@@ -30,9 +30,11 @@ class AwareDevice(devices.BaseDevice):
     desc = 'Aware device'
     converters = devices.BaseDevice.converters + [
         converter.AwareUploads,
+        converter.AwareTimestamps,
         converter.AwareTableData,
         converter.AwarePacketTimeRange,
         converter.AwareDataSize,
+        converter.AwareRecentDataCounts,
         converter.AwareScreen,
         converter.AwareBattery,
         converter.AwareLight,
@@ -40,6 +42,8 @@ class AwareDevice(devices.BaseDevice):
         converter.AwareSensorWifi,
         converter.AwareLocation,
         converter.AwareNetwork,
+        converter.AwareApplicationNotifications,
+        converter.AwareApplicationCrashes,
         converter.AwareCalls,
         converter.AwareMessages,
     ]
@@ -116,16 +120,17 @@ base_config = dict(
         #study_id=1,            # If this is set to anything, not user modifiable
         status_crashes=True,
         status_esm=True,
+        #webservice_wifi_only
 
         # Sensor config
         status_battery=True,
         status_screen=True,
         #status_bluetooth=False,
         #frequency_bluetooth=600,
-        status_light=True,
+        #status_light=True,
         status_accelerometer=False,
         frequency_accelerometer=10000000, #microseconds
-        frequency_light=10000000,  # microseconds
+        #frequency_light=10000000,  # microseconds
         #frequency_timezone=43200  # seconds
     ))
 def aware_to_string(value):
@@ -291,17 +296,17 @@ urlpatterns = [
 
     # Main registratioon link
     # AWARE has: 'index.php/webservice/index/$study_id/$api_key
-    url(r'^v1/(?P<secret_id>[0-9a-f]+)/?$', register,
+    url(r'^v1/(?:1/)?(?P<secret_id>[0-9a-f]+)/?$', register,
         name='aware-register'),
 
     # Various table operations
-    url(r'^v1/(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/create_table$', create_table,
+    url(r'^v1/(?:1/)?(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/create_table$', create_table,
         name='aware-create-table'),
-    url(r'^v1/(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/latest$', latest,
+    url(r'^v1/(?:1/)?(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/latest$', latest,
         name='aware-latest'),
-    url(r'^v1/(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/insert$', insert,
+    url(r'^v1/(?:1/)?(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/insert$', insert,
         name='aware-insert'),
-    url(r'^v1/(?P<secret_id>[0-9a-f]+)?/(?P<table>\w+)/clear_table$', clear_table,
+    url(r'^v1/(?:1/)?(?P<table>\w+)/clear_table$', clear_table,
         name='aware-clear-table'),
 ]
 
