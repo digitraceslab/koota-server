@@ -22,6 +22,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 AWARE_DOMAIN = 'https://aware.koota.zgib.net'
+PACKET_CHUNK_SIZE = 1000
+
 
 
 class AwareDevice(devices.BaseDevice):
@@ -232,9 +234,22 @@ def insert(request, secret_id, table, indexphp=None):
         timestamp_column_name = 'double_esm_user_answer_timestamp'
 
     max_ts = max(float(row[timestamp_column_name]) for row in data_decoded)
-    data_with_probe = dumps(dict(table=table, data=data))
 
-    kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
+    # Using this section, store all data in one packet.
+    #data_with_probe = dumps(dict(table=table, data=data))
+    #kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
+
+    # In this section, store data in chunks of size 500-1000.
+    chunk_size = PACKET_CHUNK_SIZE
+    data_separated = [ data_decoded[x:x+chunk_size]
+                       for x in range(0, len(data_decoded), chunk_size) ]
+    for data_chunk in data_separated:
+        data_separated = dumps(data_chunk)
+        data_with_probe = dumps(dict(table=table, data=data_separated))
+        kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
+
+    # Important conclusion: we must store the last timestamp.  Really
+    # this and the section above should be an atomic operation!
     device.attrs['aware-last-ts-%s'%table] = max_ts
     return HttpResponse()
 
