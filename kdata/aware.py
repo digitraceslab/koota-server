@@ -256,12 +256,14 @@ def insert(request, secret_id, table, indexphp=None):
 
     # In this section, store data in chunks of size 500-1000.
     chunk_size = PACKET_CHUNK_SIZE
-    data_separated = [ data_decoded[x:x+chunk_size]
-                       for x in range(0, len(data_decoded), chunk_size) ]
+    data_separated = ( data_decoded[x:x+chunk_size]
+                       for x in range(0, len(data_decoded), chunk_size) )
     for data_chunk in data_separated:
-        data_separated = dumps(data_chunk)
-        data_with_probe = dumps(dict(table=table, data=data_separated))
+        data_chunk = dumps(data_chunk)
+        data_with_probe = dumps(dict(table=table, data=data_chunk))
         kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
+        del data_chunk, data_with_probe
+    del data, data_decoded, data_separated
 
     # Important conclusion: we must store the last timestamp.  Really
     # this and the section above should be an atomic operation!
