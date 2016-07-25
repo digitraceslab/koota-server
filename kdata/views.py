@@ -108,7 +108,9 @@ def save_data(data, device_id, request=None):
     row = models.Data(device_id=device_id, ip=remote_ip, data=data)
     row.data_length = len(data)
     row.save()
-    return row.id
+    row_id = row.id
+    del row, data
+    return row_id
 
 
 
