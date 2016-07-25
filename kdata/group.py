@@ -44,7 +44,7 @@ def group_join(request):
         form = JoinGroupForm(request.POST)
         if form.is_valid():
             invite_code = form.cleaned_data['invite_code']
-            groups = models.Group.objects.filter(invite_code=invite_code)
+            groups = models.Group.objects.filter(invite_code=invite_code).exclude(invite_code="")
             context['groups'] = groups
             groups_str = ','.join(sorted(g.name for g in groups))
             if groups_str == form.cleaned_data['groups']:
