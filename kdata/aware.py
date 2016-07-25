@@ -22,6 +22,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 AWARE_DOMAIN = 'https://aware.koota.zgib.net'
+AWARE_DOMAIN_SIGNED = 'https://dev.koota.zgib.net'
 PACKET_CHUNK_SIZE = 1000
 
 
@@ -30,6 +31,7 @@ class AwareDevice(devices.BaseDevice):
     """Basic Python class handling Aware devices"""
     _register_device = True
     desc = 'Aware device'
+    AWARE_DOMAIN = AWARE_DOMAIN
     converters = devices.BaseDevice.converters + [
         converter.AwareUploads,
         converter.AwareTimestamps,
@@ -83,8 +85,15 @@ class AwareDevice(devices.BaseDevice):
                                                     secret_id=secret_id,
                                                     ))
         # TODO: http or https?
-        url = AWARE_DOMAIN+url
+        url = self.AWARE_DOMAIN+url
         return url
+
+class AwareDeviceValidCert(AwareDevice):
+    """AWARE device, using a valid cert endpoint"""
+    _register_device = True
+    desc = 'Aware device (iOS)'
+    AWARE_DOMAIN = AWARE_DOMAIN_SIGNED
+
 
 #config = 
 #$decode->{'sensors'}[] = array('setting' => 'status_mqtt','value' => 'true' );
