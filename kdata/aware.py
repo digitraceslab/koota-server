@@ -124,8 +124,8 @@ base_config = dict(
         #mqtt_password='y',
         study_start=1464728400000,  # 1 june 2016 00:00
         #webservice_server='https://aware.koota.zgib.net/'+xxx,
-        #status_webservice=True,
-
+        status_webservice=True,
+        frequency_webservice=15,
 
         # meta-options
         frequency_clean_old_data=4,  # (0 = never, 1 = weekly, 2 = monthly)
@@ -231,6 +231,10 @@ def latest(request, secret_id, table, indexphp=None):
 def insert(request, secret_id, table, indexphp=None):
     """AWARE client requesting data to be saved."""
     device = models.Device.get_by_secret_id(secret_id)
+    # We do *not* check permissions here, since we are only POSTing
+    # and no data can come out.  Unlike most devices, we must update
+    # some internal state on POSTing, thus an unauthenticated getting
+    # of a device class.
     device_cls = device.get_class()
 
     #device_uuid = request.POST['device_id']
