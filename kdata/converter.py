@@ -1448,9 +1448,9 @@ class ActiwatchFull(_Converter):
 
                 yield (time(ts),
                        time_str,
-                       int(line[0]),
-                       int(line[3]),
-                       int(line[4]),
+                       int(line[0]) if line[0] != 'NaN' else float('nan'),
+                       int(line[3]) if line[3] != 'NaN' else float('nan'),
+                       int(line[4]) if line[4] != 'NaN' else float('nan'),
                        float(line[5]),
                        float(line[6]),
                        line[7],
