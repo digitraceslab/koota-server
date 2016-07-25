@@ -1,4 +1,5 @@
 from datetime import timedelta
+from hashlib import sha256
 from json import loads, dumps
 import textwrap
 import time
@@ -235,6 +236,7 @@ def insert(request, secret_id, table, indexphp=None):
     #device_uuid = request.POST['device_id']
     data = request.POST['data']  # data is bytes JSON data
     data_decoded = loads(data)
+    data_sha256 = sha256(data.encode('utf8')).hexdigest()
 
     timestamp_column_name = 'timestamp'
     if 'double_end_timestamp' in data_decoded[0]:
@@ -260,7 +262,11 @@ def insert(request, secret_id, table, indexphp=None):
     # Important conclusion: we must store the last timestamp.  Really
     # this and the section above should be an atomic operation!
     device.attrs['aware-last-ts-%s'%table] = max_ts
-    return HttpResponse()
+    return JsonResponse([dict(timestamp=max_ts,
+                              double_end_timestamp=max_ts,
+                              double_esm_user_answer_timestamp=max_ts,
+                              dat_sha256=data_sha256),],
+                        safe=False)
 
 @csrf_exempt
 def clear_table(request, secret_id, table, indexphp=None):
