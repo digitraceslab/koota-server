@@ -33,7 +33,7 @@ class GroupResearcherInline(admin.TabularInline):
     model = models.Group.researchers.through
 class GroupAdmin(admin.ModelAdmin):
     filter_horizontal = ('subjects', 'researchers')
-    list_display = ['name', 'n_subjects', 'n_researchers', 'pyclass', 'otp_required', 'active']
+    list_display = ['name', 'priority', 'n_subjects', 'n_researchers', 'pyclass', 'managed', 'nonanonymous', 'otp_required', 'active', 'ts_start', 'ts_end']
     inlines = [
         GroupSubjectInline,
         GroupResearcherInline,
