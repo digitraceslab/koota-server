@@ -21,3 +21,14 @@ CFLAGS='-I/usr/include/gmp/ -m64' LDFLAGS="-m64 -L/opt/niksula/lib/amd64 -R/opt/
 # numpy
 ##PATH=/usr/gnu/i386-pc-solaris2.11/bin/:$PATH LDFLAGS=-m64 CFLAGS=-m64 pip install --no-use-wheel --force-reinstall --ignore-installed numpy
 PATH=/usr/xpg4/bin/:$PATH LDFLAGS='-m64' CFLAGS='-m64 -O2' pip install numpy
+
+
+# mosquitto + auth plugin
+mosquitto:
+PATH=$PATH:/usr/gnu/i386-pc-solaris2.11/bin/:/opt/pgsql/bin/ gmake CC=gcc WITH_SRV=no CFLAGS=-m64 LDFLAGS=-m64
+auth plugin:
+PATH=$PATH:/usr/gnu/i386-pc-solaris2.11/bin/:/opt/pgsql/bin/ gmake CC=gcc WITH_SRV=no BE_CFLAGS='-m64 -I/opt/pgsql/include/amd64/' BE_LDFLAGS=-m64
+LD_LIBRARY_PATH=/opt/pgsql/lib/amd64/ ./src/mosquitto -c mosquitto.conf.2
+
+config:
+auth_plugin /home/darstr1/src/mosquitto-auth-plug-0.0.7/auth-plug.so
