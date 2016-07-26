@@ -57,10 +57,15 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 LOGIN_URL = 'login2'
 LOGIN_REDIRECT_URL = 'device-list'
+
+
+#### The following settings should go into settings_local.py, NOT here.
 # Make a random salt using this and paste it here.  By default we have
 # an epheremal random salt.
 # bytes(bytearray((random.randint(0, 255) for _ in range(32))))
 SALT = None
+#TWITTER_KEY = ''    # Consumer Key (API Key)
+#TWITTER_SECRET = '' # Consumer Secret (API Secret)
 
 
 ALLOWED_HOSTS = [
