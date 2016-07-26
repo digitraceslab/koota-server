@@ -5,13 +5,15 @@ from datetime import timedelta
 from hashlib import sha256
 import importlib
 import itertools
-from json import dumps
+import json
+from json import dumps, loads
 import os
 import time
 import six
 from six import StringIO as IO
 
 import django.db.models
+import django.forms
 
 from . import models
 
@@ -242,6 +244,64 @@ def hash_mosquitto_password(passwd):
     passwd = passwd.replace('_', '$', 1)
     passwd = passwd.replace('pbkdf2', 'PBKDF2')
     return passwd
+
+
+
+class JsonConfigFormField(django.forms.Field):
+    def __init__(self, *args, **kwargs):
+        # Somehow max_length gets added again, and we have to remove it.
+        kwargs.pop('max_length', None)
+        return super(JsonConfigFormField, self).__init__(*args, **kwargs)
+    def to_python(self, value):
+        if not value.strip(): return ''
+        try:
+            value = loads(value)
+        except json.JSONDecodeError as e:
+            raise django.forms.ValidationError("Invalid JSON: "+str(e))
+            #raise django.forms.ValidationError("Invalid JSON")
+        return value
+    def prepare_value(self, value):
+        try:
+            value = loads(value)
+        except json.JSONDecodeError:
+            return value
+        return dumps(value, sort_keys=True,
+                     indent=4, separators=(',', ': '))
+# database field
+class JsonConfigField(django.db.models.TextField):
+    def formfield(self, **kwargs):
+        defaults = {'form_class': JsonConfigFormField}
+        defaults.update(kwargs)
+        return super(JsonConfigField, self).formfield(**defaults)
+    # convert python object to query value
+    def get_prep_value(self, value):
+        if value is '':   return ''
+        value = dumps(value, separators=(',', ':'))
+        # return should always be string
+        return value
+    # deserialization (from DB) and .clean() by forms
+    def to_python(self, value):
+        if value is None: return None
+        if not isinstance(value, str): return value
+        try:
+            value = loads(value)
+        except json.JSONDecodeError:
+            raise django.forms.ValidationError("Invalid JSON")
+        return value
+
+
+
+def merge_dicts(*dicts):
+    result = { }
+    for d in dicts:
+        recursive_update_dicts(d, result)
+    return result
+def recursive_update_dicts(src, dest):
+    for k, v in src.items():
+        if k in dest and isinstance(v, dict):
+            recursive_update_dicts(src[k], dest[k])
+        else:
+            result[k] = copy.deepcopy(v)
 
 
 

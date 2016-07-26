@@ -175,13 +175,17 @@ class Group(models.Model):
     url = models.CharField(max_length=256, blank=True, null=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
-    invite_code = models.CharField(max_length=64)
+    invite_code = models.CharField(max_length=64, blank=True)
     otp_required = models.BooleanField(default=False,
                                        help_text="Require OTP auth for researchers?")
     nonanonymous = models.BooleanField(default=False)
     managed = models.BooleanField(default=False)
     salt = models.CharField(max_length=128,
                             default=util.random_salt_b64, blank=True)
+    priority = models.IntegerField(default=10,
+                         help_text=("In what order should group configuration "
+                                    "be applied?  higher=more priority"))
+    config = util.JsonConfigField(blank=True)
     subjects = models.ManyToManyField(settings.AUTH_USER_MODEL,
                                       through='GroupSubject',
                                       related_name='subject_of_groups',
@@ -215,6 +219,9 @@ class GroupSubject(models.Model):
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
     #nonanonymous = NullBoolean
+    def __str__(self):
+        return '<GroupSubject(%s, %s)>'%(repr(self.hash_if_needed()),
+                                         repr(self.group.slug))
     def hash(self):
         return util.safe_hash(self.user.username)
     def hash_if_needed(self):
@@ -231,6 +238,8 @@ class GroupResearcher(models.Model):
     ts_end = models.DateTimeField(blank=True, null=True)
     manager = models.NullBooleanField(blank=True, null=True)
     #manager = Bool
+    def __str__(self):
+        return '<GroupResearcher(%s, %s)>'%(self.user.username, self.group.slug)
 
 
 
