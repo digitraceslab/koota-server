@@ -1329,6 +1329,7 @@ class PRMissingData(_Converter):
         # greater than self.min_gap seconds, yield that info.
         t_before_gap = next(ts_list_sorted)
         t_active_start = t_before_gap
+        t_next = None
         for t_next in ts_list_sorted:
             if t_next > t_before_gap + self.min_gap:
                 yield (time(t_before_gap),
@@ -1338,6 +1339,8 @@ class PRMissingData(_Converter):
                 )
                 t_active_start = t_next
             t_before_gap = t_next
+        if t_next is None:
+            return
         yield (time(t_before_gap),
                time(t_next),
                t_next-t_before_gap,
