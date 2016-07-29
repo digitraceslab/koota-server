@@ -154,6 +154,12 @@ class BaseDevice(object):
     # device is created, so needs some hack kind of things in forms.
     # This is handleded in kdata.views.DeviceCreate.model().
     dbmodel = None
+    # String containing django template to be rendered as the
+    # configuration instructions on the device /config page.
+    config_instructions_template = None
+    # Like above, but a django template filename loaded using the normal means.
+    config_instructions_template_file = None
+
     def __init__(self, dbrow):
         """Bind a DB row to this"""
         self.data = dbrow
