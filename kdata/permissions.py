@@ -4,12 +4,15 @@ import six
 
 from django.http import Http404
 
-
+from . import exceptions
 from . import models
+
 
 def has_device_permission(request, device):
     """Test for user having permissions to access device.
     """
+    if request.user.is_anonymous():
+        raise exceptions.LoginRequired()
     if isinstance(device, six.string_types):
         device = models.Device.objects.get(device_id=device)
     # is_verified tests for 2FA (OTP).
@@ -31,6 +34,8 @@ def has_group_researcher_permission(request, group):
     """Test a researcher's permission to access a group's data.
     """
     researcher = request.user
+    if researcher.is_anonymous():
+        raise exceptions.LoginRequired()
     group_class = group.get_class()
     # is_verified tests for 2FA (OTP).
     if researcher.is_superuser and researcher.is_verified():
@@ -61,6 +66,8 @@ def has_device_manager_permission(request, device):
     """
     #import IPython ; IPython.embed()
     researcher = request.user
+    if researcher.is_anonymous():
+        raise exceptions.LoginRequired()
     subject = device.user
     group = models.Group.objects.filter(
         subjects=subject,
