@@ -3,6 +3,11 @@
 
 API terms: https://dev.twitter.com/overview/terms/agreement-and-policy
 
+TODO:
+- unlink
+- handle invalid tokens
+- handle rate limit exceeded
+
 """
 
 from datetime import timedelta
@@ -17,10 +22,16 @@ from django.utils import timezone
 
 from requests_oauthlib import OAuth1Session
 
+from . import converter
 from . import devices
 from . import models
-from . import converter
+from . import permissions
 from .views import save_data
+
+
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 
@@ -35,18 +46,13 @@ class Twitter(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [
                  ]
-    raw_instructions = (
-        """Current state: {device.oauthdevice.state}.  Please link this
-        <a href="{link_url}">here</a>.
+    config_instructions_template = (
+        """Current state: {{device.oauthdevice.state}}.
+        <ul>
+          {% if device.oauthdevice.state != 'linked' %}<li>Please link this <a href="{% url 'twitter-link' public_id=device.public_id %}">here</a>.</li>{% endif %}
+          {% if device.oauthdevice.state == 'linked' %}<li>If desired, you may unlink the device here: <a href="{% url 'twitter-unlink' public_id=device.public_id%}">here</a>.</li> {% endif %}
+
         """)
-    @classmethod
-    def configure(cls, device):
-        """Information for the device configure page."""
-        instructions = cls.raw_instructions.format(
-            link_url=reverse('twitter-link', kwargs=dict(device_id=device.device_id)),
-            device=device,
-            )
-        return dict(raw_instructions=instructions)
     @classmethod
     def create_hook(cls, instance, user):
         super(Twitter, cls).create_hook(instance, user)
@@ -55,10 +61,12 @@ class Twitter(devices.BaseDevice):
 
 
 
-def link(request, device_id):
+def link(request, public_id):
     """Step one of linking the device
     """
-    device = models.OauthDevice.get_by_id(device_id)
+    device = models.OauthDevice.get_by_id(public_id)
+    if not permissions.has_device_config_permission(request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
     # TODO: error handling
     callback_uri = request.build_absolute_uri(reverse(done))
 
@@ -107,6 +115,8 @@ def done(request):
     verifier = oauth_response.get('oauth_verifier')
 
     device = models.OauthDevice.objects.get(request_key=oauth_response['oauth_token'])
+    if not permissions.has_device_config_permission(self.request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
     resource_owner_key = device.request_key
     resource_owner_secret = device.request_secret
 
@@ -269,6 +279,7 @@ Twitter.scrape_all_function = scrape_all
 
 
 urlpatterns = [
-    url(r'^(?P<device_id>[0-9a-f]+)$', link, name='twitter-link'),
+    url(r'^link/(?P<public_id>[0-9a-f]+)$', link, name='twitter-link'),
     url(r'^done/$', done, name='twitter-done'),
+    url(r'^unlink/(?P<public_id>[0-9a-f]+)$', unlink, name='twitter-unlink'),
 ]

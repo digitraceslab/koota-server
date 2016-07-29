@@ -66,6 +66,9 @@ LOGIN_REDIRECT_URL = 'device-list'
 SALT = None
 #TWITTER_KEY = ''    # Consumer Key (API Key)
 #TWITTER_SECRET = '' # Consumer Secret (API Secret)
+#FACEBOOK_KEY = ''
+#FACEBOOK_SECRET = ''
+FACEBOOK_PERMISSIONS = ['user_friends']
 
 
 ALLOWED_HOSTS = [

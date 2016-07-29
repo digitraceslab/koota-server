@@ -1,0 +1,270 @@
+# https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
+
+"""Facebook scraping support for Koota.
+
+TODO:
+- unlink
+- token expiry and renewal
+- handle declined permissions
+- enable server-to-server signing
+- handle required policy
+"""
+
+from datetime import timedelta
+from json import dumps, loads
+import time
+
+from django.conf import settings
+from django.conf.urls import url, include
+from django.core.urlresolvers import reverse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
+from django.utils import timezone
+
+import requests
+from requests_oauthlib import OAuth2Session
+from requests_oauthlib.compliance_fixes import facebook_compliance_fix
+
+from . import converter
+from . import devices
+from . import models
+from . import permissions
+from .views import save_data
+
+
+
+import logging
+logger = logging.getLogger(__name__)
+
+
+
+FACEBOOK_ID = settings.FACEBOOK_KEY
+FACEBOOK_SECRET = settings.FACEBOOK_SECRET
+app_access_token = '%s|%s'%(FACEBOOK_ID, FACEBOOK_SECRET)
+fb_permissions = settings.FACEBOOK_PERMISSIONS
+
+authorization_base_url = 'https://www.facebook.com/dialog/oauth'
+token_url = 'https://graph.facebook.com/v2.3/oauth/access_token'
+
+
+@devices.register_device_decorator(default=False)
+class Facebook(devices.BaseDevice):
+    dbmodel = models.OauthDevice
+    converters = devices.BaseDevice.converters + [
+                 ]
+    config_instructions_template = (
+        """Current state: {{device.oauthdevice.state}}.
+        <ul>
+          {% if device.oauthdevice.state != 'linked' %}<li>Please link this <a href="{% url 'twitter-link' public_id=device.public_id %}">here</a>.</li>{% endif %}
+          {% if device.oauthdevice.state == 'linked' %}<li>If desired, you may unlink the device here: <a href="{% url 'facebook-unlink' public_id=device.public_id%}">here</a>.</li> {% endif %}
+
+        """)
+    @classmethod
+    def create_hook(cls, instance, user):
+        super(Facebook, cls).create_hook(instance, user)
+        instance.state = 'unlinked'
+        instance.save()
+
+
+def gen_callback_uri(request, device):
+    """Generate callback URI.  Must be done in two places and must be identical"""
+    callback_uri = request.build_absolute_uri(reverse(done))
+    #callback_uri = 'http://koota.cs.aalto.fi:8002'+reverse(done)
+    return callback_uri
+
+import sys
+config = { 'verbose': sys.stderr}
+
+
+
+def link(request, public_id):
+    """Step one of linking the device
+    """
+    device = models.OauthDevice.get_by_id(public_id)
+    if not permissions.has_device_config_permission(request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
+    # TODO: error handling
+    callback_uri = gen_callback_uri(request, device)
+
+    scope = ','.join(fb_permissions)
+
+    # 1: Request tokens
+    session = OAuth2Session(FACEBOOK_ID, redirect_uri=callback_uri, scope=scope)
+    session = facebook_compliance_fix(session)
+
+    # TODO: scope parameter: list of permissions to request
+    authorization_url, state = session.authorization_url(authorization_base_url)
+    # authorization_url = https://www.facebook.com/dialog/oauth?response_type=code&client_id=FACEBOOK_ID&redirect_uri=CALLBACK_URI&state=XXXXXXX
+    # state = XXXXXXX
+
+    # save state
+    device.request_key = state
+    device.save()
+
+    return HttpResponseRedirect(authorization_url)
+
+
+
+def done(request):
+    # TODO: handle error: error_reason=user_denied
+    #                     &error=access_denied
+    #                     &error_description=The+user+denied+your+request.
+    if 'error' in request.GET:
+        raise exceptions.BaseMessageKootaException("Error in facebook linking: %s"%request.GET, message="An error occured")
+
+    print(request.GET)
+    #request.GET = QueryDict({'code': ['xxxxxxxx'],  'state': ['xxxxxxx']})
+    code = request.GET['code']
+    state = request.GET['state']
+
+    # Get device object
+    device = models.OauthDevice.objects.get(request_key=state)
+    if not permissions.has_device_config_permission(request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
+    callback_uri = gen_callback_uri(request, device)
+
+    # This was the requests-oauthlib way, but it did not work that well.
+    # redirect_response = raw_input('Paste the full redirect URL here:')
+    #redirect_response = request.build_absolute_uri()
+    #rr2 = 'https'+redirect_response[4:]
+    #
+    #session = OAuth2Session(FACEBOOK_ID, redirect_uri=callback_uri)
+    #session = facebook_compliance_fix(session)
+    #
+    #session.fetch_token(token_url, client_secret=FACEBOOK_SECRET,
+    #                    # requests-oauthlib uses
+    #                    # authorization_response= instead of code=.
+    #                    #authorization_response=redirect_response,
+    #                    #authorization_response=rr2,
+    #                    code=code,
+    #                    #method='GET',
+    #                    )
+    #
+    #access_token = session.access_token
+
+    session = requests.Session()
+    r = session.get('https://graph.facebook.com/oauth/access_token',
+                    params=dict(client_id=FACEBOOK_ID,
+                                redirect_uri=callback_uri,
+                                client_secret=FACEBOOK_SECRET,
+                                code=code))
+    from urllib.parse import parse_qs
+    data = parse_qs(r.text)
+    if 'error' in data:
+        logger.error('Token request failed: %s'%data)
+        #import IPython ; IPython.embed()
+
+    access_token = data['access_token'][0]
+    expires_in_seconds = float(data['expires'][0])
+    now = timezone.now()
+    expires_at = now + timedelta(seconds=expires_in_seconds)
+
+    #session.get('https://graph.facebook.com/debug_token', params=dict(input_token=access_token))
+    #S2 = requests.Session()
+    #r2 = S2.get('https://graph.facebook.com/debug_token', params=dict(input_token=access_token, access_token=FACEBOOK_ID+'|'+FACEBOOK_SECRET))
+    #S3 = OAuth2Session(FACEBOOK_ID)
+    #S3.get('https://graph.facebook.com/debug_token', params=dict(input_token=access_token, access_token=FACEBOOK_ID+'|'+FACEBOOK_SECRET))
+
+
+    #return()
+    # save these
+    #device.resource_key = resource_owner_key
+    device.resource_secret = access_token
+    device.ts_linked = timezone.now()
+    device.ts_refresh = expires_at
+    device.state = 'linked'
+    device.save()
+    return HttpResponseRedirect(reverse('device-config',
+                                        kwargs=dict(public_id=device.public_id)))
+
+
+def unlink():
+    # Destroy the auth tokens
+    pass
+
+
+
+
+def scrape_device(device_id, do_save_data=False):
+    API_BASE = 'https://api.twitter.com/1.1/%s.json'
+
+    # Get basic parameters
+    device = models.OauthDevice.get_by_id(device_id)
+    # Check token expiry
+    #if device.ts_refresh > timezone.now() + timedelta(seconds=60):
+    #    logger.error('Facebook token expired')
+    #    return()
+    # Avoid scraping again if already done
+    if (device.ts_last_fetch
+        and (timezone.now() - device.ts_last_fetch < timedelta(hours=1))):
+        pass
+    device.ts_last_fetch = timezone.now()
+    device.save()
+    access_token = device.resource_secret
+
+    # Create base OAuth session to use for everything
+    session = requests.Session()
+
+    def get(endpoint, params={ }):
+        """Get Graph API, adding access token"""
+        if 'access_token' not in params:
+            params = dict(params, access_token=access_token)
+        r = session.get('https://graph.facebook.com/%s'%endpoint,
+                        params=params)
+        return r
+
+    r = get('debug_token', {'access_token':app_access_token, 'input_token':access_token})
+    #print(r.json())
+    # {'data': {'scopes': ['user_likes', 'user_friends',
+    # 'public_profile'], 'app_id': '1026272630802129', 'issued_at':
+    # 1469623396, 'user_id': '119855341788312', 'application': 'Koota
+    # Dev Server', 'is_valid': True, 'expires_at': 1474807396}}
+    fb_permissions = r.json()['data']['scopes']
+
+
+    def get_facebook(endpoint, params={}, filter_keys=lambda j: j):
+        r = get(endpoint, params=params)
+        body = r.text
+        j = r.json()
+        #if 'next_cursor' in j:
+        #    print("Twitter needs cursoring")
+        j = filter_keys(j)
+        data = dict(endpoint=endpoint,
+                    url=url,
+                    data=dumps(j),
+                    params=params,
+                    timestamp=time.time(),
+                    version=1,
+                )
+        if do_save_data:
+            save_data(data, device_id, )
+        return j, data
+
+    def filter_keys(j):
+        return j
+
+
+    # TODO: since_id,
+    ret = get_facebook('me/friendlists')
+    print(ret, '\n')
+
+
+    #import IPython ; IPython.embed()
+
+
+def scrape_all():
+    devices = Twitter.dbmodel.objects.filter(type=Twitter.pyclass_name()).all()
+    for device in devices:
+        print(device)
+        scrape_device(device.device_id, True)
+
+Facebook.scrape_one_function = scrape_device
+Facebook.scrape_all_function = scrape_all
+
+
+
+
+urlpatterns = [
+    url(r'^link/(?P<public_id>[0-9a-f]+)$', link, name='facebook-link'),
+    url(r'^unlink/(?P<public_id>[0-9a-f]+)$', unlink, name='facebook-unlink'),
+    url(r'^done/$', done, name='facebook-done'),
+]
