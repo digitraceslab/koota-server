@@ -1721,6 +1721,17 @@ class AwareApplicationCrashes(BaseAwareConverter):
               'application_version',
               'error_condition',
               ]
+class AwareAmbientNoise(BaseAwareConverter):
+    desc = "Ambient noise plugin"
+    table = 'plugin_ambient_noise'
+    ts_column = 'timestamp'
+    fields = ['is_silent',
+              'double_decibels',
+              'double_silence_threshold',
+              'double_rms',
+              'double_frequency',
+              'blob_raw',
+              ]
 class AwareCalls(BaseAwareConverter):
     desc = "Calls (incoming=1, outgoing=2, missed=3)"
     header = ['time', 'call_type', 'call_duration', 'trace', ]

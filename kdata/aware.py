@@ -49,6 +49,7 @@ class AwareDevice(devices.BaseDevice):
         converter.AwareNetwork,
         converter.AwareApplicationNotifications,
         converter.AwareApplicationCrashes,
+        converter.AwareAmbientNoise,
         converter.AwareCalls,
         converter.AwareMessages,
     ]
