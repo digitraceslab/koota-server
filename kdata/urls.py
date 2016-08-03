@@ -13,6 +13,7 @@ from kdata import group
 from kdata import survey
 from kdata import twitter
 from kdata import facebook
+from kdata import instagram
 
 urlpatterns = [
     url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post, dict(device_class=devices.PurpleRobot),
@@ -81,6 +82,7 @@ urlpatterns = [
     # Twitter and other social sites
     url(r'^twitter/', include(twitter.urlpatterns)),
     url(r'^facebook/', include(facebook.urlpatterns)),
+    url(r'^instagram/', include(instagram.urlpatterns)),
 
     # Aware
 #    url(r'^aware/', include(aware.urlpatterns)),
