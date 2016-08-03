@@ -40,6 +40,7 @@ client_secret = settings.TWITTER_SECRET
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 base_authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
+API_BASE = 'https://api.twitter.com/1.1/%s.json'
 
 @devices.register_device_decorator(default=False)
 class Twitter(devices.BaseDevice):
@@ -51,7 +52,7 @@ class Twitter(devices.BaseDevice):
         <ul>
           {% if device.oauthdevice.state != 'linked' %}<li>Please link this <a href="{% url 'twitter-link' public_id=device.public_id %}">here</a>.</li>{% endif %}
           {% if device.oauthdevice.state == 'linked' %}<li>If desired, you may unlink the device here: <a href="{% url 'twitter-unlink' public_id=device.public_id%}">here</a>.</li> {% endif %}
-
+        </ul>
         """)
     @classmethod
     def create_hook(cls, instance, user):
@@ -115,7 +116,7 @@ def done(request):
     verifier = oauth_response.get('oauth_verifier')
 
     device = models.OauthDevice.objects.get(request_key=oauth_response['oauth_token'])
-    if not permissions.has_device_config_permission(self.request, device):
+    if not permissions.has_device_config_permission(request, device):
         raise exceptions.NoDevicePermission("No permission for device")
     resource_owner_key = device.request_key
     resource_owner_secret = device.request_secret
@@ -143,9 +144,18 @@ def done(request):
     return HttpResponseRedirect(reverse('device-config', kwargs=dict(public_id=device.public_id)))
 
 
-def unlink():
+def unlink(request, public_id):
     # Destroy the auth tokens
-    pass
+    device = models.OauthDevice.get_by_id(public_id)
+    if not permissions.has_device_config_permission(request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
+    device.state = 'unlinked'
+    device.resource_key = ''
+    device.resource_secret = ''
+    device.data = dumps(dict(unlinked=time.ctime()))
+    device.save()
+    return HttpResponseRedirect(reverse('device-config',
+                                        kwargs=dict(public_id=device.public_id)))
 
 
 
@@ -169,8 +179,6 @@ def cursor_get(func, params):
 
 
 def scrape_device(device_id, do_save_data=False):
-    API_BASE = 'https://api.twitter.com/1.1/%s.json'
-
     # Get basic parameters
     device = models.OauthDevice.get_by_id(device_id)
     if (device.ts_last_fetch
@@ -267,7 +275,8 @@ def scrape_device(device_id, do_save_data=False):
 
 
 def scrape_all():
-    devices = Twitter.dbmodel.objects.filter(type=Twitter.pyclass_name()).all()
+    devices = Twitter.dbmodel.objects.filter(type=Twitter.pyclass_name(),
+                                             state='linked')
     for device in devices:
         print(device)
         scrape_device(device.device_id, True)
