@@ -64,11 +64,17 @@ LOGIN_REDIRECT_URL = 'device-list'
 # an epheremal random salt.
 # bytes(bytearray((random.randint(0, 255) for _ in range(32))))
 SALT = None
-#TWITTER_KEY = ''    # Consumer Key (API Key)
-#TWITTER_SECRET = '' # Consumer Secret (API Secret)
-#FACEBOOK_KEY = ''
-#FACEBOOK_SECRET = ''
+TWITTER_KEY = None    # Consumer Key (API Key)
+TWITTER_SECRET = None # Consumer Secret (API Secret)
+FACEBOOK_KEY = None
+FACEBOOK_SECRET = None
 FACEBOOK_PERMISSIONS = ['user_friends']
+FACEBOOK_REDIRECT_URLDOMAIN = 'https://koota.cs.aalto.fi'
+FACEBOOK_DONE_DOMAINS = set(('dev.koota.zgib.net', 'localhost:8002'))
+INSTAGRAM_KEY = None
+INSTAGRAM_SECRET = None
+INSTAGRAM_PERMISSIONS = ['basic', 'follower_list']
+
 
 
 ALLOWED_HOSTS = [
