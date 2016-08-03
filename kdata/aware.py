@@ -223,10 +223,12 @@ def latest(request, secret_id, table, indexphp=None):
     if ts == 0:
         return JsonResponse([], safe=False)
     ts = int(float(ts))
-    return JsonResponse([dict(timestamp=ts,
-                              double_end_timestamp=ts,
-                              double_esm_user_answer_timestamp=ts)],
-                        safe=False)
+    response = [dict(timestamp=ts,
+                     double_end_timestamp=ts,
+                     double_esm_user_answer_timestamp=ts)]
+    if 'nonce' in request.POST:
+        response[0]['nonce'] = request.POST['nonce']
+    return JsonResponse(response, safe=False)
 
 @csrf_exempt
 def insert(request, secret_id, table, indexphp=None):
@@ -268,12 +270,14 @@ def insert(request, secret_id, table, indexphp=None):
 
     # Important conclusion: we must store the last timestamp.  Really
     # this and the section above should be an atomic operation!
+    response = [dict(timestamp=max_ts,
+                     double_end_timestamp=max_ts,
+                     double_esm_user_answer_timestamp=max_ts,
+                     dat_sha256=data_sha256),]
+    if 'nonce' in request.POST:
+        response[0]['nonce'] = request.POST['nonce']
     device.attrs['aware-last-ts-%s'%table] = max_ts
-    return JsonResponse([dict(timestamp=max_ts,
-                              double_end_timestamp=max_ts,
-                              double_esm_user_answer_timestamp=max_ts,
-                              dat_sha256=data_sha256),],
-                        safe=False)
+    return JsonResponse(response, safe=False)
 
 @csrf_exempt
 def clear_table(request, secret_id, table, indexphp=None):
