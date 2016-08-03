@@ -11,6 +11,7 @@ TODO:
 """
 
 from datetime import timedelta
+import hmac
 from json import dumps, loads
 import time
 
@@ -71,8 +72,50 @@ def gen_callback_uri(request, device):
     #callback_uri = 'http://koota.cs.aalto.fi:8002'+reverse(done)
     return callback_uri
 
-import sys
-config = { 'verbose': sys.stderr}
+
+
+def gen_proof(access_token):
+    return hmac.new(FACEBOOK_SECRET.encode('ascii'),
+                    access_token.encode('ascii'), 'sha256').hexdigest()
+import urllib.parse
+class FacebookAuth(requests.auth.AuthBase):
+    """Requests auth for Instagram signing
+
+    https://www.instagram.com/developer/secure-api-requests/
+
+    Sort parameters, create '/endpoint|param1=v|param2=v' with sorted
+    params and hmac-sha256.
+    """
+    def __init__(self, access_token):
+        self.access_token = access_token
+        self.appsecret_proof = hmac.new(FACEBOOK_SECRET.encode('ascii'), access_token.encode('ascii'), 'sha256').hexdigest()
+    def __call__(self, r):
+        if r.method.upper() == 'GET':
+            # Get required data
+            url = urllib.parse.urlparse(r.url)
+            qs = urllib.parse.parse_qsl(url.query)
+            # Add tokens
+            qs_new = qs + [('access_token', self.access_token),
+                           ('appsecret_proof', self.appsecret_proof)]
+            # Reassemble the request
+            qs_new = urllib.parse.urlencode(qs_new)
+            url_new = url._replace(query=qs_new)
+            r.url = url_new.geturl()
+            #import IPython ; IPython.embed()
+        elif r.method.upper() == 'POST':
+            # Get required data
+            url = urllib.parse.urlparse(r.url)
+            qs = urllib.parse.parse_qsl(r.body)
+            # Add tokens
+            qs_new = qs + [('access_token', self.access_token),
+                           ('appsecret_proof', self.appsecret_proof)]
+            # reassemble body
+            qs_new = urllib.parse.urlencode(qs_new)
+            r.body = qs_new
+        else:
+            raise NotImplementedError()
+        return r
+
 
 
 
@@ -203,16 +246,10 @@ def scrape_device(device_id, do_save_data=False):
 
     # Create base OAuth session to use for everything
     session = requests.Session()
+    session.auth = FacebookAuth(access_token)
 
-    def get(endpoint, params={ }):
-        """Get Graph API, adding access token"""
-        if 'access_token' not in params:
-            params = dict(params, access_token=access_token)
-        r = session.get('https://graph.facebook.com/%s'%endpoint,
-                        params=params)
-        return r
-
-    r = get('debug_token', {'access_token':app_access_token, 'input_token':access_token})
+    r = requests.get(API_BASE%'debug_token', {'input_token':access_token},
+                     auth=FacebookAuth(app_access_token))
     #print(r.json())
     # {'data': {'scopes': ['user_likes', 'user_friends',
     # 'public_profile'], 'app_id': '1026272630802129', 'issued_at':
