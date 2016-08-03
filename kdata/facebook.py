@@ -45,6 +45,9 @@ fb_permissions = settings.FACEBOOK_PERMISSIONS
 
 authorization_base_url = 'https://www.facebook.com/dialog/oauth'
 token_url = 'https://graph.facebook.com/v2.3/oauth/access_token'
+API_BASE = 'https://graph.facebook.com/%s'
+
+
 
 
 @devices.register_device_decorator(default=False)
@@ -55,8 +58,9 @@ class Facebook(devices.BaseDevice):
     config_instructions_template = (
         """Current state: {{device.oauthdevice.state}}.
         <ul>
-          {% if device.oauthdevice.state != 'linked' %}<li>Please link this <a href="{% url 'twitter-link' public_id=device.public_id %}">here</a>.</li>{% endif %}
+          {% if device.oauthdevice.state != 'linked' %}<li>Please link this <a href="{% url 'facebook-link' public_id=device.public_id %}">here</a>.</li>{% endif %}
           {% if device.oauthdevice.state == 'linked' %}<li>If desired, you may unlink the device here: <a href="{% url 'facebook-unlink' public_id=device.public_id%}">here</a>.</li> {% endif %}
+        </ul>
 
         """)
     @classmethod
@@ -220,16 +224,22 @@ def done(request):
                                         kwargs=dict(public_id=device.public_id)))
 
 
-def unlink():
+def unlink(request, public_id):
     # Destroy the auth tokens
-    pass
+    device = models.OauthDevice.get_by_id(public_id)
+    if not permissions.has_device_config_permission(request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
+    device.state = 'unlinked'
+    device.resource_secret = ''
+    device.data = dumps(dict(unlinked=time.ctime()))
+    device.save()
+    return HttpResponseRedirect(reverse('device-config',
+                                        kwargs=dict(public_id=device.public_id)))
 
 
 
 
 def scrape_device(device_id, do_save_data=False):
-    API_BASE = 'https://api.twitter.com/1.1/%s.json'
-
     # Get basic parameters
     device = models.OauthDevice.get_by_id(device_id)
     # Check token expiry
@@ -259,7 +269,8 @@ def scrape_device(device_id, do_save_data=False):
 
 
     def get_facebook(endpoint, params={}, filter_keys=lambda j: j):
-        r = get(endpoint, params=params)
+        url = API_BASE%endpoint
+        r = session.get(url, params=params)
         body = r.text
         j = r.json()
         #if 'next_cursor' in j:
@@ -289,7 +300,8 @@ def scrape_device(device_id, do_save_data=False):
 
 
 def scrape_all():
-    devices = Twitter.dbmodel.objects.filter(type=Twitter.pyclass_name()).all()
+    devices = Facebook.dbmodel.objects.filter(type=Facebook.pyclass_name(),
+                                              state='linked')
     for device in devices:
         print(device)
         scrape_device(device.device_id, True)
