@@ -223,13 +223,14 @@ class GroupSubject(models.Model):
         return '<GroupSubject(%s, %s)>'%(repr(self.hash_if_needed()),
                                          repr(self.group.slug))
     def hash(self):
-        return util.safe_hash(self.user.username)
+        # TODO: duplicated in iter_group_data.
+        return util.safe_hash(self.group.salt+self.user.username)
     def hash_if_needed(self):
         """Subject ID, hashed if necessary"""
         if self.group.nonanonymous:
             return self.user.username
         else:
-            return util.safe_hash(self.user.username)
+            return util.safe_hash(self.group.salt+self.user.username)
 class GroupResearcher(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)

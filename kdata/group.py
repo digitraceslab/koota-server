@@ -151,6 +151,9 @@ def iter_group_data(group,
                                                       id=gs_id).exists():
                 continue
 
+        # TODO: use subject_hash.  TODO: this duplicates code from
+        # GroupSubject.hash(), unify (by getting the GroupSubject
+        # object from above) if logic becomes complex.
         subject_hash = hash_subject(salt+subject.username)
         device_hash  = hash_device(salt+device.public_id)
 
