@@ -57,7 +57,7 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 LOGIN_URL = 'login2'
 LOGIN_REDIRECT_URL = 'device-list'
-
+DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 2**20
 
 #### The following settings should go into settings_local.py, NOT here.
 # Make a random salt using this and paste it here.  By default we have
@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     'floppyforms',
 ]
 
+# TODO: django 1.10, middleware change
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -203,6 +204,8 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'koota_prj', 'static')]
 
+# TODO: Django 1.10: add runserver logging hooks
+# https://docs.djangoproject.com/en/1.10/releases/1.10/#runserver-output-goes-through-logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
