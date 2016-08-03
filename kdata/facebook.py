@@ -10,10 +10,13 @@ TODO:
 - handle required policy
 """
 
+import base64
 from datetime import timedelta
 import hmac
 from json import dumps, loads
+import os
 import time
+import urllib.parse
 
 from django.conf import settings
 from django.conf.urls import url, include
@@ -40,6 +43,8 @@ logger = logging.getLogger(__name__)
 
 FACEBOOK_ID = settings.FACEBOOK_KEY
 FACEBOOK_SECRET = settings.FACEBOOK_SECRET
+FACEBOOK_REDIRECT_URLDOMAIN = settings.FACEBOOK_REDIRECT_URLDOMAIN
+FACEBOOK_DONE_DOMAINS = settings.FACEBOOK_DONE_DOMAINS
 app_access_token = '%s|%s'%(FACEBOOK_ID, FACEBOOK_SECRET)
 fb_permissions = settings.FACEBOOK_PERMISSIONS
 
@@ -72,8 +77,10 @@ class Facebook(devices.BaseDevice):
 
 def gen_callback_uri(request, device):
     """Generate callback URI.  Must be done in two places and must be identical"""
-    callback_uri = request.build_absolute_uri(reverse(done))
-    #callback_uri = 'http://koota.cs.aalto.fi:8002'+reverse(done)
+    if FACEBOOK_REDIRECT_URLDOMAIN is None:
+        callback_uri = request.build_absolute_uri(reverse(done))
+    else:
+        callback_uri = urllib.parse.urljoin(FACEBOOK_REDIRECT_URLDOMAIN, reverse(done))
     return callback_uri
 
 
@@ -81,7 +88,6 @@ def gen_callback_uri(request, device):
 def gen_proof(access_token):
     return hmac.new(FACEBOOK_SECRET.encode('ascii'),
                     access_token.encode('ascii'), 'sha256').hexdigest()
-import urllib.parse
 class FacebookAuth(requests.auth.AuthBase):
     """Requests auth for Instagram signing
 
@@ -131,14 +137,20 @@ def link(request, public_id):
         raise exceptions.NoDevicePermission("No permission for device")
     # TODO: error handling
     callback_uri = gen_callback_uri(request, device)
-
     scope = ','.join(fb_permissions)
 
+    # Also encode the domain in the state, since we need to redirect
+    # back to it.  Facebook is not as flexible in the allowed callback
+    # domains.  This allows us to redirect back to certain authorized
+    # domains for the final step.
+    state = base64.urlsafe_b64encode(os.urandom(24)).decode('ascii')
+    this_domain = request.get_host()
+    state = this_domain + '|||' + state
+
     # 1: Request tokens
-    session = OAuth2Session(FACEBOOK_ID, redirect_uri=callback_uri, scope=scope)
+    session = OAuth2Session(FACEBOOK_ID, redirect_uri=callback_uri, scope=scope, state=state)
     session = facebook_compliance_fix(session)
 
-    # TODO: scope parameter: list of permissions to request
     authorization_url, state = session.authorization_url(authorization_base_url)
     # authorization_url = https://www.facebook.com/dialog/oauth?response_type=code&client_id=FACEBOOK_ID&redirect_uri=CALLBACK_URI&state=XXXXXXX
     # state = XXXXXXX
@@ -156,12 +168,24 @@ def done(request):
     #                     &error=access_denied
     #                     &error_description=The+user+denied+your+request.
     if 'error' in request.GET:
-        raise exceptions.BaseMessageKootaException("Error in facebook linking: %s"%request.GET, message="An error occured")
+        raise exceptions.BaseMessageKootaException("Error in facebook linking: %s"%request.GET, message="An error linking occured")
 
-    print(request.GET)
     #request.GET = QueryDict({'code': ['xxxxxxxx'],  'state': ['xxxxxxx']})
     code = request.GET['code']
     state = request.GET['state']
+
+    # Redirect to sub-project domain, if needed.  This must be safe
+    # because the state token could be spoofed!  We have explicit
+    # whitelist of domains.
+    if '|||' in state:
+        redirect_domain = state.split('|||', 1)[0]
+        if (redirect_domain != request.get_host()
+              and request.getredirect_domain in FB_DONE_DOMAINS):
+            url = urllib.parse.urlparse(request.build_absolute_uri())
+            if 'localhost' in redirect_domain:
+                url = url._replace(scheme='http')
+            url = url._replace(netloc=redirect_domain)
+        return HttpResponseRedirect(url.geturl())
 
     # Get device object
     device = models.OauthDevice.objects.get(request_key=state)
@@ -194,8 +218,7 @@ def done(request):
                                 redirect_uri=callback_uri,
                                 client_secret=FACEBOOK_SECRET,
                                 code=code))
-    from urllib.parse import parse_qs
-    data = parse_qs(r.text)
+    data = urlib.parse.parse_qs(r.text)
     if 'error' in data:
         logger.error('Token request failed: %s'%data)
         #import IPython ; IPython.embed()
