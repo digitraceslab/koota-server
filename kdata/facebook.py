@@ -180,12 +180,12 @@ def done(request):
     if '|||' in state:
         redirect_domain = state.split('|||', 1)[0]
         if (redirect_domain != request.get_host()
-              and request.getredirect_domain in FB_DONE_DOMAINS):
+              and redirect_domain in FACEBOOK_DONE_DOMAINS):
             url = urllib.parse.urlparse(request.build_absolute_uri())
             if 'localhost' in redirect_domain:
                 url = url._replace(scheme='http')
             url = url._replace(netloc=redirect_domain)
-        return HttpResponseRedirect(url.geturl())
+            return HttpResponseRedirect(url.geturl())
 
     # Get device object
     device = models.OauthDevice.objects.get(request_key=state)
@@ -218,12 +218,11 @@ def done(request):
                                 redirect_uri=callback_uri,
                                 client_secret=FACEBOOK_SECRET,
                                 code=code))
-    data = urlib.parse.parse_qs(r.text)
-    if 'error' in data:
-        logger.error('Token request failed: %s'%data)
-        #import IPython ; IPython.embed()
+    if r.status_code != 200:
+        raise exceptions.BaseMessageKootaException("Error in facebook linking: %r %s"%(r, r.text), message="An error linking occured")
 
-    access_token = data['access_token'][0]
+    data = urllib.parse.parse_qs(r.text)
+    access_token = data['access_token'][0]  # 0 because parse_qs returns list
     expires_in_seconds = float(data['expires'][0])
     now = timezone.now()
     expires_at = now + timedelta(seconds=expires_in_seconds)
