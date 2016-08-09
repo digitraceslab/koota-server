@@ -287,28 +287,29 @@ class SurveyToken(models.Model):
 
 
 class OauthDevice(Device):
-    pass
     # service     # Which service is this: twitter, facebook, etc.
                   # specifies consumer keys
-    service          = models.CharField(max_length=64)
+    service          = models.CharField(max_length=64, blank=True)
     # state       # unlinked, requested, linked, expired, invalid
-    state            = models.CharField(max_length=16)
+    state            = models.CharField(max_length=16, blank=True)
     # data for any error
-    error            = models.CharField(max_length=256)
+    error            = models.CharField(max_length=256, blank=True)
     # Any free-form text that may need to be associated with this.
-    data             = models.CharField(max_length=265)
-    request_key      = models.CharField(max_length=256)
-    request_secret   = models.CharField(max_length=256)
-    resource_key     = models.CharField(max_length=256)
-    resource_secret  = models.CharField(max_length=256)
-    refresh_token    = models.CharField(max_length=256)
+    data             = models.CharField(max_length=265, blank=True)
+    request_key      = models.CharField(max_length=256, blank=True, db_index=True)
+    request_secret   = models.CharField(max_length=256, blank=True)
+    resource_key     = models.CharField(max_length=256, blank=True)
+    resource_secret  = models.CharField(max_length=256, blank=True)
+    refresh_token    = models.CharField(max_length=256, blank=True)
     ts_create        = models.DateTimeField(auto_now_add=True)
     # ts_linked   # When initial linking was done
-    ts_linked        = models.BooleanField(default=False)
+    ts_linked        = models.DateTimeField(null=True, blank=True)
     # Last fetch of data
-    ts_last_fetch    = models.DateTimeField(blank=True, null=True)
+    ts_last_fetch    = models.DateTimeField(null=True, blank=True)
     # When token must be refreshed
-    ts_refresh       = models.DateTimeField(blank=True, null=True)
+    ts_refresh       = models.DateTimeField(null=True, blank=True)
+    # When refresh token must be refreshed
+    ts_refresh2      = models.DateTimeField(null=True, blank=True)
 
 
 
@@ -323,7 +324,7 @@ class MosquittoUser(models.Model):
     This is used for MQTT users, but *not* for normal devices - those
     are in device attributes.
     """
-    username = models.CharField(max_length=64, db_index=True, unique=True)
+    username = models.CharField(max_length=64, unique=True)
     _passwd = models.CharField(db_column='passwd', max_length=256,
                               help_text="hashed password")
     superuser = models.BooleanField(default=False,
