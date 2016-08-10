@@ -61,14 +61,22 @@ has_group_manager_permission = has_group_researcher_permission
 
 
 
-def has_device_manager_permission(request, device):
+def has_device_manager_permission(request, device, subject=None):
     """Test for user having permissions to access device.
+
+    You may either specify the device or the subject argument.  If
+    device, the device.user will be used as subject.  If subject is
+    directly specified (as for creating a new device), the device
+    argument is ignored and can be None.
     """
     #import IPython ; IPython.embed()
     researcher = request.user
     if researcher.is_anonymous():
         raise exceptions.LoginRequired()
-    subject = device.user
+    if request.user.is_superuser and request.user.is_verified():
+        return True
+    if subject is None:
+        subject = device.user
     group = models.Group.objects.filter(
         subjects=subject,
         researchers=researcher,

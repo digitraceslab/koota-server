@@ -8,7 +8,7 @@
 <li>Device public id: {{ object.public_id }}</li>
 <li>Device secret id (used for configuration): <b>{{ object.secret_id }}</b></li>
 <li>Device type: {{ object.get_type_display }}</li>
-{% if user.is_superuser %}<li>User: {{ object.user }}</li>{% endif %}
+{% if request.user.is_superuser or request.user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
 </ul>
 
 <h2>Data</h2>
@@ -32,9 +32,11 @@ Scan this with the device<p>
 
 <h2>Change device properties</h2>
 
-<p><b>You should almost never change the settings here, unless you made
-  it wrong.  If these need changing, consider making a new device
-  instead and relinking/unlinking the old one.</b></p>
+<div class="alert alert-danger">
+  You should almost never change the settings here, unless you
+  created the device incorrectly.  If these need changing, consider
+  making a new device instead, and leaving the old one as archive.
+</div>
 
 <p>Here, you can adjust some basic properties of your device.  The name
 is just for your use.  The usage (primary, secondary) will be passed
@@ -44,11 +46,15 @@ could possibly be used for research.  The device type should not
 normally be changed unless you configured it wrong at the start.  Make
 a new server device if you need to test other device types.</p>
 
-<form class="form-control" method="post">
-{% csrf_token %}
-{{ form.as_p }}
-<input class="btn btn-primary" type="submit" value="Submit" />
-</form>
-
+<div class="panel panel-default">
+  <div class="panel-body">
+    <form method="post">{% csrf_token %}
+      <table class="table">
+      {{ form.as_table }}
+      </table>
+      <input class="btn btn-primary" type="submit" value="Submit" />
+    </form>
+  </div>
+</div>
 
 {% endblock %}

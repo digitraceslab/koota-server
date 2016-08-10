@@ -2,12 +2,18 @@
 
 {% block body %}
 
-Device create
+<h2>Create a device for {{actual_user.username}}</h2>
 
-<form action="" method="post">{% csrf_token %}
-  {{ form.as_p }}
-  <input type="submit" value="Create" />
-</form>
+<div class="panel panel-default">
+  <div class="panel-body">
+    <form action="" method="post">{% csrf_token %}
+      <table class="table">
+	{{ form.as_table }}
+      </table>
+      <input class="btn btn-primary" type="submit" value="Create" />
+    </form>
+  </div>
+</div>
 
 
 {% endblock %}

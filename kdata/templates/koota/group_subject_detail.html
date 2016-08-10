@@ -1,5 +1,7 @@
 {% extends "koota/base.html" %}
 
+{% block title %}{{ group.dbrow.name }} - {{ groupsubject.hash_if_needed }} - Koota{% endblock%}
+
 {% block body %}
 
 <h2>Basic information</h2>

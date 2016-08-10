@@ -208,6 +208,21 @@ class DeviceConfig(UpdateView):
         if 'gs_id' in self.kwargs:
             return ''
         return reverse('device-config', kwargs=dict(public_id=self.object.public_id))
+    def get_form(self, *args, **kwargs):
+        """Get a form that has device type choices set per-user
+
+        See DeviceCreate.get_Form().
+        """
+        # This is a little bit hackish.  We rely on the code from
+        # DeviceCreate.get_form and DeviceCreate.get_user so that we
+        # don't have to do it ourselves.  This code could sometime be
+        # abstracted out of the.
+        base_form = super(DeviceConfig, self).get_form(*args, **kwargs)
+        form = DeviceCreate.get_form(self,
+                                     base_form=base_form,
+                                     user=DeviceCreate.get_user(self))
+        return form
+
 
 import qrcode
 import io
@@ -216,7 +231,7 @@ from django.conf import settings
 def device_qrcode(request, public_id):
     device = models.Device.get_by_id(public_id)
     if not permissions.has_device_config_permission(request, device):
-        raise exceptions.NoPermissionDenied("No permission for device")
+        raise exceptions.NoDevicePermission("No permission for device")
     #device_class = devices.get_class(self.object.type).qr_data(device=device)
     main_host = "https://{0}".format(settings.MAIN_DOMAIN)
     post_host = "https://{0}".format(settings.POST_DOMAIN)
@@ -284,10 +299,19 @@ class DeviceCreate(CreateView):
     #    form_class = modelform_factory(model, fields=self.fields)
     #    form = form_class(**self.get_form_kwargs())
     def get_form(self, *args, **kwargs):
-        """Get the form and override device choices based on user.
+        """Get the form and override the available device types based on user.
         """
-        form = super(DeviceCreate, self).get_form(*args, **kwargs)
-        user = self.get_user()
+        # The following hackish thing is so that this method can be
+        # used for both this (DeviceCreate) and the DeviceConfig
+        # classes.  Both need to adjust the device form so that the
+        # available devices depend on what the user has access to.
+        if 'base_form' in kwargs:
+            form = kwargs['base_form']
+            user = kwargs['user']
+        else:
+            form = super(DeviceCreate, self).get_form(*args, **kwargs)
+            user = self.get_user()
+        #
 
         # This gets only the standard choices, that all users should
         # have.
@@ -319,19 +343,37 @@ class DeviceCreate(CreateView):
         return form
     def form_valid(self, form):
         """Create the device."""
-        user = self.get_user()
-        if user.is_authenticated():
-            form.instance.user = user
-        else:
+        user = self.request.user
+        device_user = self.get_user()  # this could be for a study subject...
+        if not user.is_authenticated():
             raise exceptions.LoginRequired()
+        # Who are we creating this device for?  We have to handle that cleverly.
+        if user == device_user:
+            # Creating for self, no extra permissions needed
+            pass
+        elif user != device_user:
+            # Actual user (request.user) must have permissions for
+            # managing the group.
+            if not permissions.has_device_manager_permission(self.request,
+                                                             device=None,
+                                                             subject=device_user):
+                raise exceptions.NoGroupPermission(
+                    "You can't create devices for subjects of this group")
+
+        form.instance.user = device_user
         device_class = devices.get_class(form.cleaned_data['type'])
-        device_class.create_hook(form.instance, user=user)
+        device_class.create_hook(form.instance, user=device_user)
         return super(DeviceCreate, self).form_valid(form)
     def get_success_url(self):
         """Redirect to device config page."""
         self.object.save()
         self.object.refresh_from_db()
         #print 'id'*5, self.object.device_id
+        if 'gs_id' in self.kwargs:
+            return reverse('group-subject-device-config',
+                           kwargs=dict(group_name=self.kwargs['group_name'],
+                                       gs_id=self.kwargs['gs_id'],
+                                       public_id=self.object.public_id))
         return reverse('device-config', kwargs=dict(public_id=self.object.public_id))
     def get_user(self):
         """Get the user for hich we are creating a device for.
@@ -342,6 +384,12 @@ class DeviceCreate(CreateView):
         """
         if 'gs_id' in self.kwargs:
             groupsubject = models.GroupSubject.objects.get(id=self.kwargs['gs_id'])
-            return groupsubject.user
+            user = groupsubject.user
         else:
-            return self.request.user
+            user = self.request.user
+        return user
+    def get_context_data(self, **kwargs):
+        """Update actual user (current user or group subject) into context"""
+        context = super(DeviceCreate, self).get_context_data(**kwargs)
+        context['actual_user'] = self.get_user()
+        return context

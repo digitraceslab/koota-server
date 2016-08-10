@@ -4,6 +4,8 @@
 
 <h2>Device list</h2>
 
+<p><a class="btn btn-primary" href="{{ device_create_url }}"> Create device</a></p>
+
 <div class="table-responsive">
 <table class="table table-striped table-condensed">
   <tr>
@@ -28,8 +30,6 @@
   {% endfor %}
 </table>
 </div>
-
-<a href="{{ device_create_url }}"> Create device</a>
 
 
 {% endblock %}
