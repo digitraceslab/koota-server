@@ -30,15 +30,18 @@ def post_data(device_id, data):
     _r = Request(url='https://data.koota.cs.aalto.fi/post/',
                  data=data,
                  headers={'Device-ID': device_id})
-    with urlopen(_r) as r:
+    try:
+        r = urlopen(_r)
         response = r.read()
         response = json.loads(response.decode('utf-8'))
-        print('HTTP status:', r.status)
+        # py3 / py2 comptability
+        print('HTTP status:', r.getcode())
         print('Response:', response)
         if response.get('ok', False):
             return 0
         return 1
-
+    finally:
+        r.close()
 
 
 
