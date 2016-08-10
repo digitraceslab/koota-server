@@ -222,10 +222,10 @@ def unlink(request, public_id):
 
 
 
-def scrape_device(device_id, do_save_data=False):
+def scrape_device(public_id, do_save_data=False):
 
     # Get basic parameters
-    device = models.OauthDevice.get_by_id(device_id)
+    device = models.OauthDevice.get_by_id(public_id)
     # Check token expiry
     #if device.ts_refresh > timezone.now() + timedelta(seconds=60):
     #    logger.error('Instagram token expired')

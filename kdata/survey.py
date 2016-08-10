@@ -139,7 +139,7 @@ def take_survey(request, token):
     except models.SurveyToken.DoesNotExist:
         return HttpResponse('Survey %s does not exist...'%token,
                             status=404)
-    device = models.SurveyDevice.get_by_id(token_row.device_id)
+    device = models.SurveyDevice.objects.get(device_id=token_row.device_id)
     survey_class = device.get_class()
 
     survey_data = survey_class.get_survey(data=token_row.data, device=device)

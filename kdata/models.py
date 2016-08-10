@@ -76,10 +76,11 @@ class Device(models.Model):
         # device that has device_id beginning with public_id.
         if len(public_id) < 6:
             raise exceptions.NoDevicePermission(log="device ID too short")
-        try:
-            return cls.objects.get(_public_id=public_id)
-        except cls.DoesNotExist:
-            return cls.objects.get(device_id__startswith=public_id)
+        return cls.objects.get(_public_id=public_id)
+    @classmethod
+    def get_by_id_insecure(cls, public_id):
+        """Only for use in admin scripts"""
+        return cls.objects.get(_public_id=public_id)
     @classmethod
     def get_by_secret_id(cls, secret_id):
         if len(secret_id) < 10:
