@@ -49,6 +49,9 @@ class RegisterForm(forms.Form):
         # TODO: test for username alreay existing
         if User.objects.filter(username=self.cleaned_data['username']).exists():
             raise forms.ValidationError("Username already taken")
+        # Do the django standard password validation
+        auth.password_validation.validate_password(
+            self.cleaned_data.get('password2'))
 
 #from django.views.generic.edit import FormView
 class RegisterView(FormView):
