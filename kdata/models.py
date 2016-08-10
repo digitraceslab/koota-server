@@ -156,10 +156,15 @@ class AttrInterface(object):
 
 
 class DeviceLabel(models.Model):
-    name = models.CharField(max_length=64, null=True, blank=True)
-    description = models.CharField(max_length=256, null=True, blank=True)
-    slug = models.CharField(max_length=64, null=True, blank=True,
-                            unique=True, db_index=True)
+    name        = models.CharField(max_length=64, blank=True)
+    shortname   = models.CharField(max_length=64, blank=True)
+    description = models.CharField(max_length=256,blank=True)
+    slug        = models.CharField(max_length=64, blank=True,
+                                   unique=True, db_index=True,
+                                   help_text="slug for querying")
+    analyze     = models.BooleanField(help_text="Include this label in analysis?",
+                                      default=False)
+    order       = models.IntegerField(default=0, help_text="Order in UI.")
     def __str__(self):
         return self.name
 
@@ -169,10 +174,12 @@ class Group(models.Model):
     slug = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=64)
     desc = models.CharField(max_length=64)
+    desc_long = models.TextField(blank=True)
     active = models.BooleanField(default=True)
-    pyclass = models.CharField(max_length=128, blank=True, null=True)
-    pyclass_data = models.CharField(max_length=256, blank=True, null=True)
-    url = models.CharField(max_length=256, blank=True, null=True)
+    pyclass = models.CharField(max_length=128, blank=True)
+    pyclass_data = models.CharField(max_length=256, blank=True)
+    url = models.CharField(max_length=256, blank=True)
+    url_privacy = models.CharField(max_length=256, blank=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
     invite_code = models.CharField(max_length=64, blank=True)
