@@ -1,28 +1,62 @@
 <!doctype html>
+{% load static %}
 <html lang="en">
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="{% static 'bootstrap-3.3.6-dist/css/bootstrap.min.css' %}" rel="stylesheet">
+    {% comment %} <!-- Javascript includes for reference, do not use-->
+    <!--<script src="{% static 'jquery-1.12.0.min.js' %}" type="text/javascript"></script>-->
+    <!--<script src="{% static 'bootstrap-3.3.6-dist/js/bootstrap.js' %}" type="text/javascript"></script>-->
+    {% endcomment %}
     <title>{% block title%}Koota{% endblock %}</title>
   </head>
 
+
+
 <body>
 
-  <div style="border:1px solid black;">
+  <nav class="navbar navbar-default navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <!--<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>-->
+      <a class="navbar-brand" href="{% url 'main' %}">Koota</a>
   {% if user.is_authenticated %}
-  Logged in as {{ user.username }}{% if user.is_verified %}(+OTP){% endif %}. <a href="{% url 'logout'%}?next={% url 'main' %}">Logout</a><br/>
-
+  <p class="navbar-text">Logged in as {{ user.username }}{% if user.is_verified %}(+OTP){% endif %}. <a class="btn navbar-btn btn-primary" href="{% url 'logout'%}?next={% url 'main' %}">Logout</a></p>
   {% else %}
-  <a href="{% url 'login2' %}">Login</a> <a href="{% url 'register-user' %}">Register</a><br/>
+  <a class="btn navbar-btn btn-primary" href="{% url 'login2' %}">Login</a>
+  <a class="btn navbar-btn btn-info" href="{% url 'register-user' %}">Register</a>
   {% endif %}
-  {% for breadcrumb in request.breadcrumbs %}
-    {% if breadcrumb.1 and not forloop.last %}<a href="{{ breadcrumb.1 }}">{{ breadcrumb.0 }}</a>{%else%} {{ breadcrumb.0 }}{% endif %} {% if not forloop.last %} &raquo; {% endif %}
-  {% endfor %}
-  </div><br>
+    </div>
+
+  </div>
+  </nav>
+
+
+
+<div class="container-fluid">
+
+
+  <!--<div class="container">-->
+    <ol class="breadcrumb">
+      {% for breadcrumb in request.breadcrumbs %}
+      <li{%if forloop.last%} class="active"{%endif%}>{% if breadcrumb.1 and not forloop.last %}<a href="{{ breadcrumb.1 }}">{{ breadcrumb.0 }}</a>{%else%} {{ breadcrumb.0 }}{% endif %}</li>
+      {% endfor %}
+    </ol>
+  <!--</div>-->
 
 
 {% block body %}
 {{ body }}
 {% endblock %}
+
+
+</div>
 </body>
 
 </html>

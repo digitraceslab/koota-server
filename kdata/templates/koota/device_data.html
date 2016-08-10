@@ -2,34 +2,57 @@
 {% block title %} {{ converter.name }} on {{device.name}} {% endblock %}
 
 {% block body %}
+<div class="container-fluid">
 
 <h2>{{ converter.name }} on {{device.name}}</h2>
 
+<div class="panel panel-default">
+<div class="panel-body">
 {% if converter.paging_disabled %}
 <p>This converter can not browsed here.  Select a date range and
   then view csv in browser.</p>
 {% endif %}
 
 
-Download as (all pages subject to filter):<br>
-{% for ext, format in download_formats %}<a href="{{request.path_info}}.{{ext}}?{{query_params_nopage}}">{{format}}</a>, {% endfor %}<p>
+Download (all pages subject to filter) as:
+{% for ext, format in download_formats %}<a class="btn btn-default btn-xs" href="{{request.path_info}}.{{ext}}?{{query_params_nopage}}">{{format}}</a>
+{% endfor %}
+
 
 <form method="get">
     {{ select_form }}
-    <input type="submit" value="Submit" />
+    <input class="btn btn-primary btn-xs" type="submit" value="Submit" />
 </form>(Datetime format YYYY-MM-DD [HH:MM[:SS]].  Beware, reversing does not reverse values within data packets.)
-<p>
+</div> {# end panel body #}
+</div> {# end panel #}
 
 
 {% if pages_total > 1 %}
-{%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
+<!--{%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
 {%if page_prev %}<a href="?{{page_prev }}">Prev</a>{%endif%}
 [{{page_number}}/{{pages_total}}]
 {%if page_next %}<a href="?{{page_next }}">Next</a>{%endif%}
-{%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}
+{%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}-->
+
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+    <li>{%if page_first%}<a href="?{{page_first}}">1</a>{%endif%}</li>
+    {% if page_number|add:-1 >= 1 %}
+      <li class="disabled"><a>...</a></li>
+      <li>{%if page_prev %}<a href="?{{page_prev}}">{{page_number|add:-1}}</a>{%endif%}</li>
+    {% endif %}
+    <li class="active"><a>{{page_number}}</a></li>
+    {% if page_number|add:1 <= pages_total %}
+      <li>{%if page_next %}<a href="?{{page_next}}">{{page_number|add:1}}</a>{%endif%}</li>
+      <li class="disabled"><a>...</a></li>
+    {% endif %}
+    <li>{%if page_last %}<a href="?{{page_last}}">{{pages_total}}</a>{%endif%}</li>
+  </ul>
+</nav>
 {% endif %}
 
-<table>
+
+<table class="table table-condensed table-striped table-bordered" style="width: auto !important">
   <tr>{% for name in converter.header2 %}
     <th>{{ name }}</th>{% endfor %}
   </tr>
@@ -40,17 +63,42 @@ Download as (all pages subject to filter):<br>
 {% endfor %}
 </table>
 
+
 {% if pages_total > 1 %}
-{%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
+<!--{%if page_first%}<a href="?{{page_first}}">First</a>{%endif%}
 {%if page_prev %}<a href="?{{page_prev }}">Prev</a>{%endif%}
 [{{page_number}}/{{pages_total}}]
 {%if page_next %}<a href="?{{page_next }}">Next</a>{%endif%}
-{%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}
+{%if page_last %}<a href="?{{page_last }}">Last</a>{%endif%}-->
+
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+    <li>{%if page_first%}<a href="?{{page_first}}">1</a>{%endif%}</li>
+    {% if page_number|add:-1 >= 1 %}
+      <li class="disabled"><a>...</a></li>
+      <li>{%if page_prev %}<a href="?{{page_prev}}">{{page_number|add:-1}}</a>{%endif%}</li>
+    {% endif %}
+    <li class="active"><a>{{page_number}}</a></li>
+    {% if page_number|add:1 <= pages_total %}
+      <li>{%if page_next %}<a href="?{{page_next}}">{{page_number|add:1}}</a>{%endif%}</li>
+      <li class="disabled"><a>...</a></li>
+    {% endif %}
+    <li>{%if page_last %}<a href="?{{page_last}}">{{pages_total}}</a>{%endif%}</li>
+  </ul>
+</nav>
+
 {% endif %}
 
 
 {% if converter.errors %}
-<p><font color="red">Errors: {{ converter.errors }} {{ converter.errors_dict }}</font></p>
+<div class="panel panel-danger">
+  <div class="panel-heading">Errors were detected during conversion:</div>
+  <div class="panel-body">
+   <p>{{ converter.errors }}</p>
+   <p>{{ converter.errors_dict }}</p>
+  </div>
+</div>
 {% endif %}
 
+</div>
 {% endblock %}

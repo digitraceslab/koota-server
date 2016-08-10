@@ -2,8 +2,6 @@
 
 {% block body %}
 
-<a href="{% url 'device-list' %}">Return to list</a><p>
-
 <h2>Basic information</h2>
 <ul>
 <li>Name: {{ object.name }}</li>
@@ -38,18 +36,18 @@ Scan this with the device<p>
   it wrong.  If these need changing, consider making a new device
   instead and relinking/unlinking the old one.</b></p>
 
-Here, you can adjust some basic properties of your device.  The name
+<p>Here, you can adjust some basic properties of your device.  The name
 is just for your use.  The usage (primary, secondary) will be passed
 on to researchers.  Only primary and secondary devices are considered
 for research projects.  The comment field is currently unused, but
 could possibly be used for research.  The device type should not
 normally be changed unless you configured it wrong at the start.  Make
-a new server device if you need to test other device types.
+a new server device if you need to test other device types.</p>
 
-<form method="post">
+<form class="form-control" method="post">
 {% csrf_token %}
 {{ form.as_p }}
-<input type="submit" value="Submit" />
+<input class="btn btn-primary" type="submit" value="Submit" />
 </form>
 
 

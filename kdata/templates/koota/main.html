@@ -3,8 +3,9 @@
 {% block body %}
 
 {% if not request.user.is_anonymous %}
-<p><a href="{% url 'device-list' %}">Your device list</a></p>
-{% endif %}
+<h1>Your account</h1>
+
+<p><a class="btn btn-default btn-success" href="{% url 'device-list' %}">Your device list</a></p>
 
 {% if user.subject_of_groups.exists %}
 <p>You are a subject of the following groups:
@@ -20,6 +21,9 @@
   <li><a href="{% url 'group-detail' group_name=group.slug %}">{{group.name}}</a></li>{% endfor %}
 </ul>
 </p>
+{% endif %}
+
+
 {% endif %}
 
 

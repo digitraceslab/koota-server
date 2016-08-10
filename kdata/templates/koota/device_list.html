@@ -2,27 +2,32 @@
 
 {% block body %}
 
-Device list
+<h2>Device list</h2>
 
-<table>
+<div class="table-responsive">
+<table class="table table-striped table-condensed">
   <tr>
     <th>type</th>
     <th>ID</th>
     <th>Name</th>
-    <th>User</th>
+    {%if request.user.is_admin %}<th>User</th>{% endif %}
+    <th></th>
+    <th></th>
+    <th></th>
   </tr>
   {% for device in object_list %}
-  <tr>
+  <tr{% if device.label.slug == "primary" %} class="success"{% endif %}>
     <td>{% if device.label.slug == "primary" %}<b>{% endif %}{{device.human_name}}{% if device.label.slug == "primary" %}</b>{% endif %}</td>
     <td>{{device.public_id}}</td>
     <td>{{device.name}}</td>
-    <td>{{device.user}}</td>
-    <td><a href="{% url 'device' public_id=device.public_id%}">Info</a></td>
-    <td><a href="{% url 'device-config' public_id=device.public_id%}">Configure</a></td>
+    {%if request.user.is_admin %}<td>{{device.user}}</td>{% endif %}
+    <td><a class="btn btn-primary btn-xs" href="{% url 'device' public_id=device.public_id%}">Info</a></td>
+    <td><a class="btn btn-info btn-xs" href="{% url 'device-config' public_id=device.public_id%}">Configure</a></td>
     <td>{{device.label.name}}</td>
   </tr>
   {% endfor %}
 </table>
+</div>
 
 <a href="{{ device_create_url }}"> Create device</a>
 
