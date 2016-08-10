@@ -32,6 +32,47 @@ def human_bytes(x):
 
 
 
+#
+# User management
+#
+from django import forms
+import django.contrib.auth as auth
+class RegisterForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+    password2 = forms.CharField(widget=forms.PasswordInput, label='Confirm password')
+    email = forms.EmailField()
+    def clean(self):
+        User = auth.get_user_model()
+        if self.cleaned_data['password'] != self.cleaned_data['password2']:
+            raise forms.ValidationError("Passwords don't match")
+        # TODO: test for username alreay existing
+        if User.objects.filter(username=self.cleaned_data['username']).exists():
+            raise forms.ValidationError("Username already taken")
+
+#from django.views.generic.edit import FormView
+class RegisterView(FormView):
+    template_name = 'koota/register.html'
+    form_class = RegisterForm
+    success_url = '/'
+
+    def form_valid(self, form):
+        # This method is called when valid form data has been POSTed.
+        # It should return an HttpResponse.
+        User = auth.get_user_model()
+
+        user = User.objects.create_user(form.cleaned_data['username'],
+                                        form.cleaned_data['email'],
+                                        form.cleaned_data['password'])
+        user.save()
+        # Log the user in
+        user = auth.authenticate(username=form.cleaned_data['username'],
+                                                password=form.cleaned_data['password'])
+        auth.login(self.request, user)
+        return super(RegisterView, self).form_valid(form)
+
+
+
 # One-time password (TOTP, one-factor auth) related views.
 import django_otp.forms
 from django_otp.forms import OTPAuthenticationForm

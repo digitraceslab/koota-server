@@ -29,7 +29,7 @@ urlpatterns = [
     url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html',
                                         'authentication_form':views_admin.KootaOTPAuthenticationForm},
                      name='login2'),
-    url(r'^register/$', kviews.RegisterView.as_view(), name='register-user'),
+    url(r'^register/$', views_admin.RegisterView.as_view(), name='register-user'),
     url(r'^otp/$',          views_admin.otp_config, name='otp-config'),
     url(r'^otp/otp-qr.png', views_admin.otp_qr,     name='otp-qr'),
 
