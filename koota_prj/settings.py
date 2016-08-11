@@ -58,6 +58,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 LOGIN_URL = 'login2'
 LOGIN_REDIRECT_URL = 'device-list'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 2**20
+WEB_COMPONENTS = set(('ui', 'data', 'admin'))
 
 #### The following settings should go into settings_local.py, NOT here.
 # Make a random salt using this and paste it here.  By default we have

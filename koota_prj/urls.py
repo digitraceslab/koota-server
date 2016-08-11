@@ -14,6 +14,7 @@ Including another URLconf
     2. Import the include() function: from django.conf.urls import url, include
     3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
+from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views.generic import TemplateView
@@ -22,9 +23,16 @@ from django.contrib.auth import views as auth_views
 from kdata import views as kviews
 from kdata import views_admin
 
-urlpatterns = [
-    url(r'^admin/', admin.site.urls),
 
+urlpatterns = [ ]
+
+if 'admin' in settings.WEB_COMPONENTS:
+  urlpatterns += [
+    url(r'^admin/', admin.site.urls),
+   ]
+
+if 'ui' in settings.WEB_COMPONENTS:
+  urlpatterns += [
     #url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html'}, name='login2'),
     url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html',
                                         'authentication_form':views_admin.KootaOTPAuthenticationForm},
@@ -33,6 +41,11 @@ urlpatterns = [
     url(r'^otp/$',          views_admin.otp_config, name='otp-config'),
     url(r'^otp/otp-qr.png', views_admin.otp_qr,     name='otp-qr'),
 
+
     url(r'^', include('django.contrib.auth.urls')),
+  ]
+
+
+urlpatterns += [
     url(r'^', include('kdata.urls')),
-    ]
+]

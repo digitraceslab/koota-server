@@ -1,47 +1,79 @@
+from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
-from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
+from django.views.generic import TemplateView
 
 from kdata import views as kviews
 from kdata import views_data
 from kdata import views_admin
 from kdata import aware
 from kdata import devices
+from kdata import facebook
 from kdata import funf
 from kdata import group
+from kdata import instagram
 from kdata import survey
 from kdata import twitter
-from kdata import facebook
-from kdata import instagram
 
-urlpatterns = [
-    url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post, dict(device_class=devices.PurpleRobot),
-        name='post-purple'),
+# These URLs relate to receiving data, and should be usable by the
+# write-only domain (not quite there yet, but...)
+urls_data = [
+    # Purple Robot - different API
+    url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post,
+        dict(device_class=devices.PurpleRobot), name='post-purple'),
+    # Generic POST url.
     url(r'^post/?(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post, name='post'),
-    # the Murata bed sensor has a hard-coded POST URL.
+    # Murata sleep sensor: this has a hard-coded POST URL.
     url(r'^data/push/$', kviews.post, dict(device_class=devices.MurataBSN),
         name='post-MurataBSN'),
+    # Generic config, for our own app (not really used now)
     url(r'^config$', kviews.config, name='config'),
+    # Funf
+    url(r'^funf/post1/(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post,
+        dict(device_class=funf.FunfJournal),
+        name='funf-journal-post'),
+    # AWARE
+    # Note: these do require write-connection
+    url(r'^(?:(?P<indexphp>index\.php)/)?aware/', include(aware.urlpatterns)),
+    url(r'^(?P<indexphp>index\.php)/', include(aware.urlpatterns_fixed)),
+
+    ]
+
+urls_ui = [
+    # Device UI
+    #
+    # /devices/
     url(r'^devices/$', kviews.DeviceListView.as_view(), name='device-list'),
+    # /devices/create
     url(r'^devices/create/$', kviews.DeviceCreate.as_view(),
         name='device-create'),
+    # /devices/public_id/config
     url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/config$', kviews.DeviceConfig.as_view(),
         name='device-config'),
+    # /devices/public_id/qr.png
     url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/qr.png$', kviews.device_qrcode,
         name='device-qr'),
+    # /devices/public_id/
     url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/$', views_data.DeviceDetail.as_view(),
         name='device'),
+    # /devices/public_id/Converter.format
     url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?',
         views_data.device_data,
         name='device-data'),
 
-    url(r'^log$', kviews.log, name='log'),
+    # Various admin things
     url(r'^stats/', views_admin.stats),
 
+    # Misc
+    #
+    # Purple Robot log POST url (doesn't work)
+    url(r'^log$', kviews.log, name='log'),
+    # Surveys
     url(r'^survey/take/(?P<token>[\w]*)', survey.take_survey, name='survey-take'),
 
-    # groups
+    # Group interface
+
     # /group/
     url(r'^group/$', group.group_join, name='group-join'),
     # /group/name/
@@ -74,20 +106,21 @@ urlpatterns = [
     #    group.GroupSubjectDetail.as_view(), name='group-subject-data'),
 
     # Funf
-    url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', funf.config_funf, name='funf-journal-config'),
-    url(r'^funf/post1/(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post,
-        dict(device_class=funf.FunfJournal),
-        name='funf-journal-post'),
+    url(r'^funf/config/(?P<device_id>[A-Fa-f0-9]+)?/?$', funf.config_funf,
+        name='funf-journal-config'),
 
     # Twitter and other social sites
     url(r'^twitter/', include(twitter.urlpatterns)),
     url(r'^facebook/', include(facebook.urlpatterns)),
     url(r'^instagram/', include(instagram.urlpatterns)),
 
-    # Aware
-#    url(r'^aware/', include(aware.urlpatterns)),
-    url(r'^(?:(?P<indexphp>index\.php)/)?aware/', include(aware.urlpatterns)),
-    url(r'^(?P<indexphp>index\.php)/', include(aware.urlpatterns_fixed)),
-
+    # Main frontpage
     url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
     ]
+
+urlpatterns = [ ]
+if 'data' in settings.WEB_COMPONENTS:
+    urlpatterns += urls_data
+if 'ui' in settings.WEB_COMPONENTS:
+    urlpatterns += urls_ui
+
