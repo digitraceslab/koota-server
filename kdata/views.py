@@ -80,6 +80,14 @@ def post(request, device_id=None, device_class=None):
     if not isinstance(data, six.binary_type):
         data = data.encode('utf8')
 
+    # Get nonce if provided.  Nonce is just any string which is
+    # returned directly to the client, and can be used for extra
+    # security to ensure that communications are not replayed.
+    nonce = None
+    if 'HTTP_X_NONCE' in request.META:   nonce = request.META['HTTP_X_NONCE']
+    elif 'nonce' in request.GET:         nonce = request.GET['nonce']
+    elif 'nonce' in request.POST:        nonce = request.POST['nonce']
+
     # Store data in DB.  (Uses django models for now, but should
     # be made more efficient later).
     rowid = save_data(data=data, device_id=device_id, request=request)
@@ -93,6 +101,8 @@ def post(request, device_id=None, device_class=None):
                     bytes=len(data),
                     #rowid=rowid,
                     )
+    if nonce is not None:
+        response['nonce'] = nonce
     return JsonResponse(response)
 
 def save_data(data, device_id, request=None):
