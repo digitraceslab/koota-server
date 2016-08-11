@@ -123,4 +123,7 @@ if 'data' in settings.WEB_COMPONENTS:
     urlpatterns += urls_data
 if 'ui' in settings.WEB_COMPONENTS:
     urlpatterns += urls_ui
+else:
+    urlpatterns.append(url(r'^$', TemplateView.as_view(template_name='koota/main_data.html'), name='main'))
+
 
