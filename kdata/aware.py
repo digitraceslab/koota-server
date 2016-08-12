@@ -6,7 +6,7 @@ import time
 from six.moves.urllib import parse as urlparse
 
 from django.conf.urls import url, include
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt

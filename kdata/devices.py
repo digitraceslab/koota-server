@@ -4,7 +4,7 @@ import json
 import six
 import textwrap
 
-from django.core.urlresolvers import reverse_lazy
+from django.urls import reverse_lazy
 from django.http import JsonResponse
 
 from . import converter

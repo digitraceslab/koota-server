@@ -4,7 +4,7 @@ import six
 
 from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
@@ -161,7 +161,7 @@ class DeviceListView(ListView):
 
     def dispatch(self, request, *args, **kwargs):
         """Handle anonymous users by redirecting to main"""
-        if request.user.is_anonymous():
+        if request.user.is_anonymous:
             return HttpResponseRedirect(reverse('main'))
         return super(DeviceListView, self).dispatch(request, *args, **kwargs)
     def get_context_data(self, **kwargs):
@@ -355,7 +355,7 @@ class DeviceCreate(CreateView):
         """Create the device."""
         user = self.request.user
         device_user = self.get_user()  # this could be for a study subject...
-        if not user.is_authenticated():
+        if not user.is_authenticated:
             raise exceptions.LoginRequired()
         # Who are we creating this device for?  We have to handle that cleverly.
         if user == device_user:

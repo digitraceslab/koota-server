@@ -6,7 +6,7 @@ from django import forms
 from django.core.exceptions import PermissionDenied
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse, reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.http import StreamingHttpResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
@@ -37,7 +37,7 @@ def group_join(request):
     """
     context = c = { }
     user = request.user
-    if not user.is_authenticated():
+    if not user.is_authenticated:
         # should never get here, we have login_required
         raise exceptions.NoDevicePermission()
     if request.method == 'POST':

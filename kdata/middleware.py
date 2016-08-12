@@ -1,5 +1,5 @@
-from django.core.urlresolvers import reverse
 from django.template.response import TemplateResponse
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from . import views as kviews
@@ -11,6 +11,16 @@ import logging
 log = logging.getLogger(__name__)
 
 class KdataMiddleware(object):
+    # The following two functions are for Django 1.10-style middleware
+    # handling.  This is the default path, there is no actual code in
+    # our class here.
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+
     def process_view(self, request, view_func, args, kwargs):
         view_name = request.resolver_match.url_name
 

@@ -1,6 +1,6 @@
 from django import forms
 from django.shortcuts import render
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
@@ -127,7 +127,7 @@ def otp_config(request):
       user has logged in using OTP (user.is_verified) and you have
       just verified your token.
     """
-    if request.user.is_anonymous():
+    if request.user.is_anonymous:
         return HttpResponse("Forbidden: must be logged in", status=403)
     context = c = { }
     # Get devices
@@ -184,7 +184,7 @@ def otp_qr(request):
     not check for valid code on the otp_config page.
 
     """
-    if request.user.is_anonymous():
+    if request.user.is_anonymous:
         return HttpResponse("Forbidden: must be logged in", status=403)
     # Get the right device.  Assume that there is only one per user...
     devices = list(django_otp.devices_for_user(request.user, confirmed=None))
