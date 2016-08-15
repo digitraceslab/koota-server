@@ -356,8 +356,9 @@ def group_subject_detail(request, group_name, gs_id):
                  obj='group=%s+sid=%s'%(group.slug,gs_id),
                  op='denied_group_subject_detail')
         raise exceptions.NoGroupPermission()
-    group = c['group'] = group.get_class()
-    groupsubject = c['groupsubject'] = models.GroupSubject.objects.get(id=gs_id)
+    groupcls = c['group'] = group.get_class()
+    groupsubject = c['groupsubject'] = \
+                   models.GroupSubject.objects.get(id=gs_id, group=group)
     logs.log(request, 'group subject detail',
              obj='group=%s+sid=%s'%(group.slug,gs_id),
              op='group_subject_detail',

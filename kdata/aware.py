@@ -24,7 +24,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 AWARE_DOMAIN = 'https://aware.koota.zgib.net'
-AWARE_DOMAIN_SIGNED = 'https://dev.koota.zgib.net'
+AWARE_DOMAIN_SIGNED = 'https://data.koota.cs.aalto.fi'
 PACKET_CHUNK_SIZE = 1000
 
 
