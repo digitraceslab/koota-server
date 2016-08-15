@@ -20,7 +20,7 @@ Please enter the invite code to join the group.
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
-  <input type="submit" value="Join group" />
+  <input class="btn btn-primary" type="submit" value="Join group" />
 </form>
 {% endif %}
 

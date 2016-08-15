@@ -7,6 +7,9 @@
 
 <p><a class="btn btn-default btn-success" href="{% url 'device-list' %}">Your device list</a></p>
 
+<h1>Your groups</h1>
+<p><a class="btn btn-default btn-success" href="{% url 'group-join' %}">Join a group</a></p>
+
 {% if user.subject_of_groups.exists %}
 <p>You are a subject of the following groups:
 <ul>{% for group in user.subject_of_groups.all %}

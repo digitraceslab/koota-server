@@ -7,14 +7,14 @@
 <li>Name: {{ object.name }}</li>
 <li>Device public id: {{ object.public_id }}</li>
 <li>Device type: {{ object.get_type_display }}</li>
-{% if user != object.user or user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
+{% if user != object.user %}<li>User: {{ object.user }}</li>{% endif %}
 </ul>
 
 <h2>Statistics</h2>
 <ul>
-<li>Number of data points: {{data_number}}</li>
-<li>Earliest data point at: {{data_earliest}}</li>
-<li>Latest data point at: {{data_latest}}</li>
+<li>Number of data packets: {{data_number}}</li>
+<li>Earliest data packet at: {{data_earliest}}</li>
+<li>Latest data packet at: {{data_latest}}</li>
 </ul>
 
 

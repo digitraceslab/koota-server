@@ -36,22 +36,32 @@
 <a class="btn btn-warning btn-xs" href="{% url 'group-user-create' group_name=group.dbrow.slug %}">Add a user to this group</a>
 
 <h2>Group users</h2>
-This is a managed group, users are below.
+<p>This is a managed group, users are below.</p>
+
 <table class="table table-condensed table-striped table-bordered" style="width: auto !important">
+  <tr class="info">
+    <th>Hash</th>
+    {% if group.dbrow.nonanonymous %}<th>Username</th>{% endif %}
+    <th>ID</th>
+    <th></th>
+    <th>Type</th>
+    <th>Usage</th>
+    <th></th>
+  </tr>
 {% for groupsubject in group.dbrow.groupsubject_set.all %}
   <tr>
     <th>{{ groupsubject.hash }}</th>
-    <td>{{ groupsubject.hash_if_needed }}</td>
+    {% if group.dbrow.nonanonymous %}<td>{{ groupsubject.hash_if_needed }}</td>{%endif %}
     <td colspan="5">
       <a class="btn btn-primary btn-xs" href="{% url 'group-subject-detail' group_name=group.dbrow.slug gs_id=groupsubject.id %}">Subject data</a>
        <a class="btn btn-warning btn-xs" href="{% url 'group-subject-device-create' group_name=group.dbrow.slug gs_id=groupsubject.id %}">Create device for subject</a></td>
     {% for device in groupsubject.user.device_set.all %}
-      <tr><td></td><td></td>
+      <tr {% if device.label.analyze %} class="success"{% endif %}><td></td><td></td>
         <td>{{ device.public_id }}</td>
         <td><a class="btn btn-info btn-xs" href="{% url 'group-subject-device-config' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Config</a></td>
         {# <td><a href="{% url 'group-subject-device-detail' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Data</a></td> #}
         <td>{% if device.label.slug == "primary" %}<b>{% endif %}{{device.human_name}}{% if device.label.slug == "primary" %}</b>{% endif %}</td>
-        <td>{{ device.label.name }}</td>
+        <td>{{ device.label.shortname }}</td>
       </tr>
     {% endfor %}
   </tr>
