@@ -11,6 +11,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, F
 
 from . import devices
 from . import exceptions
+from . import logs
 from . import models
 from . import permissions
 from . import util
@@ -214,6 +215,11 @@ class DeviceConfig(UpdateView):
             context['raw_instructions'] = text
         #
         return context
+    def form_valid(self, *args, **kwargs):
+        logs.log(self.request, 'edit device', user=self.request.user,
+                 obj=self.object.public_id, op='update',
+                 data_of=self.object.user)
+        return super(DeviceConfig, self).form_valid(*args, **kwargs)
     def get_success_url(self):
         if 'gs_id' in self.kwargs:
             return ''
@@ -373,6 +379,9 @@ class DeviceCreate(CreateView):
         form.instance.user = device_user
         device_class = devices.get_class(form.cleaned_data['type'])
         device_class.create_hook(form.instance, user=device_user)
+        logs.log(self.request, 'create device', user=self.request.user,
+                 obj=form.instance.public_id, op='create',
+                 data_of=form.instance.user)
         return super(DeviceCreate, self).form_valid(form)
     def get_success_url(self):
         """Redirect to device config page."""

@@ -17,6 +17,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, F
 from . import converter
 from . import devices
 from . import funf_decrypt
+from . import logs
 from . import models
 from . import util
 

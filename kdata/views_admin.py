@@ -16,6 +16,7 @@ import json
 
 from . import models
 from . import devices
+from . import logs
 from . import util
 
 import logging
@@ -68,6 +69,9 @@ class RegisterView(FormView):
                                         form.cleaned_data['email'],
                                         form.cleaned_data['password'])
         user.save()
+        logs.log(request, 'user registration',
+                 obj='user='%(user.username,),
+                 op='register')
         # Log the user in
         user = auth.authenticate(username=form.cleaned_data['username'],
                                                 password=form.cleaned_data['password'])

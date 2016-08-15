@@ -18,6 +18,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, F
 
 from . import devices
 from . import exceptions
+from . import logs
 from . import models
 from . import permissions
 from . import util
@@ -92,7 +93,13 @@ def device_data(request, public_id, converter, format):
     context = c = { }
     # Get devices and other data
     device = c['device'] = models.Device.get_by_id(public_id=public_id)
+    logs.log(request, 'get device data', user=request.user,
+             obj=device.public_id, op='get_data',
+             data_of=device.user)
     if not permissions.has_device_permission(request, device):
+        logs.log(request, 'device data denied', user=request.user,
+                 obj=device.public_id, op='denied_get_data',
+                 data_of=device.user)
         raise exceptions.NoDevicePermission("No permission for device")
     device_class = c['device_class'] = device.get_class()
     converter_class = c['converter_class'] = \

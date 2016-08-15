@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from . import devices
 from . import converter
 from . import exceptions
+from . import logs
 from . import models
 from . import permissions
 from . import util
@@ -202,6 +203,8 @@ def register(request, secret_id, indexphp=None):
         passwd = util.hash_mosquitto_password(device.secret_id)
         device.attrs['aware-device-uuid'] = data['device_id']
         device.attrs['aware-device-passwd_pbkdf2'] = passwd
+        logs.log(request, 'AWARE device registration',
+                 obj=device.public_id, op='register')
         return JsonResponse(config, safe=False)
     # error return.
     return JsonResponse(dict(error="You should scan this with the Aware app.",
@@ -308,6 +311,8 @@ def study_info(request, secret_id, indexphp=None):
 
     device = models.Device.get_by_secret_id(secret_id)
     public_id = device.public_id
+    logs.log(request, 'AWARE study info requested',
+             obj=device.public_id, op='study_info')
     response = dict(study_name='Koota',
                     study_description=('Your device is linked to Koota. '
                                        'device_id=%s'%public_id),

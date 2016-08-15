@@ -59,6 +59,8 @@ LOGIN_URL = 'login2'
 LOGIN_REDIRECT_URL = 'device-list'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 2**20
 WEB_COMPONENTS = set(('ui', 'data', 'admin'))
+GENERAL_LOG = os.path.join(BASE_DIR, 'log.txt')
+DATA_ACCESS_LOG = '/srv/koota/datalog.txt'
 
 #### The following settings should go into settings_local.py, NOT here.
 # Make a random salt using this and paste it here.  By default we have
@@ -222,7 +224,13 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'log.txt'),
+            'filename': GENERAL_LOG,
+            'formatter':'standard',
+        },
+        'kdata.datalog': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': DATA_ACCESS_LOG,
             'formatter':'standard',
         },
     },
@@ -234,6 +242,11 @@ LOGGING = {
         },
         'django.server': {
             'handlers': ['django.server'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'kdata.datalog': {
+            'handlers': ['console'] if DEBUG else ['kdata.datalog'],
             'level': 'INFO',
             'propagate': False,
         },

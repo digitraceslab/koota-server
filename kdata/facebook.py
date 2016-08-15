@@ -30,6 +30,7 @@ from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
 from . import converter
 from . import devices
+from . import logs
 from . import models
 from . import permissions
 from .views import save_data
@@ -158,6 +159,8 @@ def link(request, public_id):
     # save state
     device.request_key = state
     device.save()
+    logs.log(request, 'Facebook: begin linking',
+             obj=device.public_id, op='link_begin')
 
     return HttpResponseRedirect(authorization_url)
 
@@ -242,6 +245,8 @@ def done(request):
     device.ts_refresh = expires_at
     device.state = 'linked'
     device.save()
+    logs.log(request, 'Facebook: linking done',
+             obj=device.public_id, op='link_done')
     return HttpResponseRedirect(reverse('device-config',
                                         kwargs=dict(public_id=device.public_id)))
 
@@ -255,6 +260,8 @@ def unlink(request, public_id):
     device.resource_secret = ''
     device.data = dumps(dict(unlinked=time.ctime()))
     device.save()
+    logs.log(request, 'Facebook: unlink',
+             obj=device.public_id, op='unlink')
     return HttpResponseRedirect(reverse('device-config',
                                         kwargs=dict(public_id=device.public_id)))
 

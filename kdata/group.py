@@ -17,6 +17,7 @@ from django.template.response import TemplateResponse
 from . import converter
 from . import devices
 from . import exceptions
+from . import logs
 from . import models
 from . import permissions
 from . import util
@@ -56,6 +57,8 @@ def group_join(request):
                     #group.subjects.add(request.user)
                     if group.subjects.filter(id=user.id).exists():
                         continue
+                    logs.log(request, 'user joining group',
+                             obj='group='+group.slug, op='group_join')
                     models.GroupSubject.objects.create(user=user, group=group)
                     #print("added %s to %s"%(user, group))
                     group_class.setup_user(user)
@@ -81,7 +84,11 @@ def group_join(request):
 def group_detail(request, group_name):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
+    logs.log(request, 'view group',
+             obj='group='+group.slug, op='group_detail')
     if not permissions.has_group_researcher_permission(request, group):
+        logs.log(request, 'view group denied',
+                 obj='group='+group.slug, op='denied_group_detail')
         raise exceptions.NoGroupPermission()
     group = c['group'] = group.get_class()
     # effective number of subjects: can be overridden
@@ -193,7 +200,11 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     group_class = group.get_class()
+    logs.log(request, 'view group data',
+             obj='group='+group.slug, op='group_data')
     if not permissions.has_group_researcher_permission(request, group):
+        logs.log(request, 'group data denied',
+                 obj='group='+group.slug, op='denied_group_data')
         raise exceptions.NoGroupPermission()
 
     # Process the form and apply options
@@ -341,9 +352,16 @@ def group_subject_detail(request, group_name, gs_id):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     if not permissions.has_group_manager_permission(request, group):
+        logs.log(request, 'group subject detail denied',
+                 obj='group=%s+sid=%s'%(group.slug,gs_id),
+                 op='denied_group_subject_detail')
         raise exceptions.NoGroupPermission()
     group = c['group'] = group.get_class()
     groupsubject = c['groupsubject'] = models.GroupSubject.objects.get(id=gs_id)
+    logs.log(request, 'group subject detail',
+             obj='group=%s+sid=%s'%(group.slug,gs_id),
+             op='group_subject_detail',
+             data_of=groupsubject.user)
     #import IPython ; IPython.embed()
     return TemplateResponse(request, 'koota/group_subject_detail.html',
                             context=context)
@@ -381,7 +399,13 @@ import django.contrib.auth
 def group_user_create(request, group_name):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
+    logs.log(request, 'group user create',
+             obj='group=%s'%(group.slug),
+             op='group_user_create')
     if not permissions.has_group_manager_permission(request, group):
+        logs.log(request, 'group user create',
+                 obj='group=%s'%(group.slug),
+                 op='denied_group_user_create')
         raise exceptions.NoGroupPermission("Not a group manager.")
     if request.method == 'POST':
         form = GroupUserCreateForm(request.POST)
@@ -396,6 +420,10 @@ def group_user_create(request, group_name):
                                             email,
                                             password)
             user.save()
+            logs.log(request, 'group user create: success',
+                     obj='group=%s+username=%s'%(group.slug, user.username),
+                     op='group_user_create_success',
+                     data_of=user)
             group_class = group.get_class()
             group_class.setup_user(user)
             models.GroupSubject.objects.create(user=user, group=group)
