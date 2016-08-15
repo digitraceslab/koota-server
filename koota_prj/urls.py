@@ -17,7 +17,7 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 from django.contrib.auth import views as auth_views
 
 from kdata import views as kviews
@@ -47,5 +47,7 @@ if 'ui' in settings.WEB_COMPONENTS:
 
 
 urlpatterns += [
+    url(r'^privacy/', RedirectView.as_view(url=settings.SITE_PRIVACY_URL),
+        name='site-privacy'),
     url(r'^', include('kdata.urls')),
 ]
