@@ -368,31 +368,6 @@ def group_subject_detail(request, group_name, gs_id):
                             context=context)
 
 
-class GroupSubjectDetail(views.DeviceListView):
-    """Device list of subject's devices"""
-    template_name = 'koota/device_list.html'
-    model = models.Device
-    allow_empty = True
-
-    def get_queryset(self):
-        group_name = self.kwargs['group_name']
-        group = models.Group.objects.get(slug=group_name)
-        gs_id = self.kwargs['gs_id']
-        groupsubject = models.GroupSubject.objects.get(id=gs_id)
-        if not permissions.has_group_manager_permission(self.request, group):
-            raise exceptions.NoGroupPermission()
-
-        queryset = self.model.objects.filter(user=groupsubject.user).order_by('type', '_public_id')
-        return queryset
-    def get_context_data(self, **kwargs):
-        kwargs = self.kwargs
-        context = super(GroupSubjectDetail, self).get_context_data(**kwargs)
-        context['device_create_url'] = reverse('group-subject-device-create',
-                                               kwargs=dict(group_name=kwargs['group_name'],
-                                                           gs_id=kwargs['gs_id']))
-        return context
-
-
 
 class GroupUserCreateForm(forms.Form):
     username = forms.CharField()
