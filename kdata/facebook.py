@@ -51,7 +51,7 @@ fb_permissions = settings.FACEBOOK_PERMISSIONS
 
 authorization_base_url = 'https://www.facebook.com/dialog/oauth'
 token_url = 'https://graph.facebook.com/v2.3/oauth/access_token'
-API_BASE = 'https://graph.facebook.com/%s'
+API_BASE = 'https://graph.facebook.com/v2.7/%s'
 
 
 
@@ -268,17 +268,18 @@ def unlink(request, public_id):
 
 
 
-def scrape_device(device_id, do_save_data=False):
+def scrape_device(device_id, save_data=False, debug=False):
     # Get basic parameters
     device = models.OauthDevice.get_by_id(device_id)
     # Check token expiry
-    #if device.ts_refresh > timezone.now() + timedelta(seconds=60):
-    #    logger.error('Facebook token expired')
-    #    return()
-    # Avoid scraping again if already done
-    if (device.ts_last_fetch
-        and (timezone.now() - device.ts_last_fetch < timedelta(hours=1))):
-        pass
+    if device.ts_refresh < timezone.now() + timedelta(seconds=60):
+        logger.error('Facebook token expired')
+        return
+    # Avoid scraping again if already done, and if we are in save_data mode.
+    if (save_data
+        and (device.ts_last_fetch
+             and (timezone.now() - device.ts_last_fetch < timedelta(hours=1)))):
+        return
     device.ts_last_fetch = timezone.now()
     device.save()
     access_token = device.resource_secret
@@ -287,53 +288,118 @@ def scrape_device(device_id, do_save_data=False):
     session = requests.Session()
     session.auth = FacebookAuth(access_token)
 
+    # Get the permissions we have:
     r = requests.get(API_BASE%'debug_token', {'input_token':access_token},
                      auth=FacebookAuth(app_access_token))
-    #print(r.json())
-    # {'data': {'scopes': ['user_likes', 'user_friends',
-    # 'public_profile'], 'app_id': '1026272630802129', 'issued_at':
-    # 1469623396, 'user_id': '119855341788312', 'application': 'Koota
-    # Dev Server', 'is_valid': True, 'expires_at': 1474807396}}
+    if debug:
+        print(dumps(r.json(), indent=4, sort_keys=True))
+    # Result:
+    #     {'data': {'scopes': ['user_likes', 'user_friends',
+    #     'public_profile'], 'app_id': '1026272630802129', 'issued_at':
+    #     1469623396, 'user_id': '119855341788312', 'application': 'Koota
+    #     Dev Server', 'is_valid': True, 'expires_at': 1474807396}}
     fb_permissions = r.json()['data']['scopes']
 
 
-    def get_facebook(endpoint, params={}, filter_keys=lambda j: j):
+    def get_facebook(endpoint, params={},
+                     allowed_fields=None,
+                     remove_fields=None,
+                     filter_json=lambda j: j):
+        """Function to get and save data from one API call.
+
+        - This handles paging, saving multiple data packets in that
+          case (TODO: should it combine them?)
+
+        - `filter_json`: If given, this function is applied to the
+          JSON response and can make any changes to remove sensitive
+          data.
+
+        - `allowed_keys`: If given, should be an iterable of keys.
+          Only these keys will be saved from the data.
+
+        - `remove_keys`: If given, should be an iterable of keys.
+          These will be removed from the data.
+
+        - TODO: if paged, data is in data[]
+
+        """
         url = API_BASE%endpoint
-        r = session.get(url, params=params)
-        body = r.text
-        j = r.json()
-        #if 'next_cursor' in j:
-        #    print("Twitter needs cursoring")
-        j = filter_keys(j)
-        data = dict(endpoint=endpoint,
-                    url=url,
-                    data=dumps(j),
-                    params=params,
-                    timestamp=time.time(),
-                    version=1,
-                )
-        if do_save_data:
-            save_data(data, device_id, )
-        return j, data
+        all_data = [ ]
+        count = 0
+        if allowed_fields is not None:
+            params = params.copy()
+            params['fields'] = ','.join(allowed_fields)
+        #params['debug'] = 'all' # j['__debug__'] in response
+        #params['debug'] = 'warning'
+        # Loop is to handle paging
+        while True:
+            count += 1
+            if debug: print("GET", url, params if params else '')
+            if debug and count > 1: print("  request index: %s"%count)
+            # Get the data
+            r = session.get(url, params=params)
+            body = r.text
+            j = r.json()
+            if debug:
+                print("{} {} len={}".format(r.status_code, r.reason, len(r.content)))
+                print(dumps(j, indent=4, sort_keys=True, separators=(',', ': ')))
+            # Rate limit?
+            if 'X-App-Usage' in r.headers:
+                print(r.headers['X-App-Usage'])
+            # Handle error cases
+            if not r.ok or 'error' in j:
+                print("Error: {}".format(j['error']))
+            # Handle privacy-preserving functions.
+            j = filter_json(j)
+            all_data.append(j)
+            if remove_fields is not None:
+                for field in remove_fields:
+                    j.pop(j, None)
+            # Create our data storage object and do the storage.
+            data = dict(endpoint=endpoint,
+                        url=url,
+                        data=dumps(j),
+                        params=params,
+                        status_code=r.status_code,
+                        reason=r.reason,
+                        timestamp=time.time(),
+                        version=1,
+                    )
+            #if debug:
+            #    print(dumps(data, indent=4, sort_keys=True, separators=',:'))
+            if save_data:
+                save_data(data, device_id, )
+            # Page (start the loop again) if necessary.
+            if 'paging' in j and 'next' in j['paging']:
+                url = j['paging']['next']
+                # explicit continue here, break by default for safety
+                continue
+            break
+        return all_data
 
-    def filter_keys(j):
-        return j
 
-
-    # TODO: since_id,
-    ret = get_facebook('me/friendlists')
-    print(ret, '\n')
+    get_facebook('me',
+                 allowed_fields=('id',
+                                 'about',
+                                 'age_range',
+                                 'birthday',
+                                 'gender',
+                                 'languages'))
+    get_facebook('me/friends',
+                 allowed_fields="id",
+                 )
+    get_facebook('me/friendlists')
 
 
     #import IPython ; IPython.embed()
 
 
-def scrape_all():
+def scrape_all(save_data=False, debug=False):
     devices = Facebook.dbmodel.objects.filter(type=Facebook.pyclass_name(),
                                               state='linked')
     for device in devices:
         print(device)
-        scrape_device(device.device_id, True)
+        scrape_device(device.device_id, save_data=save_data, debug=debug)
 
 Facebook.scrape_one_function = scrape_device
 Facebook.scrape_all_function = scrape_all
