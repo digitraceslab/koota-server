@@ -186,12 +186,18 @@ def cursor_get(func, params):
 
 
 
-def scrape_device(device_id, do_save_data=False):
+def scrape_device(device_id, save_data=False, debug=False):
     # Get basic parameters
     device = models.OauthDevice.get_by_id(device_id)
-    if (device.ts_last_fetch
-        and (timezone.now() - device.ts_last_fetch < timedelta(hours=1))):
-        pass
+    # Check token expiry
+    if device.ts_refresh < timezone.now() + timedelta(seconds=60):
+        logger.error('Facebook token expired')
+        return
+    # Avoid scraping again if already done, and if we are in save_data mode.
+    if (save_data
+        and (device.ts_last_fetch
+             and (timezone.now() - device.ts_last_fetch < timedelta(hours=1)))):
+        return
     device.ts_last_fetch = timezone.now()
     device.save()
     resource_owner_key = device.resource_key
@@ -207,37 +213,60 @@ def scrape_device(device_id, do_save_data=False):
     settings_url = API_BASE%'account/settings'
     r = session.get(settings_url)
     j = r.json()
-    print(j)
+    if debug:
+        print(j)
     screen_name = j['screen_name']
 
-    def get_twitter(endpoint, params, filter_keys=lambda j: j):
-        url = 'https://api.twitter.com/1.1/%s.json'%endpoint
-        r = session.get(url, params=params)
-        body = r.text
-        print('Rate limit:', r.headers['X-Rate-Limit-Limit'],
-              r.headers['X-Rate-Limit-Remaining'])
+    def get_twitter(endpoint, params, filter_json=lambda j: j):
+        url = API_BASE%endpoint
+        all_data = [ ]
+        count = 0
+        # Loop for paging
+        while True:
+            r = session.get(url, params=params)
+            body = r.text
+            j = r.json()
+            if debug:
+                print("{} {} len={}".format(r.status_code, r.reason, len(r.content)))
+                print('  Rate limit:', r.headers['X-Rate-Limit-Limit'],
+                      r.headers['X-Rate-Limit-Remaining'])
+                print(dumps(j, indent=4, sort_keys=True, separators=(',', ': ')))
+            # Rate limiting?
+            if r.status_code == 429:
+                print('RATE LIMIT EXCEEDED: %s: twitter %s: %s'%(r.status_code, endpoint, body))
+                raise RuntimeError('Twitter rate limit exceeded')
+            # Other errors
+            if not r.ok:
+                print("Error: {}".format(j['error']))
+                print('%s: twitter %s: %s'%(r.status_code, endpoint, body))
+                return
 
-        if r.status_code == 429:
-            print('RATE LIMIT EXCEEDED: %s: twitter %s: %s'%(r.status_code, endpoint, body))
-            raise RuntimeError('Twitter rate limit exceeded')
-        if r.status_code != 200:
-            print('%s: twitter %s: %s'%(r.status_code, endpoint, body))
-            return
-        j = r.json()
-        #if 'next_cursor' in j:
-        #    print("Twitter needs cursoring")
-        j = filter_keys(j)
-        print(j)
-        data = dict(endpoint=endpoint,
-                    url=url,
-                    data=dumps(j),
-                    params=params,
-                    timestamp=time.time(),
-                    version=1,
-                )
-        if do_save_data:
-            save_data(data, device_id, )
-        return j, data
+
+
+            # Handle privacy-preserving functions
+            j = filter_json(j)
+            all_data.append(j)
+            if remove_fields is not None:
+                for field in remove_fields:
+                    j.pop(j, None)
+            # Create our data storage object and do the storage
+            data = dict(endpoint=endpoint,
+                        url=url,
+                        data=dumps(j),
+                        params=params,
+                        status_code=r.status_code,
+                        reason=r.reason,
+                        timestamp=time.time(),
+                        version=1,
+                    )
+            if save_data:
+                save_data(data, device_id, )
+            # Page (start the loop again) if necessary.
+            if 'next_cursor' in j and j['next_cursor'] != 0:
+                params['cursor'] = j['next_cursor']
+                continue
+            break
+        return all_data
 
     def filter_keys(j):
         if not isinstance(j, list):
@@ -282,12 +311,12 @@ def scrape_device(device_id, do_save_data=False):
     #import IPython ; IPython.embed()
 
 
-def scrape_all():
+def scrape_all(save_data=False, debug=False):
     devices = Twitter.dbmodel.objects.filter(type=Twitter.pyclass_name(),
                                              state='linked')
     for device in devices:
         print(device)
-        scrape_device(device.device_id, True)
+        scrape_device(device.device_id, save_data=False, debug=True)
 
 Twitter.scrape_one_function = scrape_device
 Twitter.scrape_all_function = scrape_all
