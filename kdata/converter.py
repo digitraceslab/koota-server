@@ -84,6 +84,7 @@ import csv
 from datetime import datetime, timedelta
 from hashlib import sha256
 import itertools
+import json  # needed for pretty json
 try:
     from ujson import dumps, loads
 except:
@@ -332,6 +333,38 @@ class BaseDataCounts(_Converter):
     def header2(cls):
         return cls.dates()
 
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
+class JsonPrettyHtml(_Converter):
+    """Encode each data packet as pretty JSON
+
+    This consideres HTML-escaping and can decode certain keys which
+    contain JSON as strings.
+    """
+    desc = "Pretty-print JSON for web pages"
+    header = ['packet_time', 'json']
+    json_keys = [ ]
+    def convert(self, queryset, time=lambda x:x):
+        for ts, data in queryset:
+            try:
+                data = loads(data)
+                for key in self.json_keys:
+                    if not key in data: pass
+                    data[key+'[jsondecoded]'] = loads(data[key])
+                    del data[key]
+                data = json.dumps(data, sort_keys=True, indent=1, separators=(',',': '))
+                data = mark_safe('<pre>'+escape(data)+'</pre>')
+            except:
+                # If any errors, use regular data.  This is *not*
+                # escaped, but also not marked as escaped.
+                pass
+            yield (time(timegm(ts.utctimetuple())),
+                   data,
+                  )
+class JsonPrettyHtmlData(JsonPrettyHtml):
+    desc = "Pretty-print JSON for web pages (including data key)"
+    header = ['packet_time', 'json']
+    json_keys = ['data']
 
 
 

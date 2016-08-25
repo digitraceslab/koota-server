@@ -263,6 +263,7 @@ class PurpleRobot(BaseDevice):
     post_url = reverse_lazy('post-purple')
     config_url = reverse_lazy('config-purple')
     converters = BaseDevice.converters + [
+                  converter.JsonPrettyHtml,
                   converter.PRProbes,
                   converter.PRTimestamps,
                   converter.PRScreen,

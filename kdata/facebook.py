@@ -60,6 +60,7 @@ API_BASE = 'https://graph.facebook.com/v2.7/%s'
 class Facebook(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [
+        converter.JsonPrettyHtmlData,
                  ]
     config_instructions_template = (
         """Current state: {{device.oauthdevice.state}}.

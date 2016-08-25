@@ -47,6 +47,7 @@ API_BASE = 'https://api.twitter.com/1.1/%s.json'
 class Twitter(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [
+        converter.JsonPrettyHtmlData,
                  ]
     config_instructions_template = (
         """Current state: {{device.oauthdevice.state}}.

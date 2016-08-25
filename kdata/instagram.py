@@ -47,6 +47,7 @@ API_BASE = 'https://api.instagram.com/v1/%s'
 class Instagram(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [
+        converter.JsonPrettyHtmlData,
                  ]
     config_instructions_template = (
         """Current state: {{device.oauthdevice.state}}.

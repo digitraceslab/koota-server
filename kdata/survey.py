@@ -244,6 +244,7 @@ class BaseSurvey(devices.BaseDevice):
     _register_device = True
 
     converters = devices.BaseDevice.converters + [
+                  converter.JsonPrettyHtml,
                   SurveyAnswers,
                   SurveyMeta,
                  ]

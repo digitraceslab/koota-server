@@ -41,6 +41,7 @@ class AwareDevice(devices.BaseDevice):
         converter.AwarePacketTimeRange,
         converter.AwareDataSize,
         converter.AwareRecentDataCounts,
+        converter.JsonPrettyHtmlData,
 
         converter.AwareAccelerometer,
         converter.AwareAmbientNoise,
