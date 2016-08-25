@@ -294,17 +294,25 @@ class JsonConfigField(django.db.models.TextField):
 
 
 def merge_dicts(*dicts):
+    """Recursively update dictionaries.
+
+    This recursively merges dictionaries.  Dictionaries are
+    deepcopied, other objects are not.  Later arguments take precedence.
+
+    """
     result = { }
     for d in dicts:
-        recursive_update_dicts(d, result)
+        recursive_copy_dict(d, result)
     return result
-def recursive_update_dicts(src, dest):
+def recursive_copy_dict(src, dest):
+    """Recursively copy a dict.  Mutable arguments are not copied (except dicts)."""
     for k, v in src.items():
         if k in dest and isinstance(v, dict):
-            recursive_update_dicts(src[k], dest[k])
+            recursive_copy_dict(src[k], dest[k])
+        elif isinstance(v, dict):
+            dest[k] = dict(v)  # copy
         else:
-            result[k] = copy.deepcopy(v)
-
+            dest[k] = v
 
 
 #

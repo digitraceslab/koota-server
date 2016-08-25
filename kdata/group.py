@@ -1,5 +1,6 @@
 from datetime import datetime
 import itertools
+from json import dumps, loads
 import random
 
 from django import forms
@@ -23,6 +24,36 @@ from . import permissions
 from . import util
 from . import views
 from . import views_data
+
+
+
+def user_groups(user):
+    """User's group, sorted by reverse priority.
+
+    Given a user object, return an interater over all
+    kdata.models.Group objects, sorted by reverse priority.
+    Equivalent to this code:
+    models.Group.objects.filter(groupsubject__user=user).order_by('-priority')
+    """
+    groups = models.Group.objects.filter(groupsubject__user=user)
+    groups.order_by('-priority')
+    return groups
+def user_merged_group_config(user):
+    """Merged dict of config of all user's groups.
+
+    Each group can have arbitrary JSON configuration (Group.config).
+    This consists of dictionaries, which can be recursively merged to
+    get some overall configuration.  If config conflicts, we can't
+    solve that, but at least we can do something.
+
+    """
+    groups = user_groups(user)
+    dicts = [ loads(g.config) for g in groups if g.config ]
+    config = util.merge_dicts(*dicts)
+    # Go through and update config with each grou, in reverse order.
+    return config
+
+
 
 class JoinGroupForm(forms.Form):
     invite_code = forms.CharField()
