@@ -88,6 +88,7 @@ class InstagramAuth(requests.auth.AuthBase):
             url = urllib.parse.urlparse(r.url)
             qs = urllib.parse.parse_qsl(url.query)
             if self.access_token:
+                qs = [ (k,v) for (k,v) in qs  if k != 'access_token' ]
                 qs += [('access_token', self.access_token)]
             qs = sorted(qs)
             # to_sign is /endpoint|a=b|c=d ...
@@ -107,6 +108,7 @@ class InstagramAuth(requests.auth.AuthBase):
             url = urllib.parse.urlparse(r.url)
             qs = urllib.parse.parse_qsl(r.body)
             if self.access_token:
+                qs = [ (k,v) for (k,v) in qs  if k != 'access_token' ]
                 qs += [('access_token', self.access_token)]
             # Make sig
             to_sign = '|'.join([url.path,] + [','.join((k,v)) for k,v in qs])
@@ -230,18 +232,18 @@ def unlink(request, public_id):
 
 
 
-def scrape_device(public_id, do_save_data=False):
-
+def scrape_device(public_id, save_data=False, debug=False):
     # Get basic parameters
     device = models.OauthDevice.get_by_id(public_id)
     # Check token expiry
-    #if device.ts_refresh > timezone.now() + timedelta(seconds=60):
-    #    logger.error('Instagram token expired')
-    #    return()
-    # Avoid scraping again if already done
-    if (device.ts_last_fetch
-        and (timezone.now() - device.ts_last_fetch < timedelta(hours=1))):
-        pass
+    if device.ts_refresh < timezone.now() + timedelta(seconds=60):
+        logger.error('Facebook token expired')
+        return
+    # Avoid scraping again if already done, and if we are in save_data mode.
+    if (save_data
+        and (device.ts_last_fetch
+             and (timezone.now() - device.ts_last_fetch < timedelta(hours=1)))):
+        return
     device.ts_last_fetch = timezone.now()
     device.save()
     access_token = device.resource_secret
@@ -250,26 +252,60 @@ def scrape_device(public_id, do_save_data=False):
     session = requests.Session()
     session.auth = InstagramAuth(access_token)
 
-    #def get(endpoint, params={ }):
-    #    """Get an endpoint, adding"""
-    #    if 'access_token' not in params:
-    #        params = dict(params, access_token=access_token)
-    #    r = session.get(API_BASE%endpoint,
-    #                    params=params)
-    #    return r
-
-    def get_instagram(endpoint, params={}, filter_keys=lambda j: j):
+    def get_instagram(endpoint, params={},
+                      allowed_fields=None,
+                      removed_fields=None,
+                      filter_keys=lambda j: j):
         url = API_BASE%endpoint
-        r = session.get(url, params=params)
-        data = dict(endpoint=endpoint,
-                    url=url,
-                    data=r.text,
-                    params=params,
-                    timestamp=time.time(),
-                    version=1,
-                )
-        if do_save_data:
-            save_data(data, device_id, )
+        all_data = [ ]
+        count = 0
+        # Loop is to handle paging
+        while True:
+            count += 1
+            r = session.get(url, params=params)
+            if debug: print("GET", url, params if params else '')
+            if debug and count > 1: print("  request index: %s"%count)
+            # Get the data
+            r = session.get(url, params=params)
+            j = r.json()
+            if debug:
+                print("{} {} len={}".format(r.status_code, r.reason, len(r.content)))
+                print(dumps(j, indent=4, sort_keys=True, separators=(',', ': ')))
+            # Rate limit?
+            if r.status_code == 429:
+                print(r.text)
+            # Handle error cases
+            if not r.ok:
+                print(r.text)
+            # Handle privacy-preserving functions.
+            j = filter_json(j)
+            if allowed_fields is not None:
+                j['data'] = dict((k,v) for (k,v) in j['data'].items()
+                                 if k in allowed_fields)
+            if remove_fields is not None:
+                for field in remove_fields:
+                    j['data'].pop(j, None)
+            # Create our data storage object and do the storage.
+            data = dict(endpoint=endpoint,
+                        url=url,
+                        data=dumps(j),
+                        params=params,
+                        status_code=r.status_code,
+                        reason=r.reason,
+                        timestamp=time.time(),
+                        version=1,
+                    )
+            #if debug:
+            #    print(dumps(data, indent=4, sort_keys=True, separators=',:'))
+            if do_save_data:
+                save_data(data, device_id, )
+            # Page (start the loop again) if necessary.
+            if 'pagination' in j and 'next_url' in j['pagination']:
+                url = j['pagination']['next_url']
+                # explicit continue here, break by default for safety
+                continue
+            break
+
         return data
 
 
