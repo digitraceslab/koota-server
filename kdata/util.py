@@ -28,6 +28,8 @@ def import_by_name(name, default=None, raise_if_none=False):
     name: name of class to import and return
     default: if name not found, return this as default.
     raise_if_none: if name not found, return this by default."""
+    if not isinstance(name, str):
+        raise ValueError("name must be string: %s"%name)
     if not name:
         return default
     if '.' not in name:

@@ -402,8 +402,8 @@ def scrape_all(save_data=False, debug=False):
         print(device)
         scrape_device(device.device_id, save_data=save_data, debug=debug)
 
-Facebook.scrape_one_function = scrape_device
-Facebook.scrape_all_function = scrape_all
+Facebook.scrape_one_function = staticmethod(scrape_device)
+Facebook.scrape_all_function = staticmethod(scrape_all)
 
 
 

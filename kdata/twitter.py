@@ -318,8 +318,8 @@ def scrape_all(save_data=False, debug=False):
         print(device)
         scrape_device(device.device_id, save_data=False, debug=True)
 
-Twitter.scrape_one_function = scrape_device
-Twitter.scrape_all_function = scrape_all
+Twitter.scrape_one_function = staticmethod(scrape_device)
+Twitter.scrape_all_function = staticmethod(scrape_all)
 
 
 

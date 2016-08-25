@@ -328,8 +328,8 @@ def scrape_all():
         print(device)
         scrape_device(device.device_id, True)
 
-Instagram.scrape_one_function = scrape_device
-Instagram.scrape_all_function = scrape_all
+Instagram.scrape_one_function = staticmethod(scrape_device)
+Instagram.scrape_all_function = staticmethod(scrape_all)
 
 
 
