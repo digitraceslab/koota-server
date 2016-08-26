@@ -32,6 +32,7 @@ PACKET_CHUNK_SIZE = 1000
 class AwareDevice(devices.BaseDevice):
     """Basic Python class handling Aware devices"""
     _register_device = True
+    _register_default = True
     desc = 'Aware device'
     AWARE_DOMAIN = AWARE_DOMAIN
     converters = devices.BaseDevice.converters + [

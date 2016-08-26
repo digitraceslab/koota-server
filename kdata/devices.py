@@ -227,7 +227,7 @@ class BaseDevice(object):
 
 
 
-@register_device_decorator(default=True, alias='Ios')
+@register_device_decorator(default=False, alias='Ios')
 class Ios(BaseDevice):
     desc = "iOS (our app)"
     converters = BaseDevice.converters + [
@@ -246,7 +246,7 @@ class Ios(BaseDevice):
 
 
 
-@register_device_decorator(default=True, alias='Android')
+@register_device_decorator(default=False, alias='Android')
 class Android(BaseDevice):
     converters = BaseDevice.converters + [
                   ]
