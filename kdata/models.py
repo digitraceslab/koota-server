@@ -41,6 +41,11 @@ class Device(models.Model):
                             choices=devices.get_choices(all=True))
     device_id = models.CharField(max_length=64, primary_key=True, unique=True)
     active = models.BooleanField(default=True)
+    archived = models.BooleanField(default=False,
+                                   help_text="Is this device no longer in use?  "
+                                             "This hides this device from some views "
+                                             "but doesn't change anything else.  This has"
+                                             "no effect on analysis.")
     _public_id = models.CharField(db_column='public_id', max_length=64, null=True, blank=True, db_index=True)
     _secret_id = models.CharField(db_column='secret_id', max_length=64, null=True, blank=True, db_index=True)
     label = models.ForeignKey('DeviceLabel', null=True, blank=True, verbose_name="Usage",

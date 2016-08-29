@@ -18,14 +18,14 @@
     <th>Usage</th>
   </tr>
   {% for device in object_list %}
-  <tr{% if device.label.analyze %} class="success"{% endif %}>
+  <tr{% if device.label.analyze and not device.archived %} class="success"{% endif %}>
+    <td>{{device.label.shortname}}{% if device.archived %} (Archived){% endif %}</td>
     <td>{% if device.label.slug == "primary" %}<b>{% endif %}{{device.human_name}}{% if device.label.slug == "primary" %}</b>{% endif %}</td>
     <td>{{device.public_id}}</td>
     <td>{{device.name}}</td>
     {%if request.user.is_admin %}<td>{{device.user}}</td>{% endif %}
     <td><a class="btn btn-primary btn-xs" href="{% url 'device' public_id=device.public_id%}">Data</a></td>
     <td><a class="btn btn-info btn-xs" href="{% url 'device-config' public_id=device.public_id%}">Configure</a></td>
-    <td>{{device.label.shortname}}</td>
   </tr>
   {% endfor %}
 </table>

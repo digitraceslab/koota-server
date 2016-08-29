@@ -174,13 +174,14 @@ class DeviceListView(ListView):
         if self.request.user.is_superuser:
             queryset = self.model.objects.all().order_by('_public_id')
         else:
-            queryset = self.model.objects.filter(user=self.request.user).order_by('type', '_public_id')
+            queryset = self.model.objects.filter(user=self.request.user)\
+                                .order_by('archived', 'label__order', 'type', '_public_id')
         return queryset
 
 class DeviceConfig(UpdateView):
     template_name = 'koota/device_config.html'
     model = models.Device
-    fields = ['name', 'type', 'label', 'comment']
+    fields = ['name', 'type', 'label', 'archived', 'comment']
 
     def get_object(self):
         """Get device model object, testing permissions"""
