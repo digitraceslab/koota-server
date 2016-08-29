@@ -149,11 +149,18 @@ def device_data(request, public_id, converter, format):
         # Set our URLs for pagination.  Need to do this here because
         # you can't embed tags within filter arguments, at least so I
         # see.
+        # NOTE: 1-indexed
         if page_number > 1:   c['page_first'] = replace_page(request, 1)
         if page_obj.has_previous(): c['page_prev']  = replace_page(request, page_number-1)
         if page_obj.has_next(): c['page_next']  = replace_page(request, page_number+1)
         if page_number < paginator.num_pages:
                               c['page_last']  = replace_page(request, 'last')
+        c['prev_pages'] = [ (n, replace_page(request, n))
+                            for n in range(max(2,page_number-5), page_number) ]
+        if page_number - 5 > 2: c['prev_pages'].insert(0, None)
+        c['next_pages'] = [ (n, replace_page(request, n))
+                            for n in range(page_number+1, min(page_number+5+1, paginator.num_pages)) ]
+        if page_number + 5+1 < paginator.num_pages: c['next_pages'].append(None)
         data = page_obj.object_list
     else:
         # not paginating data
