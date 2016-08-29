@@ -88,7 +88,7 @@ class KootaOTPAuthenticationForm(OTPAuthenticationForm):
     taken from the django-otp, with the last part commented out.
 
     """
-    otp_token = forms.CharField(required=False, label="OTP Token (optional)")
+    otp_token = forms.CharField(required=False, label="2FA Token (optional)")
     def clean_otp(self, user):
         """Process the otp_* fields
 
