@@ -50,6 +50,7 @@ class AwareDevice(devices.BaseDevice):
         converter.AwareApplicationCrashes,
         converter.AwareApplicationNotifications,
         converter.AwareBattery,
+        converter.AwareBluetooth,
         converter.AwareCalls,
         converter.AwareGravity,
         converter.AwareGyroscope,

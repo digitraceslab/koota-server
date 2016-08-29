@@ -1713,6 +1713,15 @@ class AwareSensorWifi(BaseAwareConverter):
               'bssid',
               'mac_address',
               ]
+class AwareBluetooth(BaseAwareConverter):
+    desc = "Bluetooth"
+    table = 'bluetooth'
+    ts_column = 'timestamp'
+    fields = ['bt_address',
+              'bt_rssi',
+              'device_id',
+              'label',
+              ]
 class AwareLocation(BaseAwareConverter):
     desc = "Location"
     table = 'locations'
