@@ -103,9 +103,10 @@ Device._meta.get_field('type').choices = devices.all_device_choices
 
 
 
-class DeviceAttr(models.Model):
-    """Arbitrary attributes for devices"""
+class BaseAttr(models.Model):
+    """Arbitrary attributes for objects"""
     class Meta:
+        abstract = True
         index_together = [
             ("device", "name"),
             ("name", "value"),
@@ -113,12 +114,16 @@ class DeviceAttr(models.Model):
         unique_together = [
             ("device", "name"),
             ]
-    device = models.ForeignKey(Device)
+    #device = models.ForeignKey(Device)
     name = models.CharField(max_length=64,
                             help_text='Attribute name')
     value = models.CharField(max_length=128,
                             help_text='Attribute value')
     ts = models.DateTimeField(auto_now=True)
+
+
+class DeviceAttr(BaseAttr):
+    device = models.ForeignKey(Device)
 
 
 
@@ -172,28 +177,54 @@ class DeviceLabel(models.Model):
 
 
 class Group(models.Model):
-    slug = models.CharField(max_length=64, unique=True)
-    name = models.CharField(max_length=64)
-    desc = models.CharField(max_length=64)
-    desc_long = models.TextField(blank=True)
-    active = models.BooleanField(default=True)
-    pyclass = models.CharField(max_length=128, blank=True)
-    pyclass_data = models.CharField(max_length=256, blank=True)
-    url = models.CharField(max_length=256, blank=True)
-    url_privacy = models.CharField(max_length=256, blank=True)
-    ts_start = models.DateTimeField(blank=True, null=True)
-    ts_end = models.DateTimeField(blank=True, null=True)
-    invite_code = models.CharField(max_length=64, blank=True)
+    def __init__(self, *args, **kwargs):
+        super(Group, self).__init__(*args, **kwargs)
+        # Set up dict-like object for accessing key-value attributes
+        self.attrs = AttrInterface(self.groupattr_set)
+    slug = models.CharField(max_length=64, unique=True,
+                      help_text="Short unique identifier, no spaces.")
+    name = models.CharField(max_length=64,
+                      help_text="Name of study, for humans.")
+    desc = models.CharField(max_length=64,
+                      help_text="Short description (64 chars)")
+    desc_long = models.TextField(blank=True,
+                      help_text="Long description explaining study.  Include contact info.")
+    invite_code = models.CharField(max_length=64, blank=True,
+                      help_text="Invite code, for subjects to join.")
+    pyclass = models.CharField(max_length=128, blank=True,
+                      help_text="Python class which manages this object.")
+    pyclass_data = models.CharField(max_length=256, blank=True,
+                      help_text="Configuration data for Python class.")
+    url = models.CharField(max_length=256, blank=True,
+                      help_text="URL with more study information.")
+    url_privacy = models.CharField(max_length=256, blank=True,
+                      help_text="URL with study privacy information.")
+    ts_start = models.DateTimeField(blank=True, null=True,
+                      help_text="Timestamp start, data available after this time.")
+    ts_end = models.DateTimeField(blank=True, null=True,
+                      help_text="Timestamp end, data available before this time.")
+    # Properties
+    active = models.BooleanField(default=True,
+                      help_text="Is this study available for joining and active?")
+    archived = models.BooleanField(default=False,
+                      help_text="Is this study archived?")
     otp_required = models.BooleanField(default=False,
-                                       help_text="Require OTP auth for researchers?")
-    nonanonymous = models.BooleanField(default=False)
-    managed = models.BooleanField(default=False)
+                      help_text="Require 2FA for researchers?")
+    nonanonymous = models.BooleanField(default=False,
+                      help_text="If true, usernames and device IDs, and individual device data will be visible to researchers")
+    managed = models.BooleanField(default=False,
+                      help_text="If true, managers will be able to control devices.")
+    leaveable = models.BooleanField(default=False,
+                      help_text="Can subjects can leave this study by themselves?")
+    #
     salt = models.CharField(max_length=128,
-                            default=util.random_salt_b64, blank=True)
-    priority = models.IntegerField(default=10,
-                         help_text=("In what order should group configuration "
-                                    "be applied?  higher=more priority"))
-    config = util.JsonConfigField(blank=True)
+                            default=util.random_salt_b64, blank=True,
+                      help_text="A hash salt for this group")
+    priority = models.IntegerField(default=0,
+                      help_text=("In what order should group configuration "
+                                 "be applied?  higher=more priority"))
+    config = util.JsonConfigField(blank=True,
+                      help_text="Arbitrary JSON configuration for this group.")
     subjects = models.ManyToManyField(settings.AUTH_USER_MODEL,
                                       through='GroupSubject',
                                       related_name='subject_of_groups',
@@ -215,8 +246,52 @@ class Group(models.Model):
         """Is given user a subject of this group?"""
         return self.subjects.filter(groupsubject__user=user).exists()
     def is_researcher(self, user):
-        """Is given user a researcher of this group?"""
-        return self.researchers.filter(groupresearcher__user=user).exists()
+        """Is given user a researcher of this group?
+
+        All researchers are researchers by default, unless their
+        researcher attribute is false.
+        """
+        gr = GroupResearcher.objects.filter(group=self,
+                                            user=user)
+        # Must have a GroupResearcher entry.
+        if not gr.exists(): return False
+        # Everyone is researcher by default, but if
+        # GroupResearcher.reseacher is false, then they are not
+        # researcher.  Default (=None), they are a researcher.
+        if gr.get().researcher is False: return False
+        return True
+    def is_manager(self, user):
+        """Is given user a manager of this group?
+
+        Manager condition: group managed, researcher has manager tag."""
+        # If group is not managed, always deny.
+        if not self.managed: return False
+        # Must have GroupResearcher entry, and .manager must be true.
+        gr = GroupResearcher.objects.filter(group=self,
+                                            user=user)
+        if not gr.exists(): return False
+        if not gr.get().manager: return False
+        return True
+    def is_admin(self, user):
+        """Is given user a admin.
+
+        Admin conditions: group managed, researcher has admin tag."""
+        # If group is not managed, always deny.
+        if not self.managed: return False
+        gr = GroupResearcher.objects.filter(group=self,
+                                            user=user)
+        # We must have GroupResearcher entry, and .admin must be True.
+        if not gr.exists(): return False
+        if not gr.get().admin: return False
+        return True
+
+
+
+class GroupAttr(BaseAttr):
+    # This is wrong, but called "device".  This is to save code by
+    # using the abstract base class BaseAttr and sharing with the
+    # DeviceAttr which came first.
+    device = models.ForeignKey(Group, on_delete=models.CASCADE)
 
 
 
@@ -226,6 +301,7 @@ class GroupSubject(models.Model):
     active = models.BooleanField(default=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
+    notes = models.TextField(blank=True)
     #nonanonymous = NullBoolean
     def __str__(self):
         return '<GroupSubject(%s, %s)>'%(repr(self.hash_if_needed()),
@@ -245,8 +321,12 @@ class GroupResearcher(models.Model):
     active = models.BooleanField(default=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
-    manager = models.NullBooleanField(blank=True, null=True)
-    #manager = Bool
+    researcher = models.NullBooleanField(blank=True, null=True, default=None,
+                                         help_text="Has access to data?")
+    manager = models.NullBooleanField(blank=True, null=True, default=False,
+                                      help_text="Has access to manage users?")
+    admin = models.NullBooleanField(blank=True, null=True, default=False,
+                                    help_text="Has access to adjust group properties?")
     def __str__(self):
         return '<GroupResearcher(%s, %s)>'%(self.user.username, self.group.slug)
 
