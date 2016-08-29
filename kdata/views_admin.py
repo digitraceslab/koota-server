@@ -69,7 +69,7 @@ class RegisterView(FormView):
                                         form.cleaned_data['email'],
                                         form.cleaned_data['password'])
         user.save()
-        logs.log(request, 'user registration',
+        logs.log(self.request, 'user registration',
                  obj='user='%(user.username,),
                  op='register')
         # Log the user in
