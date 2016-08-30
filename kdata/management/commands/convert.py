@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import itertools
 import json
+import sys
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
@@ -19,6 +20,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('converter', nargs=None)
         parser.add_argument('device_id', nargs=None)
+        parser.add_argument('--output', help="Output filename", default=sys.stdout)
         parser.add_argument('--history', help="Number of past days to use for test.", default=14, type=int)
         parser.add_argument('--textdate', help="Convert unix time?", action='store_true')
         parser.add_argument('--group',
@@ -32,6 +34,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         #print(options)
+
+        # If textdate is true, then convert time to strings, not
+        # unixtime.
         if options['textdate']:
             time_converter = lambda x: datetime.fromtimestamp(x, TZ).strftime('%Y-%m-%d %H:%M:%S')
         else:
@@ -42,39 +47,56 @@ class Command(BaseCommand):
         if options['group']:
             return self.handle_group(time_converter=time_converter, **options)
 
-        # Get the converter class
-        converter_class = util.import_by_name(options['converter'])
-        if not converter_class:
-            converter_class = getattr(kconverter, 'kdata.converter.'+options['converter'])
-        # Get our device or devices
-        if options['device_id'] == 'PR':
-            devices = Device.objects.filter(type='PurpleRobot')
-            rows = Data.objects.filter(device_id__in=devices)
-        elif options['device_id']:
-            device = Device.get_by_id(options['device_id'])
+        # Get the device we want to convert data from
+        device = Device.get_by_id(options['device_id'])
+        device_class = device.get_class()
+
+        # Get the converter class list.  We can extra data for one
+        # converter, or many at a time.
+        if options['converter'] == 'all':
+            converter_classes = device_class.converters
+        else:
+            converter_class = util.import_by_name(options['converter'])
+            if not converter_class:
+                converter_class = getattr(kconverter, 'kdata.converter.'+options['converter'])
+            converter_classes = [converter_class]
+
+        # For each converter, do the conversion.
+        for converter_class in converter_classes:
+            # Get the rows of DB objects.
             rows = Data.objects.filter(device_id=device.device_id, )
-        else:
-            raise ValueError()
-        rows = rows.order_by('ts')
+            rows = rows.order_by('ts')
 
-        # Limit to a certain number of days of history.
-        if options['history']:
-            rows = rows.filter(ts__gt=(timezone.now()-timedelta(days=options['history'])))
+            # Limit to a certain number of days of history.
+            if options['history']:
+                rows = rows.filter(ts__gt=(timezone.now()-timedelta(days=options['history'])))
 
-        # Final transformations
-        rows = util.optimized_queryset_iterator(rows)
-        rows = ((d.ts, d.data) for d in rows)
-        if options['no_handle_errors']:
-            converter = converter_class(rows=rows, time=time_converter)
-            table = converter.run()
-        else:
-            converter = converter_class(rows=rows, time=time_converter)
-            table = converter.convert(rows,
-                                      time=time_converter)
+            # Final transformations
+            rows = util.optimized_queryset_iterator(rows)
+            rows = ((d.ts, d.data) for d in rows)
+            # Two options for error handling: handle with warning at
+            # end, or immediately raise exception.
+            if options['no_handle_errors']:
+                converter = converter_class(rows=rows, time=time_converter)
+                table = converter.run()
+            else:
+                converter = converter_class(rows=rows, time=time_converter)
+                table = converter.convert(rows,
+                                          time=time_converter)
+            # Set output: stdout or a file.
+            if isinstance(options['output'], str):
+                output = options['output'].format(device_id=device.public_id,
+                                                  converter=converter_class.name(),
+                                                  ext=options['format'])
+                output = open(output, 'w')
+            else:
+                output = sys.stdout
 
-        self.print_rows(table, converter,
-                        header=converter.header2(),
-                        options=options)
+            # Do the conversion.  This is a extremely nested iterator
+            # that handles all layers at once.
+            self.print_rows(table, converter,
+                            header=converter.header2(),
+                            options=options, output=output)
 
     def handle_group(self, time_converter, **options):
         group_name = options['device_id']
@@ -107,13 +129,13 @@ class Command(BaseCommand):
                         header=header,
                         options=options)
 
-    def print_rows(self, table, converter, header, options):
+    def print_rows(self, table, converter, header, options, output=sys.stdout):
         import sys
         if options['format']:
             printer = getattr(util, options['format'].replace('-','_')+'_iter')
             for line in printer(table, converter=converter,
                                 header=header):
-                print(line, end='')
+                print(line, end='', file=output)
         else:
             for line in table:
-                print(line)
+                print(line, file=output)
