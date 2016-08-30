@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import sys
-sys.path.append('/srv/koota/pymod/') # for custom classes
 
 # Local settings
 MAIN_DOMAIN = 'koota.cs.aalto.fi'
@@ -22,11 +21,10 @@ POST_DOMAIN_SS = 'ss1.koota.cs.aalto.fi'
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-KOOTA_SSL_CERT_DER = os.path.join(BASE_DIR, 'static', 'ss1.koota.cs.aalto.fi.crt.der')
-KOOTA_SSL_CERT_PEM = os.path.join(BASE_DIR, 'static', 'ss1.koota.cs.aalto.fi.pem')
-import hashlib
-KOOTA_SSL_CERT_DER_SHA256 = hashlib.sha256(open(KOOTA_SSL_CERT_DER,'rb').read()).hexdigest()
-KOOTA_SSL_CERT_PEM_SHA256 = hashlib.sha256(open(KOOTA_SSL_CERT_PEM,'rb').read()).hexdigest()
+KOOTA_SSL_CERT_DER = None
+KOOTA_SSL_CERT_PEM = None
+KOOTA_SSL_CERT_DER_SHA256 = None
+KOOTA_SSL_CERT_PEM_SHA256 = None
 
 
 # Quick-start development settings - unsuitable for production
@@ -61,7 +59,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 2**20
 WEB_COMPONENTS = set(('ui', 'data', 'admin'))
 SITE_PRIVACY_URL = 'https://github.com/CxAalto/koota-server/wiki/PrivacyPolicy'
 GENERAL_LOG = os.path.join(BASE_DIR, 'log.txt')
-DATA_ACCESS_LOG = '/srv/koota/datalog.txt'
+DATA_ACCESS_LOG = GENERAL_LOG
 
 #### The following settings should go into settings_local.py, NOT here.
 # Make a random salt using this and paste it here.  By default we have
