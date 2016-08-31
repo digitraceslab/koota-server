@@ -58,7 +58,7 @@ class Command(BaseCommand):
         else:
             converter_class = util.import_by_name(options['converter'])
             if not converter_class:
-                converter_class = getattr(kconverter, 'kdata.converter.'+options['converter'])
+                converter_class = getattr(kconverter, options['converter'])
             converter_classes = [converter_class]
 
         # For each converter, do the conversion.
