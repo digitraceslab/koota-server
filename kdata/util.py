@@ -100,9 +100,27 @@ def csv_iter(table, converter=None, header=None):
         fo.truncate()
         yield data
     if converter and converter.errors:
+        yield '---\n'
         yield 'The following errors were found at unspecified points in processing:\n'
         for error in converter.errors:
             yield str(error)+'\n'
+# Tab-separated values
+def tsv_iter(table, converter=None, header=None, sep='\t'):
+    """Tab separated values"""
+    yield sep.join(str(x) for x in header)+'\n'
+    # Data
+    for row in table:
+        yield sep.join(str(x) for x in row)+'\n'
+    if converter and converter.errors:
+        yield '---\n'
+        yield 'The following errors were found at unspecified points in processing:\n'
+        for error in converter.errors:
+            yield str(error)+'\n'
+from functools import partial
+# Space separted values: reuse of tsv.
+ssv_iter = partial(tsv_iter, sep=' ')
+ssv_iter.__doc__ = "Space separated values"
+
 def csv_aligned_iter(table, converter=None, header=None):
     """Yields CSV lines, but try to align them.
 
@@ -123,6 +141,11 @@ def csv_aligned_iter(table, converter=None, header=None):
         yield ','.join(row2)+'\n'
     # Bottom header, properly aligned to data above.
     yield ','.join(str(x).ljust(widths[i]) for i,x in enumerate(header))+'\n'
+    if converter and converter.errors:
+        yield '---\n'
+        yield 'The following errors were found at unspecified points in processing:\n'
+        for error in converter.errors:
+            yield str(error)+'\n'
 
 def json_lines_iter(table, converter=None, header=None):
     rows = iter(table)
@@ -132,6 +155,7 @@ def json_lines_iter(table, converter=None, header=None):
     except StopIteration:
         pass
     if converter and converter.errors:
+        yield '---\n'
         yield 'The following errors were found at unspecified points in processing:\n'
         for error in converter.errors:
             yield str(error)+'\n'
@@ -148,6 +172,7 @@ def json_iter(table, converter=None, header=None):
         pass
     yield '\n]\n'
     if converter and converter.errors:
+        yield '---\n'
         yield 'The following errors were found at unspecified points in processing:\n'
         for error in converter.errors:
             yield str(error)+'\n'

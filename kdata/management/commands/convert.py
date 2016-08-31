@@ -139,3 +139,10 @@ class Command(BaseCommand):
         else:
             for line in table:
                 print(line, file=output)
+        # If we are writing to file, also print problems to stdout
+        if isinstance(output, str):
+            if converter and converter.errors:
+                print('The following errors were found at unspecified points in processing:\n')
+                for error in converter.errors:
+                    print(str(error))
+
