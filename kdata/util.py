@@ -265,7 +265,7 @@ class JsonConfigFormField(django.forms.Field):
     def prepare_value(self, value):
         try:
             value = loads(value)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             return value
         return dumps(value, sort_keys=True,
                      indent=4, separators=(',', ': '))
