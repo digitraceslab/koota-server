@@ -86,8 +86,10 @@ def has_device_manager_permission(request, device, subject=None):
     # If ANY group requires OTP
     if all(g.otp_required for g in group) and not researcher.is_verified():
         return False
-    # Normal check of more database fields.
-    if not group.get().is_manager(user):
-        return False
-    return True
+    # Normal check of more database fields.  At least one group must
+    # grant permission.
+    for g in group:
+        if group.get().is_manager(researcher):
+            return True
+    return False
 
