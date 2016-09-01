@@ -51,3 +51,7 @@ urlpatterns += [
         name='site-privacy'),
     url(r'^', include('kdata.urls')),
 ]
+
+urlpatterns += [
+    url(r'^api/v1/', include('kapi.urls')),
+  ]
