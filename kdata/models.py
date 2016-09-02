@@ -52,7 +52,9 @@ class Device(models.Model):
                               help_text='How is this device used?  Primary means that you actively use the '
                                         ' device in your life, secondary is used by you sometimes. ')
     comment = models.CharField(max_length=256, null=True, blank=True, help_text='Any other comments to researchers (optional)')
-#    ts_device_create = models.DateTimeField(auto_now_add=True)
+    # null=True to allow transition.
+    ts_create = models.DateTimeField(auto_now_add=True, null=True)
+    ts_update = models.DateTimeField(auto_now=True, null=True)
 
     def __init__(self, *args, **kwargs):
         super(Device, self).__init__(*args, **kwargs)
@@ -394,7 +396,8 @@ class OauthDevice(Device):
     resource_key     = models.CharField(max_length=256, blank=True)
     resource_secret  = models.CharField(max_length=256, blank=True)
     refresh_token    = models.CharField(max_length=256, blank=True)
-    ts_create        = models.DateTimeField(auto_now_add=True)
+    # ts_create moved to Device
+    #ts_create        = models.DateTimeField(auto_now_add=True)
     # ts_linked   # When initial linking was done
     ts_linked        = models.DateTimeField(null=True, blank=True)
     # Last fetch of data
