@@ -40,27 +40,38 @@ urls_data = [
 
     ]
 
+urls_device = [
+    url(r'^$', kviews.DeviceListView.as_view(), name='device-list'),
+    # /public_id/config
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/config$', kviews.DeviceConfig.as_view(),
+        name='device-config'),
+    # /public_id/qr.png
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/qr.png$', kviews.device_qrcode,
+        name='device-qr'),
+    # /public_id/
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/$', views_data.DeviceDetail.as_view(),
+        name='device'),
+    # /public_id/Converter.format
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?',
+        views_data.device_data,
+        name='device-data'),
+]
+
+from . import hackathon
+urls_subject = [
+    # /create
+    url(r'^create/$', kviews.DeviceCreate.as_view(),
+        name='device-create'),
+
+    url(r'^hackathon/$', hackathon.plotly),
+]
+
 urls_ui = [
     # Device UI
     #
     # /devices/
-    url(r'^devices/$', kviews.DeviceListView.as_view(), name='device-list'),
-    # /devices/create
-    url(r'^devices/create/$', kviews.DeviceCreate.as_view(),
-        name='device-create'),
-    # /devices/public_id/config
-    url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/config$', kviews.DeviceConfig.as_view(),
-        name='device-config'),
-    # /devices/public_id/qr.png
-    url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/qr.png$', kviews.device_qrcode,
-        name='device-qr'),
-    # /devices/public_id/
-    url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/$', views_data.DeviceDetail.as_view(),
-        name='device'),
-    # /devices/public_id/Converter.format
-    url(r'^devices/(?P<public_id>[0-9a-fA-F]*)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?',
-        views_data.device_data,
-        name='device-data'),
+    url(r'^me/dev/', include(urls_device)),
+    url(r'^me/', include(urls_subject)),
 
     # Various admin things
     url(r'^stats/', views_admin.stats),
