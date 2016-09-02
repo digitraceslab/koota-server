@@ -70,8 +70,8 @@ urls_ui = [
     # Device UI
     #
     # /devices/
-    url(r'^me/dev/', include(urls_device)),
-    url(r'^me/', include(urls_subject)),
+    url(r'^devices/', include(urls_subject)),
+    url(r'^devices/', include(urls_device)),
 
     # Various admin things
     url(r'^stats/', views_admin.stats),
