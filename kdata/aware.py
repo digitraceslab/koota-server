@@ -173,7 +173,11 @@ def get_user_config(device):
     config = copy.deepcopy(base_config)
     config['sensors']['mqtt_username'] = device.data.public_id
     config['sensors']['mqtt_password'] = device.data.secret_id
-    #config['study_start'] = timezone.now().timestamp()*1000
+    if device.data.ts_create is not None:
+        ts_create = device.data.ts_create.timestamp()
+    else:
+        ts_create = (timezone.now()-timedelta(days=1)).timestamp()
+    config['sensors']['study_start'] = ts_create*1000
     config['sensors']['webservice_server'] = device.qrcode_url()
     config['sensors']['status_webservice'] = True
 
