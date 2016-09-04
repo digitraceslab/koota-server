@@ -57,13 +57,10 @@ urls_device = [
         name='device-data'),
 ]
 
-from . import hackathon
 urls_subject = [
     # /create
     url(r'^create/$', kviews.DeviceCreate.as_view(),
         name='device-create'),
-
-    url(r'^hackathon/$', hackathon.plotly),
 ]
 
 urls_ui = [
