@@ -162,7 +162,8 @@ class BaseDevice(object):
 
     def __init__(self, dbrow):
         """Bind a DB row to this"""
-        self.data = dbrow
+        self.dbrow = dbrow # new
+        self.data = dbrow  # old, deprecated
     @classmethod
     def name(cls):
         """Human name for this device.
@@ -217,6 +218,39 @@ class BaseDevice(object):
         device_config page.
         """
         return { }
+    # Below are the new config protocol
+    def config_context(self):
+        """Replacement of self.configure().  Does not have to super() anything"""
+        context = { }
+        if hasattr(self, 'configure'):
+            # Old-style config: this sets context['raw_instructions']
+            # and there is nothing more that needs to be done.
+            context = self.configure(self.dbrow)
+        return context
+    def get_raw_instructions(self, context=None, request=None):
+        """Get raw_instructions string necessary for config() template"""
+        if context is None:
+            context = { }
+            context['device'] = self.data
+            context['device_class'] = self
+
+        # Render the template or whatever is needed.  First we try to find a template.
+        import django.template
+        template = None
+        # self.*template_file: load this filename using template loading system
+        if self.config_instructions_template_file is not None:
+            template = django.template.loader.get_template(
+                self.config_instructions_template)
+        # self.config_instructions_template: this is the raw template as a string
+        elif self.config_instructions_template is not None:
+            engine = django.template.engines['django']
+            template = engine.from_string(self.config_instructions_template)
+        # If we found any template, do the rendering.
+        if template is not None:
+            text = template.render(context=context, request=request)
+            context['raw_instructions'] = text
+        return context
+
     #@classmethod
     #def post(cls, request):
     #    """Handle special options needed for accepting data.

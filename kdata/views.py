@@ -194,7 +194,9 @@ class DeviceConfig(UpdateView):
         context = super(DeviceConfig, self).get_context_data(**kwargs)
         device_class = context['device_class'] = self.object.get_class()
         context['device'] = self.object
-        context.update(device_class.configure(device=self.object))
+        context.update(device_class.config_context())
+        context.update(device_class.get_raw_instructions(context=context,
+                                                         request=self.request))
         device_data = models.Data.objects.filter(device_id=self.object.device_id)
         context['data_number'] = device_data.count()
         if context['data_number'] > 0:
@@ -202,18 +204,6 @@ class DeviceConfig(UpdateView):
             context['data_latest'] = device_data.order_by('-ts').first().ts
             context['data_latest_data'] = device_data.order_by('-ts').first().data
         # Handle the instructions template
-        import django.template
-        template = None
-        if device_class.config_instructions_template_file is not None:
-            template = django.template.loader.get_template(
-                device_class.config_instructions_template)
-        elif device_class.config_instructions_template is not None:
-            engine = django.template.engines['django']
-            # Template from string
-            template = engine.from_string(device_class.config_instructions_template)
-        if template is not None:
-            text = template.render(context=context, request=self.request)
-            context['raw_instructions'] = text
         #
         return context
     def form_valid(self, *args, **kwargs):

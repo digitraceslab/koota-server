@@ -28,7 +28,8 @@ AWARE_DOMAIN_SIGNED = 'https://data.koota.cs.aalto.fi'
 PACKET_CHUNK_SIZE = 1000
 
 
-
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 class AwareDevice(devices.BaseDevice):
     """Basic Python class handling Aware devices"""
     _register_device = True
@@ -72,26 +73,31 @@ class AwareDevice(devices.BaseDevice):
         data = process_post(request)
         return dict(data=data,
                     response=JsonResponse(dict(status='success')))
-    raw_instructions = textwrap.dedent("""'\
+    config_instructions_template = textwrap.dedent("""\
     <ol>
     <li>See the <a href="https://github.com/CxAalto/koota-server/wiki/Aware">instructions on the github wiki</a>.
-    <li>URL is {study_url}</li>
+    <li>URL is {{study_url}}</li>
     </ol>
 
-    <img src="{qrcode_img_path}"></img>
+    <img src="{{qrcode_img_path}}"></img>
+
+    {% if pretty_aware_config or 1 %}
+    <p>Your raw config is:
+    {{ pretty_aware_config }}</p>
+    {% endif %}
+
     """)
-    @classmethod
-    def configure(cls, device):
-        device_class = device.get_class()
-        url = device_class.qrcode_url()
+    def config_context(self):
+        url = self.qrcode_url()
         qrcode_img_path = reverse('aware-register-qr',
-                                  kwargs=dict(public_id=device.public_id))
-        raw_instructions = raw_instructions=cls.raw_instructions.format(
-            study_url=url,
-            qrcode_img_path=qrcode_img_path,)
-        return dict(qr=False,
-                    raw_instructions=raw_instructions,
-                    )
+                                  kwargs=dict(public_id=self.dbrow.public_id))
+        config = get_user_config(self)
+        config = json.dumps(config, sort_keys=True, indent=1, separators=(',',': '))
+        config = mark_safe('<pre>'+escape(config)+'</pre>')
+        context = dict(study_url=url,
+                       qrcode_img_path=qrcode_img_path,
+                       pretty_aware_config=config, )
+        return context
     def qrcode_url(self):
         """Return the data contained in the QRcode.
 
