@@ -1,5 +1,6 @@
 from datetime import timedelta
 from hashlib import sha256
+import json  # use stdlib json for pretty formatting
 from json import loads, dumps
 import textwrap
 import time
@@ -14,6 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from . import devices
 from . import converter
 from . import exceptions
+from . import group
 from . import logs
 from . import models
 from . import permissions
@@ -191,6 +193,12 @@ def get_user_config(device):
     # config themselves and not.
     #config['sensors']['study_id'] = 1
 
+    # Get the user's group config
+    user = device.data.user
+    user_config = group.user_merged_group_config(user)
+    if 'aware_config' in user_config:
+        util.recursive_copy_dict(user_config['aware_config'], config)
+
     # Aware requires it as a list of dicts.
     sensors = [dict(setting=k, value=aware_to_string(v))
                for k,v in config['sensors'].items()]
@@ -248,7 +256,7 @@ def latest(request, secret_id, table, indexphp=None):
     ts = device.attrs.get('aware-last-ts-%s'%table, 0)
     if ts == 0:
         return JsonResponse([], safe=False)
-    ts = int(float(ts))
+    ts = float(ts)
     response = [dict(timestamp=ts,
                      double_end_timestamp=ts,
                      double_esm_user_answer_timestamp=ts)]
@@ -258,7 +266,31 @@ def latest(request, secret_id, table, indexphp=None):
 
 @csrf_exempt
 def insert(request, secret_id, table, indexphp=None):
-    """AWARE client requesting data to be saved."""
+    """AWARE client requesting data to be saved.
+
+    TODO: this function is slowed down by
+    urllib.parse.unquote_to_bytes.  When creating request.POST, it has
+    to call that, and JSON urlencoded has lots of %nn in it, so this
+    is slow.
+    """
+    # Here is the profile.  This is for about 2MB of data, for the
+    # 'accelerometer' sensor:
+    #    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    #     1    0.000    0.000    1.439    1.439 {built-in method builtins.exec}
+    #     1    0.000    0.000    1.439    1.439 <string>:1(<module>)
+    #     1    0.009    0.009    1.439    1.439 aware.py:270(insert2)
+    #     2    0.000    0.000    1.232    0.616 wsgi.py:126(_get_post)
+    #     1    0.000    0.000    1.232    1.232 request.py:282(_load_post_and_files)
+    #     1    0.000    0.000    1.205    1.205 request.py:374(__init__)
+    #     1    0.000    0.000    1.199    1.199 http.py:322(limited_parse_qsl)
+    #     4    0.019    0.005    1.105    0.276 parse.py:527(unquote)
+    #     1    0.539    0.539    1.062    1.062 parse.py:495(unquote_to_bytes)
+    #720914    0.310    0.000    0.310    0.000 {method 'append' of 'list' objects}
+    #     1    0.135    0.135    0.135    0.135 {method 'join' of 'bytes' objects}
+    #     2    0.109    0.054    0.109    0.054 {method 'split' of '_sre.SRE_Pattern' objects}
+    #    21    0.000    0.000    0.098    0.005 manager.py:84(manager_method)
+    #    10    0.000    0.000    0.082    0.008 views.py:109(save_data)
+
     device = models.Device.get_by_secret_id(secret_id)
     # We do *not* check permissions here, since we are only POSTing
     # and no data can come out.  Unlike most devices, we must update
