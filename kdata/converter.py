@@ -198,7 +198,7 @@ class _Converter(object):
                 del e
 
 class Raw(_Converter):
-    header = ['time', 'data']
+    header = ['packet_time', 'data']
     desc = "Raw data packets"
 
     def convert(self, queryset, time=lambda x:x):
@@ -208,7 +208,7 @@ class Raw(_Converter):
                   )
 
 class PacketSize(_Converter):
-    header = ['time', 'data_length']
+    header = ['packet_time', 'data_length']
     desc = "Data packet sizes"
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
@@ -1625,7 +1625,7 @@ class AwareTimestamps(BaseAwareConverter):
                        data['table'],
                        )
 class AwareTableData(BaseAwareConverter):
-    header = ['time', 'table', 'data']
+    header = ['packet_time', 'table', 'data']
     desc = "Uploaded data, by table."
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
