@@ -281,12 +281,16 @@ def insert(request, secret_id, table, indexphp=None):
     chunk_size = PACKET_CHUNK_SIZE
     data_separated = ( data_decoded[x:x+chunk_size]
                        for x in range(0, len(data_decoded), chunk_size) )
-    for data_chunk in data_separated:
-        data_chunk = dumps(data_chunk)
-        data_with_probe = dumps(dict(table=table, data=data_chunk))
-        kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
-        del data_chunk, data_with_probe
-    del data, data_decoded, data_separated
+    with transaction.atomic():
+        for data_chunk in data_separated:
+            max_ts = max(float(row[timestamp_column_name]) for row in data_chunk)
+            data_chunk = dumps(data_chunk)
+            data_with_probe = dumps(dict(table=table, data=data_chunk, version=1))
+            #max_ts = max(float(row[timestamp_column_name]) for row in data_chunk)
+            kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
+            device.attrs['aware-last-ts-%s'%table] = max_ts
+            del data_chunk, data_with_probe
+        del data, data_decoded, data_separated
 
     # Important conclusion: we must store the last timestamp.  Really
     # this and the section above should be an atomic operation!
@@ -296,7 +300,7 @@ def insert(request, secret_id, table, indexphp=None):
                      dat_sha256=data_sha256),]
     if 'nonce' in request.POST:
         response[0]['nonce'] = request.POST['nonce']
-    device.attrs['aware-last-ts-%s'%table] = max_ts
+    #device.attrs['aware-last-ts-%s'%table] = max_ts
     return JsonResponse(response, safe=False)
 
 @csrf_exempt
