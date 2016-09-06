@@ -26,6 +26,10 @@ from . import views
 from . import views_data
 
 
+import logging
+logger = logging.getLogger(__name__)
+datalogger = logging.getLogger('kdata.datalog')
+
 
 def user_groups(user):
     """User's group, sorted by reverse priority.
@@ -443,3 +447,43 @@ def group_user_create(request, group_name):
     return TemplateResponse(request, 'koota/group_user_create.html',
                             context=context)
 
+
+
+
+def ensure_user_has_devices(user, devs, group):
+    """Function to idempotently ensure user has devices.
+
+    This would be used in the adding of users to groups.
+
+    user: user object
+    group: pyclass group object
+    devs: list of devices and data to create.  Example:
+          devs = [
+              dict(cls=kdata.aware.AwareDevice, name="Phone"),
+              dict(cls=kdata.devices.MurataBSN, name="Murata"),
+              ]
+    """
+    for dev in devs:
+        cls = dev['cls']
+        name = dev['name']
+        comment = dev.get('comment', 'automatically created')
+        label_slug = dev.get('label', 'primary')
+
+        created = False
+        params = dict()
+        qs = models.Device.objects.filter(
+            user=user,
+            type=cls.pyclass_name(),
+            label__slug=label_slug)
+        if qs.exists():
+            continue
+        device = models.Device(
+            user=user,
+            type=cls.pyclass_name(),
+            name=name,
+            comment=comment,
+            label=models.DeviceLabel.objects.get(slug=label_slug))
+
+        cls.create_hook(device, user=user)
+        device.save()
+        datalogger.info("auto-create-device u=%s cls=%s g=%s"%(user.username, cls.pyclass_name(), group.dbrow.slug))
