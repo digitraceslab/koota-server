@@ -264,6 +264,7 @@ def latest(request, secret_id, table, indexphp=None):
         response[0]['nonce'] = request.POST['nonce']
     return JsonResponse(response, safe=False)
 
+from django.db import transaction
 @csrf_exempt
 def insert(request, secret_id, table, indexphp=None):
     """AWARE client requesting data to be saved.
