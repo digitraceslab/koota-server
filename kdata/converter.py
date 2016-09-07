@@ -283,7 +283,7 @@ class BaseDataSize(_Converter):
 class BaseDataCounts(_Converter):
     per_page = None
     header = ['']
-    desc = "Data points per day, for the last 7 days"
+    desc = "Data points per day, for the last 7 days (slow calculation)"
     days_ago = 7
     @classmethod
     def query(cls, queryset):
@@ -1887,7 +1887,7 @@ class AwareMessages(BaseAwareConverter):
                        safe_hash(row['trace']) if 'trace' in row else '',
                        )
 class AwareRecentDataCounts(BaseDataCounts):
-    device_class = 'PurpleRobot'
+    device_class = 'kdata.aware.AwareDevice'
     timestamp_converter = AwareTimestamps
 
 
