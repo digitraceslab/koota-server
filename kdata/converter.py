@@ -1582,6 +1582,7 @@ class BaseAwareConverter(_Converter):
     #ts_column = 'timestamp'
     #fields = ['screen_status',
     #          ]
+    @classmethod
     def header2(cls):
         """Return table header"""
         if hasattr(cls, 'header') and cls.header:
