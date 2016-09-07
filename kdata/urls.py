@@ -85,32 +85,32 @@ urls_ui = [
     # /group/
     url(r'^group/$', group.group_join, name='group-join'),
     # /group/name/
-    url(r'^group/(?P<group_name>[\w]+)/$', group.group_detail, name='group-detail'),
+    url(r'^group/(?P<group_name>[\w-]+)/$', group.group_detail, name='group-detail'),
     # /group/name/converter(.ext)
-    url(r'^group/(?P<group_name>[\w]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
+    url(r'^group/(?P<group_name>[\w-]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
         group.group_data, name='group-data'),
     # /group/name/converter(.ext)
-    url(r'^group/(?P<group_name>[\w]+)/user-create/$',
+    url(r'^group/(?P<group_name>[\w-]+)/user-create/$',
         group.group_user_create, name='group-user-create'),
     # Subject related
     # /group/name/subjNN/
-    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/$',
+    url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/$',
         group.group_subject_detail, name='group-subject-detail'),
     # /group/name/subjNN/public_id/config
-    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/config/$',
+    url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/config/$',
         kviews.DeviceConfig.as_view(), name='group-subject-device-config'),
     # /group/name/subjNN/converter(.ext)         Subject's data
-    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
+    url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
         group.group_data, name='group-subject-data'),
     # /group/name/subjNN/create/                 Add subject device
-    url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/create/$',
+    url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/create/$',
         kviews.DeviceCreate.as_view(), name='group-subject-device-create'),
 
     # /group/name/subjNN/public_id/
-    #url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/$',
+    #url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/$',
     #    group.GroupSubjectDeviceDetail.as_view(), name='group-subject-device'),
     # /group/name/subjNN/public_id/              Subject's device detail
-    #url(r'^group/(?P<group_name>[\w]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/$',
+    #url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/$',
     #    group.GroupSubjectDetail.as_view(), name='group-subject-data'),
 
     # Funf
