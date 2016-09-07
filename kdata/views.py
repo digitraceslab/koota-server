@@ -5,6 +5,7 @@ import six
 from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
+from django.utils import timezone
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
@@ -106,19 +107,46 @@ def post(request, device_id=None, device_class=None):
         response['nonce'] = nonce
     return JsonResponse(response)
 
-def save_data(data, device_id, request=None):
-    """Save data programatically, as in not in a HTTP request.
+def save_data(data, device_id, request=None,
+              received_ts=None, data_ts=None):
+    """Save data which our server receives.
 
-    This is a stripped down copy of POST."""
+    This is the master "save data in DB" function.
+
+    Arguments:
+    data:        data (normally binary, though this is TODO)
+    device_id:   device ID under which to save.  The checksum is
+                 checked.
+    request:     the HttpRequest object.  Used to get remote IP
+                 address.
+    received_ts: If given, override the automatic "data packet
+                 received" timestamp
+    data_ts:     If given, this is used as the timestamp to index by,
+                 and represents the time the data was actually received.
+    """
     device_id = device_id.lower()
     if not util.check_checkdigits(device_id):
         raise exceptions.InvalidDeviceID("Invalid device ID: checkdigits invalid.")
     remote_ip = '127.0.0.1'
     if request is not None:
         remote_ip = request.META['REMOTE_ADDR']
+    # Actual saving process.
     row = models.Data(device_id=device_id, ip=remote_ip, data=data)
     row.data_length = len(data)
     row.save()
+    # If necessary, set custom timestamps on the data.  It's unlikely
+    # that we get both, so save twice.
+    if received_ts is not None:
+        if isinstance(received_ts, int):
+            received_ts = timezone.make_aware(timezone.datetime.fromtimestamp(received_ts))
+        row.ts_received = received_ts
+        row.save()
+    if data_ts is not None:
+        if isinstance(data_ts, int):
+            data_ts = timezone.make_aware(timezone.datetime.fromtimestamp(data_ts))
+        row.ts = data_ts
+        row.save()
+    # Return row_id of inserted data.
     row_id = row.id
     del row, data
     return row_id
