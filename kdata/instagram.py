@@ -237,7 +237,7 @@ def scrape_device(public_id, save_data=False, debug=False):
     device = models.OauthDevice.get_by_id(public_id)
     # Check token expiry
     if device.ts_refresh < timezone.now() + timedelta(seconds=60):
-        logger.error('Facebook token expired')
+        logger.error('Instagram token expired')
         return
     # Avoid scraping again if already done, and if we are in save_data mode.
     if (save_data
@@ -309,14 +309,29 @@ def scrape_device(public_id, save_data=False, debug=False):
         return data
 
 
-    ret = get_instagram('users/self')
+    ret = get_instagram('users/self',params={},
+                      allowed_fields="id","counts",
+                      removed_fields="username","full_name","profile_picture","bio", "website")
+    print(ret, '\n')
+    
+    ret = get_instagram('users/self/media/like',params={},
+                      allowed_fields="comments","likes","created_time",
+                      removed_fields="location","caption","null","link","images","type","users_in_photo","filter","tags","user","videos")
     print(ret, '\n')
 
-    ret = get_instagram('users/self/follows')
+    ret = get_instagram('users/self/follows',params={},
+                      allowed_fields="id",
+                      removed_fields="username","profile_picture","full_name")
     print(ret, '\n')
 
-    ret = get_instagram('users/self/followed-by')
+    ret = get_instagram('users/self/followed-by',params={},
+                      allowed_fields="id",
+                      removed_fields="username","profile_picture","full_name")
     print(ret, '\n')
+    
+    ret = get_instagram('users/self/requested-by',params={},
+                      allowed_fields="id",
+                      removed_fields="username","profile_picture")
 
     #import IPython ; IPython.embed()
 
