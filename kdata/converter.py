@@ -1827,6 +1827,13 @@ class AwareRotation(BaseAwareConverter):
               'double_values_2',
               'accuracy',
               ]
+class AwareProximity(BaseAwareConverter):
+    desc = "proximity"
+    table = 'sensor_proximity'
+    ts_column = 'timestamp'
+    fields = ['double_sensor_power_ma',
+              'double_sensor_resolution',
+              ]
 class AwareNetworkTraffic(BaseAwareConverter):
     desc = "network_traffic"
     table = 'network_traffic'
