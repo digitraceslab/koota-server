@@ -31,10 +31,13 @@ class GroupSubjectInline(admin.TabularInline):
     model = models.Group.subjects.through
 class GroupResearcherInline(admin.TabularInline):
     model = models.Group.researchers.through
+class GroupAttrInline(admin.TabularInline):
+    model = models.GroupAttr
 class GroupAdmin(admin.ModelAdmin):
     filter_horizontal = ('subjects', 'researchers')
     list_display = ['name', 'priority', 'n_subjects', 'n_researchers', 'pyclass', 'managed', 'nonanonymous', 'otp_required', 'active', 'ts_start', 'ts_end']
     inlines = [
+        GroupAttrInline,
         GroupSubjectInline,
         GroupResearcherInline,
         ]
