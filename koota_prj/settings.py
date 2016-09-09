@@ -75,7 +75,7 @@ FACEBOOK_REDIRECT_URLDOMAIN = 'https://koota.cs.aalto.fi'
 FACEBOOK_DONE_DOMAINS = set(('dev.koota.zgib.net', 'localhost:8002'))
 INSTAGRAM_KEY = None
 INSTAGRAM_SECRET = None
-INSTAGRAM_PERMISSIONS = ['basic', 'follower_list']
+INSTAGRAM_PERMISSIONS = ['public_content', 'basic', 'follower_list']
 
 
 
