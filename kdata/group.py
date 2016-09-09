@@ -490,7 +490,12 @@ def ensure_user_has_devices(user, devs, group):
             label__slug=label_slug)
         if qs.exists():
             continue
-        device = models.Device(
+        print("Creating %s for %s"%(cls, user))
+        # create device
+        model = models.Device
+        if cls.dbmodel is not None:
+            model = cls.dbmodel
+        device = model(
             user=user,
             type=cls.pyclass_name(),
             name=name,
