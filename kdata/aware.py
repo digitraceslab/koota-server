@@ -185,7 +185,8 @@ def get_user_config(device):
         ts_create = device.data.ts_create.timestamp()
     else:
         ts_create = (timezone.now()-timedelta(days=1)).timestamp()
-    config['sensors']['study_start'] = ts_create*1000
+    # AWARE parses study_start as int!
+    config['sensors']['study_start'] = int(ts_create*1000)
     config['sensors']['webservice_server'] = device.qrcode_url()
     config['sensors']['status_webservice'] = True
 
