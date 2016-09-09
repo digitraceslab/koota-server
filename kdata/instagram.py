@@ -232,11 +232,11 @@ def unlink(request, public_id):
 
 
 
-def scrape_device(public_id, save_data=False, debug=False):
+def scrape_device(device_id, save_data=False, debug=False):
     # Get basic parameters
-    device = models.OauthDevice.get_by_id(public_id)
+    device = models.OauthDevice.get_by_id(device_id)
     # Check token expiry
-    if device.ts_refresh < timezone.now() + timedelta(seconds=60):
+    if device.ts_refresh and device.ts_refresh < timezone.now() + timedelta(seconds=60):
         logger.error('Instagram token expired')
         return
     # Avoid scraping again if already done, and if we are in save_data mode.
@@ -255,7 +255,7 @@ def scrape_device(public_id, save_data=False, debug=False):
     def get_instagram(endpoint, params={},
                       allowed_fields=None,
                       removed_fields=None,
-                      filter_keys=lambda j: j):
+                      filter_json=lambda j: j):
         url = API_BASE%endpoint
         all_data = [ ]
         count = 0
@@ -267,24 +267,43 @@ def scrape_device(public_id, save_data=False, debug=False):
             if debug and count > 1: print("  request index: %s"%count)
             # Get the data
             r = session.get(url, params=params)
-            j = r.json()
             if debug:
                 print("{} {} len={}".format(r.status_code, r.reason, len(r.content)))
-                print(dumps(j, indent=4, sort_keys=True, separators=(',', ': ')))
+                #print(dumps(j, indent=4, sort_keys=True, separators=(',', ': ')))
+                print(r.text)
+            j = r.json()
             # Rate limit?
             if r.status_code == 429:
                 print(r.text)
             # Handle error cases
+            # Example error message: {"meta": {"error_type":
+            #   "OAuthPermissionsException", "code": 400,
+            #   "error_message": "This request requires
+            #   scope=public_content, but this access token is not
+            #   authorized with this scope. The user must re-authorize
+            #   your application with scope=public_content to be granted
+            #   this permissions."}}
             if not r.ok:
                 print(r.text)
+                # FIXME: do something
             # Handle privacy-preserving functions.
             j = filter_json(j)
             if allowed_fields is not None:
-                j['data'] = dict((k,v) for (k,v) in j['data'].items()
-                                 if k in allowed_fields)
-            if remove_fields is not None:
-                for field in remove_fields:
-                    j['data'].pop(j, None)
+                if isinstance(j['data'], dict):
+                    j['data'] = dict((k,v) for (k,v) in j['data'].items()
+                                     if k in allowed_fields)
+                else:
+                    j['data'] = [ dict((k,v) for (k,v) in item.items()
+                                       if k in allowed_fields)
+                                  for item in j['data'] ]
+            if removed_fields is not None:
+                if isinstance(j['data'], dict):
+                    for field in removed_fields:
+                        j['data'].pop(field, None)
+                else:
+                    for item in j['data']:
+                        for field in removed_fields:
+                            item.pop(field, None)
             # Create our data storage object and do the storage.
             data = dict(endpoint=endpoint,
                         url=url,
@@ -297,7 +316,7 @@ def scrape_device(public_id, save_data=False, debug=False):
                     )
             #if debug:
             #    print(dumps(data, indent=4, sort_keys=True, separators=',:'))
-            if do_save_data:
+            if save_data:
                 save_data(data, device_id, )
             # Page (start the loop again) if necessary.
             if 'pagination' in j and 'next_url' in j['pagination']:
@@ -310,28 +329,28 @@ def scrape_device(public_id, save_data=False, debug=False):
 
 
     ret = get_instagram('users/self',params={},
-                      allowed_fields="id","counts",
-                      removed_fields="username","full_name","profile_picture","bio", "website")
+                      allowed_fields=("id","counts"),
+                      removed_fields=("username","full_name","profile_picture","bio", "website"))
     print(ret, '\n')
-    
-    ret = get_instagram('users/self/media/like',params={},
-                      allowed_fields="comments","likes","created_time",
-                      removed_fields="location","caption","null","link","images","type","users_in_photo","filter","tags","user","videos")
+
+    ret = get_instagram('users/self/media/liked',params={},
+                      allowed_fields=("comments","likes","created_time"),
+                      removed_fields=("location","caption","null","link","images","type","users_in_photo","filter","tags","user","videos"))
     print(ret, '\n')
 
     ret = get_instagram('users/self/follows',params={},
-                      allowed_fields="id",
-                      removed_fields="username","profile_picture","full_name")
+                      allowed_fields=("id",),
+                      removed_fields=("username","profile_picture","full_name"))
     print(ret, '\n')
 
     ret = get_instagram('users/self/followed-by',params={},
-                      allowed_fields="id",
-                      removed_fields="username","profile_picture","full_name")
+                      allowed_fields=("id",),
+                      removed_fields=("username","profile_picture","full_name"))
     print(ret, '\n')
-    
+
     ret = get_instagram('users/self/requested-by',params={},
-                      allowed_fields="id",
-                      removed_fields="username","profile_picture")
+                      allowed_fields=("id", ),
+                      removed_fields=("username","profile_picture"))
 
     #import IPython ; IPython.embed()
 
