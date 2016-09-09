@@ -25,7 +25,7 @@ from . import devices
 from . import logs
 from . import models
 from . import permissions
-from .views import save_data
+from . import views
 
 
 
@@ -239,13 +239,14 @@ def scrape_device(device_id, save_data=False, debug=False):
     if device.ts_refresh and device.ts_refresh < timezone.now() + timedelta(seconds=60):
         logger.error('Instagram token expired')
         return
-    # Avoid scraping again if already done, and if we are in save_data mode.
-    if (save_data
-        and (device.ts_last_fetch
-             and (timezone.now() - device.ts_last_fetch < timedelta(hours=1)))):
-        return
-    device.ts_last_fetch = timezone.now()
-    device.save()
+    # Avoid scraping again if already done, and if we are in save_data
+    # mode.
+    if save_data:
+        if (device.ts_last_fetch
+            and (timezone.now() - device.ts_last_fetch < timedelta(hours=1))):
+            return
+        device.ts_last_fetch = timezone.now()
+        device.save()
     access_token = device.resource_secret
 
     # Create base OAuth session to use for everything
@@ -317,7 +318,7 @@ def scrape_device(device_id, save_data=False, debug=False):
             #if debug:
             #    print(dumps(data, indent=4, sort_keys=True, separators=',:'))
             if save_data:
-                save_data(data, device_id, )
+                views.save_data(dumps(data), device.device_id, )
             # Page (start the loop again) if necessary.
             if 'pagination' in j and 'next_url' in j['pagination']:
                 url = j['pagination']['next_url']
@@ -328,29 +329,35 @@ def scrape_device(device_id, save_data=False, debug=False):
         return data
 
 
+    # permission: none
     ret = get_instagram('users/self',params={},
                       allowed_fields=("id","counts"),
                       removed_fields=("username","full_name","profile_picture","bio", "website"))
     print(ret, '\n')
 
+    # permission: public_content
     ret = get_instagram('users/self/media/liked',params={},
                       allowed_fields=("comments","likes","created_time"),
                       removed_fields=("location","caption","null","link","images","type","users_in_photo","filter","tags","user","videos"))
     print(ret, '\n')
 
+    # permission: follower_list
     ret = get_instagram('users/self/follows',params={},
                       allowed_fields=("id",),
                       removed_fields=("username","profile_picture","full_name"))
     print(ret, '\n')
 
+    # permission: follower_list
     ret = get_instagram('users/self/followed-by',params={},
                       allowed_fields=("id",),
                       removed_fields=("username","profile_picture","full_name"))
     print(ret, '\n')
 
+    # permission: follower_list
     ret = get_instagram('users/self/requested-by',params={},
                       allowed_fields=("id", ),
                       removed_fields=("username","profile_picture"))
+    print(ret, '\n')
 
     #import IPython ; IPython.embed()
 

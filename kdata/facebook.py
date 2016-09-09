@@ -33,7 +33,7 @@ from . import devices
 from . import logs
 from . import models
 from . import permissions
-from .views import save_data
+from . import views
 
 
 
@@ -277,12 +277,12 @@ def scrape_device(device_id, save_data=False, debug=False):
         logger.error('Facebook token expired')
         return
     # Avoid scraping again if already done, and if we are in save_data mode.
-    if (save_data
-        and (device.ts_last_fetch
-             and (timezone.now() - device.ts_last_fetch < timedelta(hours=1)))):
-        return
-    device.ts_last_fetch = timezone.now()
-    device.save()
+    if save_data:
+        if (device.ts_last_fetch
+            and (timezone.now() - device.ts_last_fetch < timedelta(hours=1))):
+            return
+        device.ts_last_fetch = timezone.now()
+        device.save()
     access_token = device.resource_secret
 
     # Create base OAuth session to use for everything
@@ -369,7 +369,7 @@ def scrape_device(device_id, save_data=False, debug=False):
             #if debug:
             #    print(dumps(data, indent=4, sort_keys=True, separators=',:'))
             if save_data:
-                save_data(data, device_id, )
+                views.save_data(dumps(data), device.device_id, )
             # Page (start the loop again) if necessary.
             if 'paging' in j and 'next' in j['paging']:
                 url = j['paging']['next']
