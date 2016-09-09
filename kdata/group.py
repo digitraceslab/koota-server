@@ -162,7 +162,8 @@ def iter_group_data(group,
                     row_limit=None,
                     time_converter=lambda x: x,
                     handle_errors=True,
-                    gs_id=None):
+                    gs_id=None,
+                    reverse_html_order=True):
     """Core data iterator: (user, data, converter_data...)
 
     This abstracts out the core iteration of group data.  Basically,
@@ -201,6 +202,10 @@ def iter_group_data(group,
 
         # Fetch all relevant data
         queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
+        # If row_limit, we are looking on HTML page and we reverse
+        # things because this is more useful.
+        if row_limit and reverse_html_order:
+            queryset = queryset.reverse()
         # Filter the queryset however needed.  Two parts: group
         # limitations (left here), other user filtering (done via
         # filter_queryset callback.)
@@ -212,7 +217,15 @@ def iter_group_data(group,
             queryset = filter_queryset(queryset)
 
         # Apply the converter.
-        queryset = util.optimized_queryset_iterator(queryset)
+
+        # If row_limit, we are looking at the HTML pages, and display
+        # is reversed (see above).  In this case, we have to use
+        # optimized_queryset_iterator_1.  It is slower, but it doesn't
+        # matter since we have fewer rows.
+        if row_limit and reverse_html_order:
+            queryset = util.optimized_queryset_iterator_1(queryset)
+        else:
+            queryset = util.optimized_queryset_iterator(queryset)
         rows = ((x.ts, x.data) for x in queryset)
         converter = converter_class(rows=rows, time=time_converter)
         converter.errors = converter_for_errors.errors
@@ -284,11 +297,11 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
                             converter_for_errors=converter_for_errors,
                             filter_queryset=filter_queryset,
                             time_converter=time_converter,
-                            row_limit=None if format else 50,
+                            row_limit=None if format else 100,
                             gs_id=gs_id, # limits to one subject if needed
                             )
-    if not format:
-        table = itertools.islice(table, 1000)
+    #if not format:
+    #    table = itertools.islice(table, 1000)
     c['table'] = table
 
 
