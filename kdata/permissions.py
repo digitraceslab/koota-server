@@ -89,7 +89,7 @@ def has_device_manager_permission(request, device, subject=None):
     # Normal check of more database fields.  At least one group must
     # grant permission.
     for g in group:
-        if group.get().is_manager(researcher):
+        if g.is_manager(researcher):
             return True
     return False
 
