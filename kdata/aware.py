@@ -362,14 +362,25 @@ def study_info(request, secret_id, indexphp=None):
 
     device = models.Device.get_by_secret_id(secret_id)
     public_id = device.public_id
+
+    user = device.user
+    user_config = group.user_merged_group_config(user)
+    study_config = user_config.get('aware_study',{})
+    study_name         = study_config.get('study_name', 'Koota')
+    study_description  = study_config.get('study_description',
+                                          ('Your device is linked to your account'
+                                           'device_id=%s'%public_id))
+    researcher_first   = study_config.get('researcher_first', 'Aalto Complex Systems')
+    researcher_last    = study_config.get('researcher_last', '')
+    researcher_contact = study_config.get('researcher_contact', 'noreply@koota.cs.aalto.fi')
+
     logs.log(request, 'AWARE study info requested',
              obj=device.public_id, op='study_info')
-    response = dict(study_name='Koota',
-                    study_description=('Your device is linked to Koota. '
-                                       'device_id=%s'%public_id),
-                    researcher_first='Aalto Complex Systems',  # researcher name
-                    researcher_last='',
-                    researcher_contact='noreply@koota.cs.aalto.fi',
+    response = dict(study_name=study_name,
+                    study_description=study_description,
+                    researcher_first=researcher_first,  # researcher name
+                    researcher_last=researcher_last,
+                    researcher_contact=researcher_contact,
                     device_id='11'
                 )
     return JsonResponse(response)
