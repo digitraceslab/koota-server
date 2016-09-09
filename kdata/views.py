@@ -124,6 +124,8 @@ def save_data(data, device_id, request=None,
     data_ts:     If given, this is used as the timestamp to index by,
                  and represents the time the data was actually received.
     """
+    if not isinstance(data, (str, bytes)):
+        raise ValueError("save_data data must be str or bytes!")
     device_id = device_id.lower()
     if not util.check_checkdigits(device_id):
         raise exceptions.InvalidDeviceID("Invalid device ID: checkdigits invalid.")
