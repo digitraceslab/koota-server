@@ -138,13 +138,12 @@ class AwareDeviceValidCert(AwareDevice):
 # https://github.com/denzilferreira/aware-server/blob/master/aware_dashboard.sql#L298
 base_config = dict(
     sensors=dict(
-        status_mqtt=True,
-        mqtt_server='aware.koota.zgib.net',
-        mqtt_port=8883,
-        mqtt_keep_alive=600,
-        mqtt_qos=2,
-        #mqtt_username='x',
-        #mqtt_password='y',
+        status_mqtt=False,
+        #mqtt_server='aware.koota.zgib.net',
+        #mqtt_port=8883,
+        #mqtt_keep_alive=600,
+        #mqtt_qos=2,
+
         study_start=1464728400000,  # 1 june 2016 00:00
         #webservice_server='https://aware.koota.zgib.net/'+xxx,
         status_webservice=True,
@@ -179,8 +178,8 @@ def get_user_config(device):
     return value: Python dict object."""
     import copy
     config = copy.deepcopy(base_config)
-    config['sensors']['mqtt_username'] = device.data.public_id
-    config['sensors']['mqtt_password'] = device.data.secret_id
+    #config['sensors']['mqtt_username'] = device.data.public_id
+    #config['sensors']['mqtt_password'] = device.data.secret_id
     if device.data.ts_create is not None:
         ts_create = device.data.ts_create.timestamp()
     else:
