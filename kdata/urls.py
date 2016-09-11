@@ -18,6 +18,7 @@ from kdata import twitter
 
 # These URLs relate to receiving data, and should be usable by the
 # write-only domain (not quite there yet, but...)
+# pylint: disable=invalid-name
 urls_data = [
     # Purple Robot - different API
     url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post,
@@ -45,6 +46,13 @@ urls_device = [
     # /public_id/config
     url(r'^(?P<public_id>[0-9a-fA-F]*)/config$', kviews.DeviceConfig.as_view(),
         name='device-config'),
+    # URL for marking that a subject does not have this device
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/mark-device/dont-have',
+        kviews.mark_device, dict(operation="dont-have"),
+        name='mark-device-dont-have'),
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/mark-device/not-linking',
+        kviews.mark_device, dict(operation="not-linking"),
+        name='mark-device-not-linking'),
     # /public_id/qr.png
     url(r'^(?P<public_id>[0-9a-fA-F]*)/qr.png$', kviews.device_qrcode,
         name='device-qr'),
@@ -133,5 +141,3 @@ if 'ui' in settings.WEB_COMPONENTS:
     urlpatterns += urls_ui
 else:
     urlpatterns.append(url(r'^$', TemplateView.as_view(template_name='koota/main_data.html'), name='main'))
-
-

@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
 from . import devices
@@ -433,3 +434,21 @@ class DeviceCreate(CreateView):
         context = super(DeviceCreate, self).get_context_data(**kwargs)
         context['actual_user'] = self.get_user()
         return context
+
+
+@require_http_methods(['POST'])
+def mark_device(request, public_id, operation=None):
+    if operation is None:
+        operation = request.POST['operation']
+    device = models.Device.get_by_id(public_id)
+    if not permissions.has_device_config_permission(request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
+
+    if operation == 'dont-have':
+        device.attrs['dont-have-device'] = True
+    if operation == 'not-linking':
+        device.attrs['not-linking'] = True
+    logs.log(request, "marking %s"%operation, obj=public_id,
+                 op='mark-device-'+operation, data_of=device.user)
+
+    return HttpResponseRedirect(request.POST['next'])
