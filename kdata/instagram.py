@@ -14,9 +14,11 @@ import urllib.parse
 
 from django.conf import settings
 from django.conf.urls import url, include
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 import requests
 
@@ -49,13 +51,25 @@ class Instagram(devices.BaseDevice):
     converters = devices.BaseDevice.converters + [
         converter.JsonPrettyHtmlData,
                  ]
-    config_instructions_template = (
-        """Current state: {{device.oauthdevice.state}}.
-        <ul>
-          {% if device.oauthdevice.state != 'linked' %}<li>Please link this <a href="{% url 'instagram-link' public_id=device.public_id %}">here</a>.</li>{% endif %}
-          {% if device.oauthdevice.state == 'linked' %}<li>If desired, you may unlink the device here: <a href="{% url 'instagram-unlink' public_id=device.public_id%}">here</a>.</li> {% endif %}
-        </ul>
-        """)
+    config_instructions_template = """
+Current state: {{device.oauthdevice.state}}.
+<ul>
+    {% if device.oauthdevice.state != 'linked' %}
+      <li>Please link this
+        <form method="post" style="display: inline" action="{% url 'instagram-link' public_id=device.public_id %}">{%csrf_token%}
+        <button type="submit" class="btn btn-xs">here</button>
+        </form>
+    </li>
+    {% endif %}
+    {% if device.oauthdevice.state == 'linked' %}
+      <li>If desired, you may unlink the device here:
+      <form method="post" style="display: inline" action="{% url 'instagram-unlink' public_id=device.public_id %}">{%csrf_token%}
+      <button type="submit" class="btn btn-xs">here</button>
+      </form>
+    </li>
+    {% endif %}
+</ul>
+"""
     @classmethod
     def create_hook(cls, instance, user):
         super(Instagram, cls).create_hook(instance, user)
@@ -122,7 +136,8 @@ class InstagramAuth(requests.auth.AuthBase):
         return r
 
 
-
+@login_required
+@require_http_methods(["POST"])
 def link(request, public_id):
     """Step one of linking the device
     """
@@ -158,7 +173,7 @@ def link(request, public_id):
     return HttpResponseRedirect(authorization_url)
 
 
-
+@login_required
 def done(request):
     # TODO: handle error: error_reason=user_denied
     #                     &error=access_denied
@@ -215,6 +230,8 @@ def done(request):
                                         kwargs=dict(public_id=device.public_id)))
 
 
+@login_required
+@require_http_methods(["POST"])
 def unlink(request, public_id):
     # Destroy the auth tokens
     device = models.OauthDevice.get_by_id(public_id)
