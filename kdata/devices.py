@@ -449,6 +449,45 @@ class MurataBSN(BaseDevice):
         return dict(raw_instructions=cls.raw_instructions.format(device=device),
                     )
 
+
+# pylint disable=wrong-import-order,wrong-import-position
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+LOGGER_MURATA = logging.getLogger('kdata.devices.muratabsn')
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def murata_calibrate(request, dev_id=None):
+    # pyli nt disable=redefined-variable-type,unused-variable
+    # BSN syncs its FW version details and BCG calibration parameters
+    # with cloud server after power on/reset and then every 24 hours.
+    LOGGER_MURATA.info("Calibrate received: %s %s", dev_id, request.body)
+    try:
+        data = json.loads(request.body.decode())
+    except json.JSONDecodeInfo:
+        LOGGER_MURATA.info("Invalid data: %s %s", dev_id, request.body)
+    if 'pars' in data:
+        old_pars = data['pars'].split(',')
+        LOGGER_MURATA.info("Murata: old parameters = %s", old_pars)
+
+    response = { }
+
+    # Parameters are: 0=var_level_1, 1=var_level_2, 2=stroke_vol, 3=tentative_stroke_vol, 4=signal_range, 5=to_micro_g
+    pars = None
+    #pars = [6000, 300, 4000, 1500,  7]    # our standard params
+    #pars = [7000, 270, 5000, 0, 1400, 7]   # in Murata docs
+    if pars is not None:
+        if len(pars) != 7:
+            raise ValueError("Wrong number of Murata parameters: %s"%pars)
+        LOGGER_MURATA.info("Murata: old parameters = %s", old_pars)
+        response['pars'] = ','.join(str(_) for _ in pars)
+
+    return JsonResponse(response)
+
+
+
+
 @register_device_decorator(default=True)
 class Actiwatch(BaseDevice):
     desc = "Philips Actiwatch"

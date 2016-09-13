@@ -28,6 +28,9 @@ urls_data = [
     # Murata sleep sensor: this has a hard-coded POST URL.
     url(r'^data/push/$', kviews.post, dict(device_class=devices.MurataBSN),
         name='post-MurataBSN'),
+    # Murata sleep sensor, calibration
+    url(r'^firmware/device/(?P<dev_id>[^/]+)/?$', devices.murata_calibrate,
+        name='MurataBSN-calibrate'),
     # Generic config, for our own app (not really used now)
     url(r'^config$', kviews.config, name='config'),
     # Funf
