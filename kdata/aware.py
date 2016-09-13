@@ -8,7 +8,7 @@ from six.moves.urllib import parse as urlparse
 
 from django.conf.urls import url, include
 from django.urls import reverse
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404, UnreadablePostError
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
@@ -70,11 +70,6 @@ class AwareDevice(devices.BaseDevice):
         converter.AwareTelephony,
         converter.AwareWifi,
     ]
-    @classmethod
-    def post(self, request):
-        data = process_post(request)
-        return dict(data=data,
-                    response=JsonResponse(dict(status='success')))
     config_instructions_template = textwrap.dedent("""\
     <ol>
     <li>See the <a href="https://github.com/CxAalto/koota-server/wiki/Aware">instructions on the github wiki</a>.
@@ -300,7 +295,10 @@ def insert(request, secret_id, table, indexphp=None):
     device_cls = device.get_class()
 
     #device_uuid = request.POST['device_id']
-    data = request.POST['data']  # data is bytes JSON data
+    try:
+        POST = request.POST
+    except UnreadablePostError:
+        return JsonResponse(status_code=400, reason_phrase="Data not received")
     data_decoded = loads(data)
     data_sha256 = sha256(data.encode('utf8')).hexdigest()
 
