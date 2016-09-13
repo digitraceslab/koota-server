@@ -210,18 +210,37 @@ def take_survey(request, token):
 
 # The two converters
 class SurveyAnswers(converter._Converter):
-    header = ['id', 'access_time', 'submit_time', 'question', 'answer', 'order']
+    header = ['id', 'access_time', 'submit_time', 'question', 'answer', 'order',
+                  'choice_text']
     desc = "Survey questions and answers"
+    allowed_slugs = None
+    removed_slugs = None
     def convert(self, rows, time=lambda x:x):
         for ts, data in rows:
             data = loads(data)
+            # Find the raw choice text.  Make a lookup for it.
+            raw_choices = { q[0]: q[1][1]['choices']
+                             for q in data['survey_data']['questions']
+                             if 'choices' in q[1][1] }
+            # Do conversion.  Loop through each question in order.
             for slug, x in sorted(data['answers'].items(), key=lambda x: x[1]['order']):
+                # Filter: remove removed slugs
+                if self.removed_slugs and slug in self.removed_slugs:
+                    continue
+                # Filter: only allow allowed slugs
+                if self.allowed_slugs and slug not in self.allowed_slugs:
+                    continue
+                # If this was a Choice, then add the raw text to a column here.
+                choice_text = ''
+                if slug in raw_choices:
+                    choice_text = raw_choices[slug][int(x['a'])]
                 yield (slug,
                        time(data['access_time']),
                        time(data['submit_time']),
                        x['q'],
                        x['a'],
-                       x.get('order',''),)
+                       x.get('order',''),
+                       choice_text)
 class SurveyMeta(converter._Converter):
     header = ['name', 'access_time', 'submit_time', 'seconds', 'n_questions']
     desc = "Survey questions and answers"
@@ -240,6 +259,7 @@ class SurveyMeta(converter._Converter):
 
 from . import converter
 class BaseSurvey(devices.BaseDevice):
+    desc = 'Survey Name'
     dbmodel = models.SurveyDevice
     _register_device = True
 
@@ -291,6 +311,37 @@ class BaseSurvey(devices.BaseDevice):
             )
         return dict(qr=False,
                     raw_instructions=instructions)
+
+    @classmethod
+    def AnswerConverterFactory(cls, allowed_slugs=None, removed_slugs=None):
+        """Factory to return a SurveyAnswers converter.
+
+        This returns SurveyAnswers converter with device_class set for
+        this study.  This is mainly useful as a group conveter,
+        otherwise just use SurveyAnswers directly.  You may pass
+        allowed_slugs and removed_slugs to this to limit the questions
+        presented.
+        """
+        attrs = dict(
+            desc=cls.desc,
+            device_class=cls.pyclass_name(),
+            allowed_slugs=allowed_slugs,
+            removed_slugs=removed_slugs,
+            )
+        return type(cls.name()+'Answers', (SurveyAnswers, ), attrs)
+    @classmethod
+    def MetaConverterFactory(cls):
+        """Factory to return a SurveyAnswers converter.
+
+        This returns SurveyMeta converter with device_class set for
+        this study.  This is mainly useful as a group conveter,
+        otherwise just use SurveyMeta directly."""
+        attrs = dict(
+            desc=cls.desc + 'meta info',
+            device_class=cls.pyclass_name(),
+            )
+        return type(cls.name()+'Meta', (SurveyMeta, ), attrs)
+
 
 
 
