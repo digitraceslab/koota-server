@@ -3,12 +3,10 @@ from hashlib import sha256
 import json  # use stdlib json for pretty formatting
 from json import loads, dumps
 import textwrap
-import time
 from six.moves.urllib import parse as urlparse
 
-from django.conf.urls import url, include
 from django.urls import reverse
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404, UnreadablePostError
+from django.http import HttpResponse, JsonResponse, UnreadablePostError
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
@@ -23,7 +21,7 @@ from . import util
 from . import views as kviews
 
 import logging
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 AWARE_DOMAIN = 'https://aware.koota.zgib.net'
 AWARE_DOMAIN_SIGNED = 'https://data.koota.cs.aalto.fi'
@@ -131,7 +129,7 @@ class AwareDeviceValidCert(AwareDevice):
 # This is the JSON returned when a device is registered.
 # Sensor settings:
 # https://github.com/denzilferreira/aware-server/blob/master/aware_dashboard.sql#L298
-base_config = dict(
+BASE_CONFIG = dict(
     sensors=dict(
         status_mqtt=False,
         #mqtt_server='aware.koota.zgib.net',
@@ -182,7 +180,7 @@ def get_user_config(device):
 
     return value: Python dict object."""
     import copy
-    config = copy.deepcopy(base_config)
+    config = copy.deepcopy(BASE_CONFIG)
     #config['sensors']['mqtt_username'] = device.data.public_id
     #config['sensors']['mqtt_password'] = device.data.secret_id
     if device.data.ts_create is not None:
@@ -219,6 +217,7 @@ def get_user_config(device):
 @csrf_exempt
 def register(request, secret_id, indexphp=None):
     """Initial URL that a device hits to register."""
+    # pylint: disable=unused-argument
     device = models.Device.get_by_secret_id(secret_id)
     device_cls = device.get_class()
     config = get_user_config(device_cls)
@@ -240,6 +239,7 @@ def register(request, secret_id, indexphp=None):
 @csrf_exempt
 def create_table(request, secret_id, table, indexphp=None):
     """AWARE client creating table.  This is nullop for us."""
+    # pylint: disable=unused-argument
     # {'device_id': ['2e66087d-4afb-4a64-9316-67d737e21998'],
     #  'fields': ["_id integer primary key autoincrement,timestamp real default 0,device_id text default '',topic text default '',message text default '',status integer default 0,UNIQUE(timestamp,device_id)"]}
     #data = request.POST
@@ -253,8 +253,8 @@ def latest(request, secret_id, table, indexphp=None):
     would send data out), but we get the stored timestamp of latest
     data and return that.
     """
+    # pylint: disable=unused-argument
     device = models.Device.get_by_secret_id(secret_id)
-    device_cls = device.get_class()
 
     # Return the latest timestamp in our database.  Aware uses
     # this to know what data needs to be sent.
@@ -279,7 +279,8 @@ def insert(request, secret_id, table, indexphp=None):
     to call that, and JSON urlencoded has lots of %nn in it, so this
     is slow.
     """
-    # Here is the profile.  This is for about 2MB of data, for the
+    # pylint: disable=unused-argument
+   # Here is the profile.  This is for about 2MB of data, for the
     # 'accelerometer' sensor:
     #    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
     #     1    0.000    0.000    1.439    1.439 {built-in method builtins.exec}
@@ -302,7 +303,6 @@ def insert(request, secret_id, table, indexphp=None):
     # and no data can come out.  Unlike most devices, we must update
     # some internal state on POSTing, thus an unauthenticated getting
     # of a device class.
-    device_cls = device.get_class()
 
     #device_uuid = request.POST['device_id']
     try:
@@ -332,12 +332,14 @@ def insert(request, secret_id, table, indexphp=None):
         for data_chunk in data_separated:
             max_ts = max(float(row[timestamp_column_name]) for row in data_chunk)
             data_chunk = dumps(data_chunk)
-            data_with_probe = dumps(dict(table=table, data=data_chunk, version=1))
+            # pylint: disable=redefined-variable-type
+            data_to_save = dict(table=table,
+                                data=data_chunk,
+                                version=1)
+            data_to_save = dumps(data_to_save)
             #max_ts = max(float(row[timestamp_column_name]) for row in data_chunk)
-            kviews.save_data(data_with_probe, device_id=device.device_id, request=request)
+            kviews.save_data(data_to_save, device_id=device.device_id, request=request)
             device.attrs['aware-last-ts-%s'%table] = max_ts
-            del data_chunk, data_with_probe
-        del data, data_decoded, data_separated
 
     # Important conclusion: we must store the last timestamp.  Really
     # this and the section above should be an atomic operation!
@@ -353,6 +355,7 @@ def insert(request, secret_id, table, indexphp=None):
 @csrf_exempt
 def clear_table(request, secret_id, table, indexphp=None):
     """AWARE client requesting to clear a table.  Nullop for us."""
+    # pylint: disable=unused-argument
     return HttpResponse(reason="Not handled")
 
 
@@ -363,6 +366,7 @@ def study_info(request, secret_id, indexphp=None):
     """Returns "study info" that is presented when QR scanned.
 
     This function has no effect on config locking."""
+    # pylint: disable=unused-argument
     public_id = None
     if not secret_id:
         return JsonResponse({ })
@@ -397,9 +401,9 @@ def study_info(request, secret_id, indexphp=None):
 import qrcode
 import io
 from six.moves.urllib.parse import quote as url_quote
-from django.conf import settings
 def register_qrcode(request, public_id, indexphp=None):
     """Produce png AWARE qr code."""
+    # pylint: disable=unused-argument
     device = models.Device.get_by_id(public_id)
     if not permissions.has_device_config_permission(request, device):
         raise exceptions.NoDevicePermission()
@@ -415,6 +419,7 @@ def register_qrcode(request, public_id, indexphp=None):
 
 
 
+from django.conf.urls import url
 urlpatterns = [
     url(r'^v1/(?P<public_id>[0-9a-f]+)/qr.png$', register_qrcode,
         name='aware-register-qr'),
