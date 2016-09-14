@@ -30,6 +30,7 @@ from .. import exceptions
 from .. import logs
 from .. import models
 from .. import permissions
+from .. import util
 from .. import views
 
 
@@ -208,7 +209,7 @@ def scrape_device(device_id, save_data=False, debug=False):
     # Get basic parameters
     device = models.OauthDevice.get_by_id(device_id)
     # Check token expiry
-    if device.ts_refresh < timezone.now() + timedelta(seconds=60):
+    if device.ts_refresh and device.ts_refresh < timezone.now() + timedelta(seconds=60):
         logger.error('Facebook token expired')
         return
     # Avoid scraping again if already done, and if we are in save_data mode.
@@ -227,28 +228,31 @@ def scrape_device(device_id, save_data=False, debug=False):
                             resource_owner_key=resource_owner_key,
                             resource_owner_secret=resource_owner_secret)
 
-    # Get settings to get screen name
-    settings_url = API_BASE%'account/settings'
-    r = session.get(settings_url)
-    j = r.json()
-    if debug:
-        print(j)
-    screen_name = j['screen_name']
-
-    def get_twitter(endpoint, params, filter_json=lambda j: j):
+    def get_twitter(endpoint, params={}, filter_json=lambda j: j,
+                    removed_fields=None, allowed_fields=None,
+                    since_id_key=None):
         url = API_BASE%endpoint
         all_data = [ ]
-        count = 0
+        params = { k:v for k,v in params.items() if v is not None }
+        # Handle since_id.  If given since_id_key, use this to get the
+        # most recent id on the last data-saving run, and save this
+        # for use next time.
+        if save_data and since_id_key is not None:
+            since_id = device.attrs.get('last-id-'+since_id_key)
+            print('since_id:', since_id)
+            if since_id is not None:
+                params['since_id'] = int(since_id)
         # Loop for paging
         while True:
             r = session.get(url, params=params)
             body = r.text
             j = r.json()
             if debug:
+                print("="*10)
+                print("GET {} {}".format(url, params))
                 print("{} {} len={}".format(r.status_code, r.reason, len(r.content)))
                 print('  Rate limit:', r.headers['X-Rate-Limit-Limit'],
                       r.headers['X-Rate-Limit-Remaining'])
-                print(dumps(j, indent=4, sort_keys=True, separators=(',', ': ')))
             # Rate limiting?
             if r.status_code == 429:
                 print('RATE LIMIT EXCEEDED: %s: twitter %s: %s'%(r.status_code, endpoint, body))
@@ -259,14 +263,14 @@ def scrape_device(device_id, save_data=False, debug=False):
                 print('%s: twitter %s: %s'%(r.status_code, endpoint, body))
                 return
 
-
-
             # Handle privacy-preserving functions
             j = filter_json(j)
+            util.filter_allowed(j, allowed_fields)
+            util.filter_removed(j, removed_fields)
             all_data.append(j)
-            if remove_fields is not None:
-                for field in remove_fields:
-                    j.pop(j, None)
+            if debug:
+                print(dumps(j, indent=4, sort_keys=True, separators=(',', ': ')))
+
             # Create our data storage object and do the storage
             data = dict(endpoint=endpoint,
                         url=url,
@@ -284,9 +288,13 @@ def scrape_device(device_id, save_data=False, debug=False):
                 params['cursor'] = j['next_cursor']
                 continue
             break
+        # Store our most recent tweet, for use in filtering the next
+        # time around.
+        if save_data and since_id_key is not None and all_data[-1]:
+            device.attrs['last-id-'+since_id_key] = max(x['id'] for x in all_data[-1])
         return all_data
 
-    def filter_keys(j):
+    def filter_json(j):
         if not isinstance(j, list):
             return j
         for row in j:
@@ -296,99 +304,112 @@ def scrape_device(device_id, save_data=False, debug=False):
         return j
 
 
-    #r = session.get('https://api.twitter.com/1.1/statuses/user_timeline.json',
-    #                params=dict(screen_name=screen_name))
-    #j = r.json()
-    # TODO: since_id,
+    # Get user object to get screen name and user ID
+    #settings_url = API_BASE%'account/settings'
+    ret = get_twitter('account/verify_credentials',
+                      {'skip_status':True},
+                      filter_json=filter_json,
+                      #removed_fields={'description'}
+                          )
+    #print(ret, '\n')
+    screen_name = ret[0]['screen_name']
+    #user_id = ret[0]['id']
+
+
     ret = get_twitter('statuses/user_timeline',
-                      {'screen_name':'false'},
-                      {'since_id':1442259804},
-                      {'include_rts':'false'},
-                      filter_keys)
-    print(ret, '\n')
+                      params={'screen_name':screen_name,
+                              #'since_id':last_id,
+                              'include_rts':'false'},
+                      since_id_key='user-timeline',
+                      filter_json=filter_json,
+                      #allowed_fields={'id', 'created_at'}
+                          )
+    #print(ret, '\n')
 
     ret = get_twitter('statuses/mentions_timeline',
-                      {'since_id':1442260740},
-                      {'trim_user':1},                  
-                      filter_keys)
-    
-    print(ret, '\n')
+                      params={#'since_id':1442260740,
+                              'trim_user':1},
+                      since_id_key='menitions-timeline',
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('statuses/retweets_of_me',
-                      {'since_id':1442260740},
-                      {'trim_user':1}, 
-                      {'include_entities':'false'},
-                      {'include_user_entities':'false'},                 
-                      filter_keys)
-    print(ret, '\n')
+                      params={#'since_id':1442260740,
+                              'trim_user':1,
+                              'include_entities':'false',
+                              'include_user_entities':'false'},
+                      since_id_key='retweets-of-me',
+                      filter_json=filter_json)
+    #print(ret, '\n')
 
     ret = get_twitter('direct_messages/sent',
-                      {'since_id':1442260740},
-                      {'include_entities':'false'},             
-                      filter_keys)
-    
-    print(ret, '\n')
+                      {#'since_id':1442260740,
+                       'include_entities':'false'},
+                      since_id_key='direct-messages-sent',
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('direct_messages',
-                      {'since_id':1442260740},
-                      {'include_entities':'false'},   
-                      {'skip_status':1},          
-                      filter_keys)
-    
-    print(ret, '\n')
+                      params={#'since_id':1442260740,
+                              'include_entities':'false',
+                              'skip_status':1},
+                      since_id_key='direct-messages-received',
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('friendships/no_retweets/ids',
-                      {'stringify_ids':'true'}                            
-                      filter_keys)
-    
-    print(ret, '\n')
+                      params={},
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('friends/ids',
-                       {'stringify_ids':'true'},
-                       {'count':5000},            
-                       filter_keys)
-    
-    print(ret, '\n')
+                      params={'count':5000},
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('followers/ids',
-                       {'stringify_ids':'true'},
-                       {'count':5000},            
-                       filter_keys)
-    
-    print(ret, '\n')
+                      params={'count':5000},
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('friendships/incoming',
-                       {'stringify_ids':'true'},
-                       filter_keys)
-    
-    print(ret, '\n')
+                      params={},
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('friendships/outgoing',
-                        {'stringify_ids':'true'},
-                        filter_keys)
-    
-    print(ret, '\n')
+                      params={},
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('blocks/ids',
-                       {'stringify_ids':'true'},
-                       filter_keys)
-    
-    print(ret, '\n')
+                      params={},
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('mutes/users/ids',
-                       filter_keys)
-    
-    print(ret, '\n')
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('lists/ownerships',
-                        filter_keys)
-    
-    print(ret, '\n')
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
     ret = get_twitter('lists/subscriptions',
-                        filter_keys)
-    
-    print(ret, '\n')
+                      filter_json=filter_json)
+
+    #print(ret, '\n')
 
 
 
@@ -397,11 +418,11 @@ def scrape_device(device_id, save_data=False, debug=False):
 
 
 def scrape_all(save_data=False, debug=False):
-    devices = Twitter.dbmodel.objects.filter(type=Twitter.pyclass_name(),
+    devices_ = Twitter.dbmodel.objects.filter(type=Twitter.pyclass_name(),
                                              state='linked')
-    for device in devices:
+    for device in devices_:
         print(device)
-        scrape_device(device.device_id, save_data=False, debug=True)
+        scrape_device(device.device_id, save_data=save_data, debug=debug)
 
 Twitter.scrape_one_function = staticmethod(scrape_device)
 Twitter.scrape_all_function = staticmethod(scrape_all)

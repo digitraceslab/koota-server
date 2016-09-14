@@ -318,6 +318,8 @@ class JsonConfigField(django.db.models.TextField):
 
 
 
+
+
 def merge_dicts(*dicts):
     """Recursively update dictionaries.
 
@@ -338,6 +340,40 @@ def recursive_copy_dict(src, dest):
             dest[k] = dict(v)  # copy
         else:
             dest[k] = v
+
+
+
+
+# Tools for filtering social media results
+def filter_allowed(val, allowed_fields):
+    """In-place modify dict or list of dicts, allowing only certain fields"""
+    if allowed_fields is None:
+        return
+    print(allowed_fields)
+    if isinstance(val, dict):
+        for k in list(val.keys()):
+            if k not in allowed_fields:
+                val.pop(k)
+    else:
+        for dct in val:
+            for k in list(dct.keys()):
+                if k not in allowed_fields:
+                    dct.pop(k)
+def filter_removed(val, removed_fields):
+    """In-place modify dict or list of dicts, removing certain fields"""
+    if removed_fields is None:
+        return
+    print(removed_fields)
+    if isinstance(val, dict):
+        for field in removed_fields:
+            if field in val:
+                val.pop(field)
+    else:
+        for dct in val:
+            for field in removed_fields:
+                if field in val:
+                    dct.pop(field)
+
 
 
 #

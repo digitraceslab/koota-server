@@ -28,6 +28,7 @@ from .. import exceptions
 from .. import logs
 from .. import models
 from .. import permissions
+from .. import util
 from .. import views
 
 
@@ -180,7 +181,7 @@ def done(request):
     #                     &error=access_denied
     #                     &error_description=The+user+denied+your+request.
     if 'error' in request.GET:
-        raise exceptions.BaseMessageKootaException("Error in instagram linking: %s"%request.GET, message="An error linking occured")
+        raise exceptions.BaseMessageKootaException("An error linking occured", log="Error in instagram linking: %s"%request.GET)
 
     #request.GET = QueryDict({'code': ['xxxxxxxx'],  'state': ['xxxxxxx']})
     code = request.GET['code']
@@ -211,8 +212,8 @@ def done(request):
     # }
     #import IPython ; IPython.embed()
     if r.status_code != 200:
-        raise exceptions.BaseMessageKootaException('IG linking failed: %s %s'%(r.status_code, r.text),
-                                                   message='Linking failed')
+        raise exceptions.BaseMessageKootaException('Linking failed',
+                                      log='IG linking failed: %s %s'%(r.status_code, r.text))
     data = r.json()
 
     access_token = data['access_token']
@@ -282,7 +283,10 @@ def scrape_device(device_id, save_data=False, debug=False):
         while True:
             count += 1
             r = session.get(url, params=params)
-            if debug: print("GET", url, params if params else '')
+            if debug:
+                print("="*10)
+                print("GET {} {}".format(url, params))
+                print("{} {} len={}".format(r.status_code, r.reason, len(r.content)))
             if debug and count > 1: print("  request index: %s"%count)
             # Get the data
             r = session.get(url, params=params)
@@ -304,25 +308,13 @@ def scrape_device(device_id, save_data=False, debug=False):
             #   this permissions."}}
             if not r.ok:
                 print(r.text)
+                raise RuntimeError("Instagram unhandled failure")
                 # FIXME: do something
             # Handle privacy-preserving functions.
             j = filter_json(j)
-            if allowed_fields is not None:
-                if isinstance(j['data'], dict):
-                    j['data'] = dict((k,v) for (k,v) in j['data'].items()
-                                     if k in allowed_fields)
-                else:
-                    j['data'] = [ dict((k,v) for (k,v) in item.items()
-                                       if k in allowed_fields)
-                                  for item in j['data'] ]
-            if removed_fields is not None:
-                if isinstance(j['data'], dict):
-                    for field in removed_fields:
-                        j['data'].pop(field, None)
-                else:
-                    for item in j['data']:
-                        for field in removed_fields:
-                            item.pop(field, None)
+            util.filter_allowed(j, allowed_fields)
+            util.filter_removed(j, removed_fields)
+            all_data.append(j)
             # Create our data storage object and do the storage.
             data = dict(endpoint=endpoint,
                         url=url,
@@ -344,7 +336,7 @@ def scrape_device(device_id, save_data=False, debug=False):
                 continue
             break
 
-        return data
+        return all_data
 
 
     # permission: none
@@ -381,9 +373,9 @@ def scrape_device(device_id, save_data=False, debug=False):
 
 
 def scrape_all():
-    devices = Instagram.dbmodel.objects.filter(type=Instagram.pyclass_name(),
+    devices_ = Instagram.dbmodel.objects.filter(type=Instagram.pyclass_name(),
                                                state='linked')
-    for device in devices:
+    for device in devices_:
         print(device)
         scrape_device(device.device_id, True)
 
