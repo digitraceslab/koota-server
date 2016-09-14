@@ -58,6 +58,12 @@ def user_merged_group_config(user):
     return config
 
 
+def user_main_page(user):
+    pass
+
+
+
+
 
 class JoinGroupForm(forms.Form):
     invite_code = forms.CharField()

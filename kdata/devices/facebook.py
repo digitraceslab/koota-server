@@ -30,12 +30,13 @@ import requests
 from requests_oauthlib import OAuth2Session
 from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
-from . import converter
-from . import devices
-from . import logs
-from . import models
-from . import permissions
-from . import views
+from .. import converter
+from .. import devices
+from .. import exceptions
+from .. import logs
+from .. import models
+from .. import permissions
+from .. import views
 
 
 
@@ -58,7 +59,7 @@ API_BASE = 'https://graph.facebook.com/v2.7/%s'
 
 
 
-@devices.register_device_decorator(default=False)
+@devices.register_device(default=False, aliases=['kdata.facebook.Facebook'])
 class Facebook(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [

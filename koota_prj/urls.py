@@ -23,6 +23,7 @@ from django.contrib.auth import views as auth_views
 from kdata import views as kviews
 from kdata import views_admin
 
+import oxford2016.views
 
 urlpatterns = [ ]
 
@@ -40,6 +41,8 @@ if 'ui' in settings.WEB_COMPONENTS:
     url(r'^register/$', views_admin.RegisterView.as_view(), name='register-user'),
     url(r'^otp/$',          views_admin.otp_config, name='otp-config'),
     url(r'^otp/otp-qr.png', views_admin.otp_qr,     name='otp-qr'),
+
+    url(r'^oxford/', oxford2016.views.main,     name='oxford'),
 
 
     url(r'^', include('django.contrib.auth.urls')),

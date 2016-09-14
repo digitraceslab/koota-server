@@ -22,12 +22,13 @@ from django.views.decorators.http import require_http_methods
 
 import requests
 
-from . import converter
-from . import devices
-from . import logs
-from . import models
-from . import permissions
-from . import views
+from .. import converter
+from .. import devices
+from .. import exceptions
+from .. import logs
+from .. import models
+from .. import permissions
+from .. import views
 
 
 
@@ -45,7 +46,7 @@ token_url = 'https://api.instagram.com/oauth/access_token'
 API_BASE = 'https://api.instagram.com/v1/%s'
 
 
-@devices.register_device_decorator(default=False)
+@devices.register_device(default=False, aliases=['kdata.instagram.Instagram'])
 class Instagram(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [

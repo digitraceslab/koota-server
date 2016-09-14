@@ -102,8 +102,10 @@ class Device(models.Model):
         # device is registered.
         if self.type not in devices.device_class_lookup:
             self.get_class()
-        # djnago's internal "human name" functionality.
-        return self.get_type_display()
+        try:
+            return self.get_type_display()
+        except AttributeError:
+            return self.type.rsplit('.')[-1]
 # See comment in kdata.devices.register_device to know why this is
 # here. It is a hack to work around a circular import.
 Device._meta.get_field('type').choices = devices.all_device_choices

@@ -7,6 +7,7 @@ from datetime import timedelta
 from hashlib import sha256
 import json  # use stdlib json for pretty formatting
 from json import loads, dumps
+import logging
 import textwrap
 from six.moves.urllib import parse as urlparse
 
@@ -15,17 +16,16 @@ from django.http import HttpResponse, JsonResponse, UnreadablePostError
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from . import devices
-from . import converter
-from . import exceptions
-from . import group
-from . import logs
-from . import models
-from . import permissions
-from . import util
-from . import views as kviews
+from .. import devices
+from .. import converter
+from .. import exceptions
+from .. import group
+from .. import logs
+from .. import models
+from .. import permissions
+from .. import util
+from .. import views as kviews
 
-import logging
 LOGGER = logging.getLogger(__name__)
 
 AWARE_DOMAIN = 'https://aware.koota.zgib.net'
@@ -35,10 +35,10 @@ PACKET_CHUNK_SIZE = 1000
 
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-class AwareDevice(devices.BaseDevice):
+
+@devices.register_device(default=True, aliases=['kdata.aware.AwareDevice'])
+class Aware(devices.BaseDevice):
     """Basic Python class handling Aware devices"""
-    _register_device = True
-    _register_default = True
     desc = 'Aware device'
     AWARE_DOMAIN = AWARE_DOMAIN
     converters = devices.BaseDevice.converters + [
@@ -110,9 +110,9 @@ class AwareDevice(devices.BaseDevice):
         url_ = self.AWARE_DOMAIN+url_
         return url_
 
-class AwareDeviceValidCert(AwareDevice):
+@devices.register_device(default=True, aliases=['kdata.aware.AwareDeviceValidCert'])
+class AwareValidCert(Aware):
     """AWARE device, using a valid cert endpoint"""
-    _register_device = True
     desc = 'Aware device (iOS)'
     AWARE_DOMAIN = AWARE_DOMAIN_SIGNED
 
@@ -161,7 +161,7 @@ BASE_CONFIG = dict(
 for name in ("accelerometer", "barometer", "gravity", "gyroscope",
                  "light", "linear_accelerometer", "magnetometer",
                  "proximity", "rotation", "temperature"):
-    base_config['sensors']['threshold_'+name] = 0.05
+    BASE_CONFIG['sensors']['threshold_'+name] = 0.05
 
 def aware_to_string(value):
     """AWARE requires setting values to be string.  Convert them"""
@@ -301,7 +301,9 @@ def insert(request, secret_id, table, indexphp=None):
     try:
         POST = request.POST
     except UnreadablePostError:
-        return JsonResponse(status_code=400, reason_phrase="Data not received")
+        return JsonResponse({'error': True}, status_code=400,
+                                reason_phrase="Data not received")
+    data = POST['data']
     data_decoded = loads(data)
     data_sha256 = sha256(data.encode('utf8')).hexdigest()
 
@@ -340,8 +342,8 @@ def insert(request, secret_id, table, indexphp=None):
                      double_end_timestamp=max_ts,
                      double_esm_user_answer_timestamp=max_ts,
                      dat_sha256=data_sha256),]
-    if 'nonce' in request.POST:
-        response[0]['nonce'] = request.POST['nonce']
+    if 'nonce' in POST:
+        response[0]['nonce'] = POST['nonce']
     #device.attrs['aware-last-ts-%s'%table] = max_ts
     return JsonResponse(response, safe=False)
 

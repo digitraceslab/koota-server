@@ -24,12 +24,13 @@ from django.views.decorators.http import require_http_methods
 
 from requests_oauthlib import OAuth1Session
 
-from . import converter
-from . import devices
-from . import logs
-from . import models
-from . import permissions
-from . import views
+from .. import converter
+from .. import devices
+from .. import exceptions
+from .. import logs
+from .. import models
+from .. import permissions
+from .. import views
 
 
 
@@ -45,7 +46,7 @@ base_authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
 API_BASE = 'https://api.twitter.com/1.1/%s.json'
 
-@devices.register_device_decorator(default=False)
+@devices.register_device(default=False, aliases=['kdata.twitter.Twitter'])
 class Twitter(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [
