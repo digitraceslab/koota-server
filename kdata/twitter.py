@@ -306,25 +306,90 @@ def scrape_device(device_id, save_data=False, debug=False):
                       filter_keys)
     print(ret, '\n')
 
-#   ret = get_twitter('statuses/mentions_timeline',
-#                      {'screen_name':screen_name},
-#                      filter_keys)
-#    print(ret, '\n')
+    ret = get_twitter('statuses/mentions_timeline',
+                      {'since_id':1442260740},
+                      {'trim_user':1},                  
+                      filter_keys)
+    
+    print(ret, '\n')
 
-#    ret = get_twitter('statuses/retweets_of_me',
-#                      {'screen_name':screen_name},
-#                      filter_keys)
-#    print(ret, '\n')
+    ret = get_twitter('statuses/retweets_of_me',
+                      {'since_id':1442260740},
+                      {'trim_user':1}, 
+                      {'include_entities':'false'},
+                      {'include_user_entities':'false'},                 
+                      filter_keys)
+    print(ret, '\n')
 
-#    ret = get_twitter('friends/list',
-#                      {'screen_name':screen_name},
-#                     )
-#    print(ret, '\n')
+    ret = get_twitter('direct_messages/sent',
+                      {'since_id':1442260740},
+                      {'include_entities':'false'},             
+                      filter_keys)
+    
+    print(ret, '\n')
 
-#    ret = get_twitter('followers/list',
-#                      {'screen_name':screen_name},
-#                     )
-#    print(ret, '\n')
+    ret = get_twitter('direct_messages',
+                      {'since_id':1442260740},
+                      {'include_entities':'false'},   
+                      {'skip_status':1},          
+                      filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('friendships/no_retweets/ids',
+                      {'stringify_ids':'true'}                            
+                      filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('friends/ids',
+                       {'stringify_ids':'true'},
+                       {'count':5000},            
+                       filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('followers/ids',
+                       {'stringify_ids':'true'},
+                       {'count':5000},            
+                       filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('friendships/incoming',
+                       {'stringify_ids':'true'},
+                       filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('friendships/outgoing',
+                        {'stringify_ids':'true'},
+                        filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('blocks/ids',
+                       {'stringify_ids':'true'},
+                       filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('mutes/users/ids',
+                       filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('lists/ownerships',
+                        filter_keys)
+    
+    print(ret, '\n')
+
+    ret = get_twitter('lists/subscriptions',
+                        filter_keys)
+    
+    print(ret, '\n')
+
+
 
 
     #import IPython ; IPython.embed()
