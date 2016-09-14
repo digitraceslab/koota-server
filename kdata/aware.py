@@ -1,3 +1,8 @@
+"""AWARE devices
+
+http://www.awareframework.com/
+"""
+
 from datetime import timedelta
 from hashlib import sha256
 import json  # use stdlib json for pretty formatting
@@ -76,20 +81,21 @@ class AwareDevice(devices.BaseDevice):
 
     <img src="{{qrcode_img_path}}"></img>
 
-    {% if pretty_aware_config or 1 %}
+    {% if pretty_aware_config %}
     <p>Your raw config is:
     {{ pretty_aware_config }}</p>
     {% endif %}
 
     """)
     def config_context(self):
-        url = self.qrcode_url()
+        url_ = self.qrcode_url()
         qrcode_img_path = reverse('aware-register-qr',
                                   kwargs=dict(public_id=self.dbrow.public_id))
         config = get_user_config(self)
+        # pylint: disable=redefined-variable-type
         config = json.dumps(config, sort_keys=True, indent=1, separators=(',',': '))
         config = mark_safe('<pre>'+escape(config)+'</pre>')
-        context = dict(study_url=url,
+        context = dict(study_url=url_,
                        qrcode_img_path=qrcode_img_path,
                        pretty_aware_config=config, )
         return context
@@ -98,12 +104,11 @@ class AwareDevice(devices.BaseDevice):
 
         This is the data used for registration."""
         secret_id = self.data.secret_id
-        url = reverse('aware-register', kwargs=dict(indexphp='index.php',
+        url_ = reverse('aware-register', kwargs=dict(indexphp='index.php',
                                                     secret_id=secret_id,
                                                     ))
-        # TODO: http or https?
-        url = self.AWARE_DOMAIN+url
-        return url
+        url_ = self.AWARE_DOMAIN+url_
+        return url_
 
 class AwareDeviceValidCert(AwareDevice):
     """AWARE device, using a valid cert endpoint"""
@@ -112,21 +117,9 @@ class AwareDeviceValidCert(AwareDevice):
     AWARE_DOMAIN = AWARE_DOMAIN_SIGNED
 
 
-#config = 
-#$decode->{'sensors'}[] = array('setting' => 'status_mqtt','value' => 'true' );
-#$decode->{'sensors'}[] = array('setting' => 'mqtt_server', 'value' => $mqtt_config['mqtt_server']);
-#$decode->{'sensors'}[] = array('setting' => 'mqtt_port', 'value' => $mqtt_config['mqtt_port']);
-#$decode->{'sensors'}[] = array('setting' => 'mqtt_keep_alive','value' => '600');
-#$decode->{'sensors'}[] = array('setting' => 'mqtt_qos','value' => '2');
-#$decode->{'sensors'}[] = array('setting' => 'status_esm','value' => 'true' );
-#$decode->{'sensors'}[] = array('setting' => 'mqtt_username', 'value' => $device_id);
-#$decode->{'sensors'}[] = array('setting' => 'mqtt_password', 'value' => $pwd);
-#$decode->{'sensors'}[] = array('setting' => 'study_id', 'value' => $study_id);
-#$decode->{'sensors'}[] = array('setting' => 'study_start', 'value' => (string) round(microtime(true) * 1000));
-#$decode->{'sensors'}[] = array('setting' => 'webservice_server', 'value' => base_url().'index.php/webservice/index/'.$study_id.'/'.$api_key);
-#$decode->{'sensors'}[] = array('setting' => 'status_webservice', 'value' => 'true');
 
-# This is the JSON returned when a device is registered.
+
+# This is our standard JSON configuration.
 # Sensor settings:
 # https://github.com/denzilferreira/aware-server/blob/master/aware_dashboard.sql#L298
 BASE_CONFIG = dict(
