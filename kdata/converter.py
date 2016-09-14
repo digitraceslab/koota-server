@@ -196,6 +196,22 @@ class _Converter(object):
                 # Possibly we need to prevent each next traceback from
                 # storing the previous traceback, too.
                 del e
+    def run_queryset(self, queryset, device,
+                     time_converter=lambda x: x,
+                     catch_errors=False):
+        """Generic function to handle converting querysets"""
+        from . import util
+        queryset = util.optimized_queryset_iterator(queryset)
+        if catch_errors:
+            converter = cls(((x.ts, x.data) for x in data),
+                            time=time_converter)
+            table = converter.run()
+        else:
+            converter = converter_class()
+            table = converter.convert(((x.ts, x.data) for x in data),
+                                      time=time_converter)
+        return table
+
 
 class Raw(_Converter):
     header = ['packet_time', 'data']
