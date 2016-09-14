@@ -138,30 +138,40 @@ base_config = dict(
         #mqtt_port=8883,
         #mqtt_keep_alive=600,
         #mqtt_qos=2,
-
+        #mqtt_username='x',         # overridden
+        #mqtt_password='y',         # overridden
         study_start=1464728400000,  # 1 june 2016 00:00
         #webservice_server='https://aware.koota.zgib.net/'+xxx,
         status_webservice=True,
         frequency_webservice=15,
+        webservice_stateless=True,   # don't /create_table
+        webservice_only=True,        # delete data after uploading, no /latest
 
         # meta-options
         frequency_clean_old_data=4,  # (0 = never, 1 = weekly, 2 = monthly)
         #study_id=1,            # If this is set to anything, not user modifiable
         status_crashes=True,
-        status_esm=True,
+        status_esm=False,
         #webservice_wifi_only
 
         # Sensor config
         status_battery=True,
         status_screen=True,
+        #status_wifi=False,
+        #frequency_wifi=300,
         #status_bluetooth=False,
-        #frequency_bluetooth=600,
+        #frequency_bluetooth=300,
         #status_light=True,
         status_accelerometer=False,
-        frequency_accelerometer=10000000, #microseconds
+        frequency_accelerometer=1000000, #microseconds
         #frequency_light=10000000,  # microseconds
         #frequency_timezone=43200  # seconds
     ))
+for name in ("accelerometer", "barometer", "gravity", "gyroscope",
+                 "light", "linear_accelerometer", "magnetometer",
+                 "proximity", "rotation", "temperature"):
+    base_config['sensors']['threshold_'+name] = 0.05
+
 def aware_to_string(value):
     """AWARE requires setting values to be string.  Convert them"""
     if isinstance(value, bool):
