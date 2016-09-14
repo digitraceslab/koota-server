@@ -301,29 +301,31 @@ def scrape_device(device_id, save_data=False, debug=False):
     #j = r.json()
     # TODO: since_id,
     ret = get_twitter('statuses/user_timeline',
-                      {'screen_name':screen_name},
+                      {'screen_name':'false'},
+                      {'since_id':1442259804},
+                      {'include_rts':'false'},
                       filter_keys)
     print(ret, '\n')
 
-    ret = get_twitter('statuses/mentions_timeline',
-                      {'screen_name':screen_name},
-                      filter_keys)
-    print(ret, '\n')
+#   ret = get_twitter('statuses/mentions_timeline',
+#                      {'screen_name':screen_name},
+#                      filter_keys)
+#    print(ret, '\n')
 
-    ret = get_twitter('statuses/retweets_of_me',
-                      {'screen_name':screen_name},
-                      filter_keys)
-    print(ret, '\n')
+#    ret = get_twitter('statuses/retweets_of_me',
+#                      {'screen_name':screen_name},
+#                      filter_keys)
+#    print(ret, '\n')
 
-    ret = get_twitter('friends/list',
-                      {'screen_name':screen_name},
-                     )
-    print(ret, '\n')
+#    ret = get_twitter('friends/list',
+#                      {'screen_name':screen_name},
+#                     )
+#    print(ret, '\n')
 
-    ret = get_twitter('followers/list',
-                      {'screen_name':screen_name},
-                     )
-    print(ret, '\n')
+#    ret = get_twitter('followers/list',
+#                      {'screen_name':screen_name},
+#                     )
+#    print(ret, '\n')
 
 
     #import IPython ; IPython.embed()
