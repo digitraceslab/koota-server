@@ -42,7 +42,7 @@ def get_choices(all=False):
         return list(x[:2] for x in all_device_choices)
     return list(x[:2] for x in standard_device_choices)
 def register_device(cls, desc=None, default=False,
-                    alias=None):
+                    alias=None, aliases=None):
     """Allow us to dynamically register devices.
 
     This dynamically changes the models.Device.type.choices when
@@ -56,11 +56,14 @@ def register_device(cls, desc=None, default=False,
     alias: if given, this short name will be used in the database,
            instead of the full importable name.
     """
+    # device_class_lookup is a table of all devices and device names.
     name = cls.pyclass_name()
-    # If alias is provided, use this as a fast lookup.
+    device_class_lookup[name] = cls
     if alias is not None:
         name = alias
     device_class_lookup[name] = cls
+    for alias in aliases:
+        device_class_lookup[name] = cls
     # description: description in the form field
     if desc is None:
         desc = getattr(cls, 'desc', cls.name())
@@ -88,12 +91,14 @@ def register_device(cls, desc=None, default=False,
             = all_device_choices
 
 # Class decorator for the above function
-def register_device_decorator(desc=None, default=False, alias=None):
+def register_device_decorator(desc=None, default=False, alias=None,
+                              aliases=None):
     """Register devices (as class decorator)
 
     Similar signature as register_device()"""
     def register(cls):
-        register_device(cls, desc=desc, default=default, alias=alias)
+        register_device(cls, desc=desc, default=default, alias=alias,
+                        aliases=aliases)
         return cls
     return register
 
