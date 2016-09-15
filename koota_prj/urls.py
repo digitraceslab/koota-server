@@ -45,7 +45,7 @@ if 'ui' in settings.WEB_COMPONENTS:
     url(r'^otp/$',          views_admin.otp_config, name='otp-config'),
     url(r'^otp/otp-qr.png', views_admin.otp_qr,     name='otp-qr'),
 
-    url(r'^oxford/', oxford2016.views.main,     name='oxford'),
+    url(r'^oxford/', oxford2016.views.main,     name='oxford2016'),
 
 
     url(r'^', include('django.contrib.auth.urls')),

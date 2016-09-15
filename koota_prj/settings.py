@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'kdata',
+    'oxford2016',
 
     'django_otp',
     'django_otp.plugins.otp_totp',
