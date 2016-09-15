@@ -164,7 +164,12 @@ def done(request):
     device.save()
     logs.log(request, 'Twitter: done linking',
              obj=device.public_id, op='link_done')
-    return HttpResponseRedirect(reverse('device-config', kwargs=dict(public_id=device.public_id)))
+    # redirect user back to place they belong
+    target = reverse('device-config',
+                      kwargs=dict(public_id=device.public_id))
+    if 'login_view_name' in request.session:
+        target = reverse(request.session['login_view_name'])
+    return HttpResponseRedirect(target)
 
 
 @login_required
@@ -181,8 +186,12 @@ def unlink(request, public_id):
     device.save()
     logs.log(request, 'Twitter: unlink',
              obj=device.public_id, op='unlink')
-    return HttpResponseRedirect(reverse('device-config',
-                                        kwargs=dict(public_id=device.public_id)))
+    # redirect user back to place they belong
+    target = reverse('device-config',
+                      kwargs=dict(public_id=device.public_id))
+    if 'login_view_name' in request.session:
+        target = reverse(request.session['login_view_name'])
+    return HttpResponseRedirect(target)
 
 
 
