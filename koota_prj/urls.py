@@ -35,8 +35,11 @@ if 'admin' in settings.WEB_COMPONENTS:
 if 'ui' in settings.WEB_COMPONENTS:
   urlpatterns += [
     #url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html'}, name='login2'),
-    url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html',
-                                        'authentication_form':views_admin.KootaOTPAuthenticationForm},
+    #url(r'^login/$', auth_views.login, {'template_name': 'koota/login.html',
+    #                                    'authentication_form':views_admin.KootaOTPAuthenticationForm},
+    #                 name='login2'),
+    url(r'^login/$', views_admin.login, {'template_name': 'koota/login.html',
+                                 'authentication_form':views_admin.KootaOTPAuthenticationForm},
                      name='login2'),
     url(r'^register/$', views_admin.RegisterView.as_view(), name='register-user'),
     url(r'^otp/$',          views_admin.otp_config, name='otp-config'),

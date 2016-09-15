@@ -59,7 +59,9 @@ def user_merged_group_config(user):
 
 
 def user_main_page(user):
-    pass
+    """Return the view name of this user's login page"""
+    config = user_merged_group_config(user)
+    return config.get('login_view_name', None)
 
 
 
