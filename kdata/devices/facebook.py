@@ -182,7 +182,6 @@ def link(request, public_id):
 
 
 
-@login_required
 def done(request):
     # TODO: handle error: error_reason=user_denied
     #                     &error=access_denied
@@ -206,6 +205,10 @@ def done(request):
                 url = url._replace(scheme='http')
             url = url._replace(netloc=redirect_domain)
             return HttpResponseRedirect(url.geturl())
+
+    # have to test for login here
+    if not request.user.is_authenticated:
+        return HttpResponseRedirect(reverse(settings.LOGIN_URL))
 
     # Get device object
     device = models.OauthDevice.objects.get(request_key=state)
