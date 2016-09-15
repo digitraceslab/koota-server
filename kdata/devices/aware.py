@@ -341,7 +341,7 @@ def insert(request, secret_id, table, indexphp=None):
     response = [dict(timestamp=max_ts,
                      double_end_timestamp=max_ts,
                      double_esm_user_answer_timestamp=max_ts,
-                     dat_sha256=data_sha256),]
+                     data_sha256=data_sha256),]
     if 'nonce' in POST:
         response[0]['nonce'] = POST['nonce']
     #device.attrs['aware-last-ts-%s'%table] = max_ts
