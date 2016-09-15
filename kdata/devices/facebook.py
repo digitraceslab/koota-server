@@ -322,7 +322,7 @@ def scrape_device(device_id, save_data=False, debug=False):
 
     def get_facebook(endpoint, params={},
                      allowed_fields=None,
-                     remove_fields=None,
+                     removed_fields=None,
                      filter_json=lambda j: j):
         """Function to get and save data from one API call.
 
@@ -371,8 +371,8 @@ def scrape_device(device_id, save_data=False, debug=False):
             # Handle privacy-preserving functions.
             j = filter_json(j)
             all_data.append(j)
-            if remove_fields is not None:
-                for field in remove_fields:
+            if removed_fields is not None:
+                for field in removed_fields:
                     j.pop(j, None)
             # Create our data storage object and do the storage.
             data = dict(endpoint=endpoint,
@@ -407,7 +407,10 @@ def scrape_device(device_id, save_data=False, debug=False):
     get_facebook('me/friends',
                  allowed_fields="id",
                  )
-    get_facebook('me/friendlists')
+    #get_facebook('me/friendlists')
+
+    get_facebook('me/events',
+                 )
 
 
     #import IPython ; IPython.embed()
