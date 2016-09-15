@@ -6,3 +6,4 @@ defusedxml
 pytz
 pycrypto
 ujson (optional)
+django-otp
