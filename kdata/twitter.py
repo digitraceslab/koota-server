@@ -299,17 +299,22 @@ def scrape_device(device_id, save_data=False, debug=False):
     #                params=dict(screen_name=screen_name))
     #j = r.json()
     # TODO: since_id,
-    ret = get_twitter('statuses/user_timeline',
+        ret = get_twitter('statuses/user_timeline',
                       {'screen_name':'false'},
                       {'since_id':1442259804},
                       {'include_rts':'false'},
-                      filter_keys)
+                      j=['created_at','favorite_count','id','in_reply_to_user_id','retweet_count',
+                      'favourites_count','follow_request_sent','followers_count','friends_count', 
+                      'listed_count','protected','statuses_count',  #in user{}
+                      'user_mentions','id' #of the user mentions 
+                      ])
     print(ret, '\n')
 
     ret = get_twitter('statuses/mentions_timeline',
                       {'since_id':1442260740},
                       {'trim_user':1},                  
-                      filter_keys)
+                      j=['created_at','favorite_count','id','in_reply_to_status_id',
+                      'in_reply_to_user_id','retweet_count','user','endpoint','params:{"since_id"}','timestamp'])
     
     print(ret, '\n')
 
@@ -318,26 +323,26 @@ def scrape_device(device_id, save_data=False, debug=False):
                       {'trim_user':1}, 
                       {'include_entities':'false'},
                       {'include_user_entities':'false'},                 
-                      filter_keys)
+                      j=['id','retweet_count','favorite_count','endpoint','timestamp'])
     print(ret, '\n')
 
     ret = get_twitter('direct_messages/sent',
                       {'since_id':1442260740},
-                      {'include_entities':'false'},             
-                      filter_keys)
+                      {'include_entities':'false'}, #j: TODO define
+                      )
     
     print(ret, '\n')
 
     ret = get_twitter('direct_messages',
                       {'since_id':1442260740},
                       {'include_entities':'false'},   
-                      {'skip_status':1},          
+                      {'skip_status':1}, #j: TODO define         
                       filter_keys)
     
     print(ret, '\n')
 
     ret = get_twitter('friendships/no_retweets/ids',
-                      {'stringify_ids':'true'}                            
+                      {'stringify_ids':'true'} , #j: TODO define. Not needed for Oxford.                          
                       filter_keys)
     
     print(ret, '\n')
@@ -345,47 +350,42 @@ def scrape_device(device_id, save_data=False, debug=False):
     ret = get_twitter('friends/ids',
                        {'stringify_ids':'true'},
                        {'count':5000},            
-                       filter_keys)
+                       j=['ids','endpoint','timestamp'])
     
     print(ret, '\n')
 
     ret = get_twitter('followers/ids',
                        {'stringify_ids':'true'},
                        {'count':5000},            
-                       filter_keys)
+                       j=['ids','endpoint','timestamp'])
     
     print(ret, '\n')
 
     ret = get_twitter('friendships/incoming',
-                       {'stringify_ids':'true'},
+                       {'stringify_ids':'true'}, #j TODO define
                        filter_keys)
     
     print(ret, '\n')
 
     ret = get_twitter('friendships/outgoing',
-                        {'stringify_ids':'true'},
+                        {'stringify_ids':'true'}, #j TODO define
                         filter_keys)
     
     print(ret, '\n')
 
     ret = get_twitter('blocks/ids',
-                       {'stringify_ids':'true'},
-                       filter_keys)
-    
-    print(ret, '\n')
-
-    ret = get_twitter('mutes/users/ids',
+                       {'stringify_ids':'true'}, #j TODO define
                        filter_keys)
     
     print(ret, '\n')
 
     ret = get_twitter('lists/ownerships',
-                        filter_keys)
+                        j=['created_at','id','member_count','mode','subscriber_count','endpoint','timestamp'])
     
     print(ret, '\n')
 
     ret = get_twitter('lists/subscriptions',
-                        filter_keys)
+                        j=['lists','endpoint','timestamp'])
     
     print(ret, '\n')
 
