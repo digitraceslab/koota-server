@@ -427,18 +427,55 @@ def scrape_device(device_id, save_data=False, debug=False):
 
     get_facebook('me',
                  allowed_fields=('id',
-                                 'about',
                                  'age_range',
-                                 'birthday',
+                                 'devices',
+                                 'favorite_athletes',
+                                 'favorite_teams',
                                  'gender',
-                                 'languages'))
-    get_facebook('me/friends',
-                 allowed_fields="id",
-                 )
-    #get_facebook('me/friendlists')
-
+                                 'hometown',
+                                 'interested_in',
+                                 'languages',
+                                 'relationship_status',
+                                 'significant_other',
+                                 'sports',
+                                 'third_party_id'))
+    get_facebook('me/friendlists', params={'list_type','name'}
+                    allowed_fields=('id')) #This could be omitted
+    get_facebook('me/feed', params={'since':1442657244}
+                    allowed_fields=('created_time',
+                                    'id',
+                                    'status_type',
+                                    'comments{comment_count,like_count,id}',
+                                    'likes{id}',
+                                    'reactions{id,type}'
+                                    ))
+    get_facebook('me/albums',
+                 allowed_fields=('created_time',
+                                  'id',
+                                  'photo_count',
+                                  'privacy',
+                                  'place',
+                                  'type',
+                                  'likes{id}',
+                                  'comments{id,from}'
+                    ))
     get_facebook('me/events',
+                  allowed_fields=('attending_count',
+                                    'id',
+                                    'maybe_count',
+                                    'noreply_count','rsvp_status'
+                                  ))
+    get_facebook('me/family',
+                 allowed_fields=('id'))
+    get_facebook('me/friends',
+                 allowed_fields=("id","third_party_id")
                  )
+    get_facebook('me/videos',
+                  allowed_fields=('id',
+                                  'created_time',
+                                  'likes{id}',
+                                  'comments{from}'
+                 ))
 
 
     #import IPython ; IPython.embed()
