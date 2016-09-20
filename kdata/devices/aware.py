@@ -223,6 +223,15 @@ def register(request, secret_id, indexphp=None):
         device.attrs['aware-device-passwd_pbkdf2'] = passwd
         logs.log(request, 'AWARE device registration',
                  obj=device.public_id, op='register')
+
+        # Save registration data
+        data_to_save = dict(table="register",
+                            data=json.dumps(request.POST),
+                            version=1)
+        data_to_save = dumps(data_to_save)
+        kviews.save_data(data_to_save, device_id=device.device_id, request=request)
+        device.attrs['aware-last-ts-%s'%"register"] = timezone.now().timestamp()*1000
+
         return JsonResponse(config, safe=False)
     # error return.
     return JsonResponse(dict(error="You should scan this with the Aware app.",
