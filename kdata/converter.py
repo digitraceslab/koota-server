@@ -408,6 +408,8 @@ class MurataBSN(_Converter):
         from dateutil import parser as date_parser
         count = 0
         for ts_packet, data in rows:
+            if not data.startswith('<'):
+                continue
             unixtime_packet = timegm(ts_packet.timetuple())
             # Do various XML parsing
             doc = xml_fromstring(data)
