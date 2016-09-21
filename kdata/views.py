@@ -445,9 +445,9 @@ def mark_device(request, public_id, operation=None):
         raise exceptions.NoDevicePermission("No permission for device")
 
     if operation == 'dont-have':
-        device.attrs['dont-have-device'] = True
+        device.attrs['dont_have'] = True
     if operation == 'not-linking':
-        device.attrs['not-linking'] = True
+        device.attrs['not_linking'] = True
     logs.log(request, "marking %s"%operation, obj=public_id,
                  op='mark-device-'+operation, data_of=device.user)
 

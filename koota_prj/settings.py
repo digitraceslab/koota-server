@@ -70,7 +70,7 @@ TWITTER_KEY = None    # Consumer Key (API Key)
 TWITTER_SECRET = None # Consumer Secret (API Secret)
 FACEBOOK_KEY = None
 FACEBOOK_SECRET = None
-FACEBOOK_PERMISSIONS = ['user_friends']
+FACEBOOK_PERMISSIONS = ['public_profile', 'user_friends']
 FACEBOOK_REDIRECT_URLDOMAIN = 'https://koota.cs.aalto.fi'
 FACEBOOK_DONE_DOMAINS = set(('dev.koota.zgib.net', 'localhost:8002'))
 INSTAGRAM_KEY = None
@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'kdata',
+    'oxford2016',
 
     'django_otp',
     'django_otp.plugins.otp_totp',

@@ -14,12 +14,12 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
 
-from . import converter
-from . import devices
 from . import funf_decrypt
-from . import logs
-from . import models
-from . import util
+from .. import converter
+from .. import devices
+from .. import logs
+from .. import models
+from .. import util
 
 import logging
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 CONFIG_DOMAIN = settings.MAIN_DOMAIN
 POST_DOMAIN = settings.POST_DOMAIN
 
-@devices.register_device_decorator(default=True)
+@devices.register_device(default=True, aliases=['kdata.funf.FunfJournal'])
 class FunfJournal(devices.BaseDevice):
     desc = 'Funf-journal device'
     converters = devices.BaseDevice.converters + [ ]

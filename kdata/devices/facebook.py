@@ -30,12 +30,13 @@ import requests
 from requests_oauthlib import OAuth2Session
 from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
-from . import converter
-from . import devices
-from . import logs
-from . import models
-from . import permissions
-from . import views
+from .. import converter
+from .. import devices
+from .. import exceptions
+from .. import logs
+from .. import models
+from .. import permissions
+from .. import views
 
 
 
@@ -58,7 +59,7 @@ API_BASE = 'https://graph.facebook.com/v2.7/%s'
 
 
 
-@devices.register_device_decorator(default=False)
+@devices.register_device(default=False, aliases=['kdata.facebook.Facebook'])
 class Facebook(devices.BaseDevice):
     dbmodel = models.OauthDevice
     converters = devices.BaseDevice.converters + [
@@ -115,7 +116,7 @@ class FacebookAuth(requests.auth.AuthBase):
         self.access_token = access_token
         self.appsecret_proof = hmac.new(FACEBOOK_SECRET.encode('ascii'), access_token.encode('ascii'), 'sha256').hexdigest()
     def __call__(self, r):
-        if r.method.upper() == 'GET':
+        if r.method.upper() in {'GET', 'DELETE'}:
             # Get required data
             url = urllib.parse.urlparse(r.url)
             qs = urllib.parse.parse_qsl(url.query)
@@ -181,13 +182,13 @@ def link(request, public_id):
 
 
 
-@login_required
 def done(request):
     # TODO: handle error: error_reason=user_denied
     #                     &error=access_denied
     #                     &error_description=The+user+denied+your+request.
-    if 'error' in request.GET:
-        raise exceptions.BaseMessageKootaException("Error in facebook linking: %s"%request.GET, message="An error linking occured")
+    if not request.GET or 'error' in request.GET:
+        raise exceptions.BaseMessageKootaException("An error linking occured",
+                                        log="Error in facebook linking: %s"%request.GET)
 
     #request.GET = QueryDict({'code': ['xxxxxxxx'],  'state': ['xxxxxxx']})
     code = request.GET['code']
@@ -205,6 +206,10 @@ def done(request):
                 url = url._replace(scheme='http')
             url = url._replace(netloc=redirect_domain)
             return HttpResponseRedirect(url.geturl())
+
+    # have to test for login here
+    if not request.user.is_authenticated:
+        return HttpResponseRedirect(reverse(settings.LOGIN_URL))
 
     # Get device object
     device = models.OauthDevice.objects.get(request_key=state)
@@ -238,7 +243,8 @@ def done(request):
                                 client_secret=FACEBOOK_SECRET,
                                 code=code))
     if r.status_code != 200:
-        raise exceptions.BaseMessageKootaException("Error in facebook linking: %r %s"%(r, r.text), message="An error linking occured")
+        raise exceptions.BaseMessageKootaException("An error linking occured",
+                                      log="Error in facebook linking: %r %s"%(r, r.text))
 
     data = urllib.parse.parse_qs(r.text)
     access_token = data['access_token'][0]  # 0 because parse_qs returns list
@@ -263,8 +269,12 @@ def done(request):
     device.save()
     logs.log(request, 'Facebook: linking done',
              obj=device.public_id, op='link_done')
-    return HttpResponseRedirect(reverse('device-config',
-                                        kwargs=dict(public_id=device.public_id)))
+    # redirect user back to place they belong
+    target = reverse('device-config',
+                      kwargs=dict(public_id=device.public_id))
+    if 'login_view_name' in request.session:
+        target = reverse(request.session['login_view_name'])
+    return HttpResponseRedirect(target)
 
 
 @login_required
@@ -274,14 +284,25 @@ def unlink(request, public_id):
     device = models.OauthDevice.get_by_id(public_id)
     if not permissions.has_device_config_permission(request, device):
         raise exceptions.NoDevicePermission("No permission for device")
+    access_token = device.resource_secret
+    # mark internal state as deleted
     device.state = 'unlinked'
     device.resource_secret = ''
     device.data = dumps(dict(unlinked=time.ctime()))
     device.save()
+    # Remove facebook perms
+    session = requests.Session()
+    session.auth = FacebookAuth(access_token)
+    session.delete(API_BASE%'me/permissions')
+    #
     logs.log(request, 'Facebook: unlink',
              obj=device.public_id, op='unlink')
-    return HttpResponseRedirect(reverse('device-config',
-                                        kwargs=dict(public_id=device.public_id)))
+    # redirect user back to place they belong
+    target = reverse('device-config',
+                      kwargs=dict(public_id=device.public_id))
+    if 'login_view_name' in request.session:
+        target = reverse(request.session['login_view_name'])
+    return HttpResponseRedirect(target)
 
 
 
@@ -307,21 +328,29 @@ def scrape_device(device_id, save_data=False, debug=False):
     session.auth = FacebookAuth(access_token)
 
     # Get the permissions we have:
-    r = requests.get(API_BASE%'debug_token', {'input_token':access_token},
-                     auth=FacebookAuth(app_access_token))
-    if debug:
-        print(dumps(r.json(), indent=4, sort_keys=True))
+    #r = requests.get(API_BASE%'debug_token', {'input_token':access_token},
+    #                 auth=FacebookAuth(app_access_token))
     # Result:
     #     {'data': {'scopes': ['user_likes', 'user_friends',
     #     'public_profile'], 'app_id': '1026272630802129', 'issued_at':
     #     1469623396, 'user_id': '119855341788312', 'application': 'Koota
     #     Dev Server', 'is_valid': True, 'expires_at': 1474807396}}
-    fb_permissions = r.json()['data']['scopes']
+    #fb_permissions = r.json()['data']['scopes']
+    # Method 2
+    r = session.get(API_BASE%'me/permissions')
+    # { "data": [ { "permission": "user_likes", "status": "granted" },
+    #          { "permission": "user_events", "status": "granted" }, {
+    #          "permission": "user_posts", "status": "granted" }, {
+    #          "permission": "public_profile", "status": "granted" } ]
+    #          }
+    if debug:
+        print(dumps(r.json(), indent=4, sort_keys=True))
+    fb_permissions = { row['permission']:row['status']=='granted' for row in j['data'] }
 
 
     def get_facebook(endpoint, params={},
                      allowed_fields=None,
-                     remove_fields=None,
+                     removed_fields=None,
                      filter_json=lambda j: j):
         """Function to get and save data from one API call.
 
@@ -370,8 +399,8 @@ def scrape_device(device_id, save_data=False, debug=False):
             # Handle privacy-preserving functions.
             j = filter_json(j)
             all_data.append(j)
-            if remove_fields is not None:
-                for field in remove_fields:
+            if removed_fields is not None:
+                for field in removed_fields:
                     j.pop(j, None)
             # Create our data storage object and do the storage.
             data = dict(endpoint=endpoint,
@@ -406,7 +435,10 @@ def scrape_device(device_id, save_data=False, debug=False):
     get_facebook('me/friends',
                  allowed_fields="id",
                  )
-    get_facebook('me/friendlists')
+    #get_facebook('me/friendlists')
+
+    get_facebook('me/events',
+                 )
 
 
     #import IPython ; IPython.embed()

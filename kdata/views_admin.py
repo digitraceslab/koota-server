@@ -16,6 +16,7 @@ import json
 
 from . import models
 from . import devices
+from . import group
 from . import logs
 from . import util
 
@@ -30,6 +31,8 @@ def human_bytes(x):
     exponent = int(log(x, 1024))
     quotient = x / 1024**exponent
     return '%6.2f %-3s'%(quotient, unit_list[exponent])
+
+
 
 
 
@@ -80,6 +83,8 @@ class RegisterView(FormView):
 
 
 
+
+
 # One-time password (TOTP, one-factor auth) related views.
 import django_otp.forms
 from django_otp.forms import OTPAuthenticationForm
@@ -101,12 +106,12 @@ class KootaOTPAuthenticationForm(OTPAuthenticationForm):
 
         device = self._chosen_device(user)
         token = self.cleaned_data.get('otp_token')
-        error = None
 
         user.otp_device = None
 
         if self.cleaned_data.get('otp_challenge'):
-            error = self._handle_challenge(device)
+            #error = self._handle_challenge(device)
+            pass
         elif token:
             user.otp_device = self._verify_token(user, token, device)
 
@@ -117,6 +122,28 @@ class KootaOTPAuthenticationForm(OTPAuthenticationForm):
         #        error = forms.ValidationError(_('Please enter your OTP token'))
         #
         #    raise error
+
+
+from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.cache import never_cache
+#from django.contrib.auth.views import LoginView as DjangoLoginView
+from django.contrib.auth.views import login as django_login
+@never_cache
+@sensitive_post_parameters()
+def login(request, *args, **kwargs):
+    """Login view redirecting to the subject's expected login page."""
+    ret = django_login(request, *args, **kwargs)
+    if not request.user.is_anonymous:
+        login_view_name = group.user_main_page(request.user)
+        if login_view_name is not None:
+            request.session['login_view_name'] = login_view_name
+            return HttpResponseRedirect(reverse(login_view_name))
+    return ret
+
+
+
+
+
 from django import forms
 class OTPVerifyForm(forms.Form):
     otp_token = forms.CharField()
@@ -177,6 +204,8 @@ def otp_config(request):
         form = c['otp_form'] = OTPVerifyForm()
 
     return TemplateResponse(request, 'koota/otp.html', context)
+
+
 import base64
 import qrcode
 import io
@@ -207,6 +236,8 @@ def otp_qr(request):
     img.save(cimage)
     cimage.seek(0)
     return HttpResponse(cimage.getvalue(), content_type='image/png')
+
+
 
 
 

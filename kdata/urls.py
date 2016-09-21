@@ -1,20 +1,19 @@
 from django.conf import settings
 from django.conf.urls import url, include
-from django.contrib import admin
-from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView
 
-from kdata import views as kviews
-from kdata import views_data
-from kdata import views_admin
-from kdata import aware
-from kdata import devices
-from kdata import facebook
-from kdata import funf
 from kdata import group
-from kdata import instagram
 from kdata import survey
-from kdata import twitter
+from kdata import views as kviews
+from kdata import views_admin
+from kdata import views_data
+from kdata.devices import aware
+from kdata.devices import facebook
+from kdata.devices import funf
+from kdata.devices import instagram
+from kdata.devices import twitter
+from kdata.devices.muratabsn import MurataBSN, murata_calibrate
+from kdata.devices.purplerobot import PurpleRobot
 
 # These URLs relate to receiving data, and should be usable by the
 # write-only domain (not quite there yet, but...)
@@ -22,14 +21,14 @@ from kdata import twitter
 urls_data = [
     # Purple Robot - different API
     url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post,
-        dict(device_class=devices.PurpleRobot), name='post-purple'),
+        dict(device_class=PurpleRobot), name='post-purple'),
     # Generic POST url.
     url(r'^post/?(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post, name='post'),
     # Murata sleep sensor: this has a hard-coded POST URL.
-    url(r'^data/push/$', kviews.post, dict(device_class=devices.MurataBSN),
+    url(r'^data/push/$', kviews.post, dict(device_class=MurataBSN),
         name='post-MurataBSN'),
     # Murata sleep sensor, calibration
-    url(r'^firmware/device/(?P<dev_id>[^/]+)/?$', devices.murata_calibrate,
+    url(r'^firmware/device/(?P<dev_id>[^/]+)/?$', murata_calibrate,
         name='MurataBSN-calibrate'),
     # Generic config, for our own app (not really used now)
     url(r'^config$', kviews.config, name='config'),
@@ -144,3 +143,6 @@ if 'ui' in settings.WEB_COMPONENTS:
     urlpatterns += urls_ui
 else:
     urlpatterns.append(url(r'^$', TemplateView.as_view(template_name='koota/main_data.html'), name='main'))
+
+from kdata.devices import aware, funf, purplerobot, ios, android
+from kdata.devices import facebook, instagram, twitter, actiwatch

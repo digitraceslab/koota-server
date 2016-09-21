@@ -58,6 +58,14 @@ def user_merged_group_config(user):
     return config
 
 
+def user_main_page(user):
+    """Return the view name of this user's login page"""
+    config = user_merged_group_config(user)
+    return config.get('login_view_name', None)
+
+
+
+
 
 class JoinGroupForm(forms.Form):
     invite_code = forms.CharField()
