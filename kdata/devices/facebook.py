@@ -345,7 +345,7 @@ def scrape_device(device_id, save_data=False, debug=False):
     #          }
     if debug:
         print(dumps(r.json(), indent=4, sort_keys=True))
-    fb_permissions = { row['permission']:row['status']=='granted' for row in j['data'] }
+    fb_permissions = { row['permission']:row['status']=='granted' for row in r.json()['data'] }
 
 
     def get_facebook(endpoint, params={},
@@ -439,9 +439,10 @@ def scrape_device(device_id, save_data=False, debug=False):
                                  'significant_other',
                                  'sports',
                                  'third_party_id'))
-    get_facebook('me/friendlists', params={'list_type','name'}
-                    allowed_fields=('id')) #This could be omitted
-    get_facebook('me/feed', params={'since':1442657244}
+    get_facebook('me/friendlists', params={},
+                    allowed_fields=('id', 'list_type', 'name')) #This could be omitted
+    get_facebook('me/feed', params={},
+                    # TODO: since
                     allowed_fields=('created_time',
                                     'id',
                                     'status_type',
@@ -466,16 +467,14 @@ def scrape_device(device_id, save_data=False, debug=False):
                                     'noreply_count','rsvp_status'
                                   ))
     get_facebook('me/family',
-                 allowed_fields=('id'))
+                 allowed_fields=('id',))
     get_facebook('me/friends',
-                 allowed_fields=("id","third_party_id")
-                 )
+                 allowed_fields=("id", "third_party_id"))
     get_facebook('me/videos',
                   allowed_fields=('id',
                                   'created_time',
                                   'likes{id}',
-                                  'comments{from}'
-                 ))
+                                  'comments{from}'))
 
 
     #import IPython ; IPython.embed()
