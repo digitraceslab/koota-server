@@ -75,6 +75,7 @@ class Aware(devices.BaseDevice):
     ]
     config_instructions_template = textwrap.dedent("""\
     <ol>
+    <li><a href="{{install_url}}">Install the AWERE app from here</a>.</li>
     <li>See the <a href="https://github.com/CxAalto/koota-server/wiki/Aware">instructions on the github wiki</a>.
     <li>URL is {{study_url}}</li>
     </ol>
@@ -87,6 +88,7 @@ class Aware(devices.BaseDevice):
     {% endif %}
 
     """)
+    install_url = 'http://play.google.com/store/apps/details?id=com.aware.phone'
     def config_context(self):
         url_ = self.qrcode_url()
         qrcode_img_path = reverse('aware-register-qr',
@@ -97,7 +99,8 @@ class Aware(devices.BaseDevice):
         config = mark_safe('<pre>'+escape(config)+'</pre>')
         context = dict(study_url=url_,
                        qrcode_img_path=qrcode_img_path,
-                       pretty_aware_config=config, )
+                       pretty_aware_config=config,
+                       install_url=self.install_url)
         return context
     def qrcode_url(self):
         """Return the data contained in the QRcode.
@@ -115,6 +118,7 @@ class AwareValidCert(Aware):
     """AWARE device, using a valid cert endpoint"""
     desc = 'Aware device (iOS)'
     AWARE_DOMAIN = AWARE_DOMAIN_SIGNED
+    install_url = 'https://itunes.apple.com/us/app/aware-client-ios/id1065978412'
 
 
 
