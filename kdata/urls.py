@@ -28,7 +28,7 @@ urls_data = [
     url(r'^data/push/$', kviews.post, dict(device_class=MurataBSN),
         name='post-MurataBSN'),
     # Murata sleep sensor, calibration
-    url(r'^firmware/device/(?P<dev_id>[^/]+)/?$', murata_calibrate,
+    url(r'^firmware/device/(?P<mac_addr>[^/]+)/?$', murata_calibrate,
         name='MurataBSN-calibrate'),
     # Generic config, for our own app (not really used now)
     url(r'^config$', kviews.config, name='config'),
