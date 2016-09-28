@@ -11,6 +11,7 @@ class DeviceAdmin(admin.ModelAdmin):
     inlines = [
         DeviceAttrInline,
         ]
+    search_fields = ('_public_id', 'device_id', '_secret_id', 'user__username', )
 admin.site.register(models.Device, DeviceAdmin)
 
 
@@ -41,6 +42,7 @@ class GroupAdmin(admin.ModelAdmin):
         GroupSubjectInline,
         GroupResearcherInline,
         ]
+    search_fields = ('slug', 'name', 'invite_code', 'pyclass')
 admin.site.register(models.Group, GroupAdmin)
 
 
