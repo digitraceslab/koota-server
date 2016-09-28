@@ -376,7 +376,7 @@ def study_info(request, secret_id, indexphp=None):
     # pylint: disable=unused-argument
     public_id = None
     if not secret_id:
-        return JsonResponse({ })
+        return JsonResponse({ }, status_code=400)
 
     device = models.Device.get_by_secret_id(secret_id)
     public_id = device.public_id
@@ -386,8 +386,8 @@ def study_info(request, secret_id, indexphp=None):
     study_config = user_config.get('aware_study',{})
     study_name         = study_config.get('study_name', 'Koota')
     study_description  = study_config.get('study_description',
-                                          ('Your device is linked to your account'
-                                           'device_id=%s'%public_id))
+                                          ('Link to your account '
+                                           '(device_id=%s)'%public_id))
     researcher_first   = study_config.get('researcher_first', 'Aalto Complex Systems')
     researcher_last    = study_config.get('researcher_last', '')
     researcher_contact = study_config.get('researcher_contact', 'noreply@koota.cs.aalto.fi')
