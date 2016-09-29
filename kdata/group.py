@@ -155,11 +155,18 @@ def iter_subjects(group, group_class):
         yield subject
 def iter_users_devices(group, group_class, group_converter_class):
     """Iterate (user, device_id) pairs in group"""
+    # device_class can be a list, in which case we check all of them.
+    # If it is not a list, make it a list.
+    device_classes = group_converter_class.device_class
+    if not isinstance(device_classes, (list, tuple)):
+        device_classes = [device_classes]
+    #
     for subject in iter_subjects(group, group_class):
-        for device in models.Device.objects.filter(user=subject,
-                                         type=group_converter_class.device_class,
-                                         label__analyze=True):
-            yield subject, device
+        for device_class in device_classes:
+            for device in models.Device.objects.filter(user=subject,
+                                            type=device_class,
+                                            label__analyze=True):
+                yield subject, device
 
 def iter_group_data(group,
                     group_class,

@@ -1469,7 +1469,7 @@ class IosScreen(_IosGeneric):
 import io
 from dateutil.parser import parse as dateutil_parse
 class ActiwatchFull(_Converter):
-    device_class = 'kdata.devices.Actiwatch'
+    device_class = 'kdata.devices.actiwatch.Actiwatch'
     desc = "Actiwatch full data"
     header = [#'line',
               'time',
@@ -1510,7 +1510,7 @@ class ActiwatchFull(_Converter):
                        line[7],
                        )
 class ActiwatchStatistics(_Converter):
-    device_class = 'kdata.devices.Actiwatch'
+    device_class = 'kdata.devices.actiwatch.Actiwatch'
     desc = "Actiwatch intervals"
     header = ['time_start',
               'time_end',
@@ -1560,7 +1560,7 @@ class ActiwatchStatistics(_Converter):
 
                 yield (start_ts, end_ts) + tuple(line[:-1]) # last one is empty
 class ActiwatchMarkers(_Converter):
-    device_class = 'kdata.devices.Actiwatch'
+    device_class = 'kdata.devices.actiwatch.Actiwatch'
     desc = "Actiwatch button pushes"
     header = ['time',
               'time_str',
@@ -1594,7 +1594,7 @@ class ActiwatchMarkers(_Converter):
 
 
 class BaseAwareConverter(_Converter):
-    device_class = 'kdata.aware.AwareDevice'
+    device_class = ('Aware', 'AwareValidCert')
     #table = 'screen'
     #desc = "Generic Aware converter"
     #ts_column = 'timestamp'
@@ -1672,7 +1672,7 @@ class AwarePacketTimeRange(BaseAwareConverter):
                    len(data_decoded)/float(time_range) if time_range else '',
                    )
 class AwareDataSize(BaseDataSize):
-    device_class = 'PurpleRobot'
+    device_class = ('Aware', 'AwareValidCert')
     per_page = None
     def do_queryset_iteration(self, queryset, sizes, counts, total_days):
         for ts, data in queryset:
@@ -1912,7 +1912,7 @@ class AwareMessages(BaseAwareConverter):
                        safe_hash(row['trace']) if 'trace' in row else '',
                        )
 class AwareRecentDataCounts(BaseDataCounts):
-    device_class = 'kdata.aware.AwareDevice'
+    device_class = ('Aware', 'AwareValidCert')
     timestamp_converter = AwareTimestamps
 
 

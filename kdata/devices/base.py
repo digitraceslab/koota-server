@@ -93,6 +93,8 @@ def register_device(desc=None, default=False, alias=None,
 
     Similar signature as register_device()"""
     def register(cls):
+        if alias is not None:
+            cls._class_alias = alias
         _register_device(cls, desc=desc, default=default, alias=alias,
                         aliases=aliases)
         return cls
@@ -147,6 +149,8 @@ class BaseDevice(object):
     # if true, then automanically register this device.
     _register_device = False
     _register_default = False
+    # This is the canonical name of the device, if not None.
+    _class_alias = None
     # Converters are special data processors.
     converters = [converter.Raw,
                   converter.PacketSize]
@@ -175,10 +179,12 @@ class BaseDevice(object):
     def pyclass_name(cls):
         """Importable name for this class.
 
-        This is the Python class name corresponding to this device.
-        This is used when the server needs to import the object
-        corresponding to the device.
+        This is the canonical type name of this device, used in the
+        database.  It can either be a custom alias, or the importable
+        class name.
         """
+        if cls._class_alias is not None:
+            return cls._class_alias
         return '%s.%s'%(cls.__module__, cls.__name__)
     @classmethod
     def _devicechoices_row(cls):

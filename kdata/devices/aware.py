@@ -36,7 +36,8 @@ PACKET_CHUNK_SIZE = 1000
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
-@devices.register_device(default=True, aliases=['kdata.aware.AwareDevice'])
+@devices.register_device(default=True, alias="Aware",
+                         aliases=['kdata.devices.aware.Aware'])
 class Aware(devices.BaseDevice):
     """Basic Python class handling Aware devices"""
     desc = 'Aware device'
@@ -113,7 +114,8 @@ class Aware(devices.BaseDevice):
         url_ = self.AWARE_DOMAIN+url_
         return url_
 
-@devices.register_device(default=True, aliases=['kdata.aware.AwareDeviceValidCert'])
+@devices.register_device(default=True, alias='AwareValidCert',
+                         aliases=['kdata.devices.aware.AwareValidCert'])
 class AwareValidCert(Aware):
     """AWARE device, using a valid cert endpoint"""
     desc = 'Aware device (iOS)'
