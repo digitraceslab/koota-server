@@ -211,6 +211,14 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'koota_prj', 'static')]
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
     'handlers': {
         'django.server': {
             'level': 'INFO',
@@ -227,6 +235,11 @@ LOGGING = {
             'filename': GENERAL_LOG,
             'formatter':'standard',
         },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler',
+        },
         'kdata.datalog': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -236,7 +249,7 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console'] if DEBUG else ['file'],
+            'handlers': ['console'] if DEBUG else ['file', 'mail_admins'],
             'level': 'ERROR',
             'propagate': False,
         },
