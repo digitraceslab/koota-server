@@ -106,7 +106,7 @@ logger = logging.getLogger(__name__)
 # salt, and b) not depend on django.
 try:
     from django.conf import settings
-    SALT = settings.SALT
+    SALT_KEY = settings.SALT_KEY
     del settings
 except:
     # Make a random salt that changes on every invocation.  This is
@@ -115,12 +115,12 @@ except:
     # there is no point where comparing across invocations is
     # important.
     import random
-    SALT = bytes(bytearray((random.randint(0, 255) for _ in range(32))))
+    SALT_KEY = bytes(bytearray((random.randint(0, 255) for _ in range(32))))
 def safe_hash(data):
     """Make a safe hash function for identifiers."""
     if not isinstance(data, bytes):
         data = data.encode('utf8')
-    return urlsafe_b64encode(sha256(SALT+data).digest()[:9]).decode('ascii')
+    return urlsafe_b64encode(sha256(SALT_KEY+data).digest()[:9]).decode('ascii')
 
 
 

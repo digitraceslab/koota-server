@@ -65,7 +65,7 @@ DATA_ACCESS_LOG = GENERAL_LOG
 # Make a random salt using this and paste it here.  By default we have
 # an epheremal random salt.
 # bytes(bytearray((random.randint(0, 255) for _ in range(32))))
-SALT = None
+SALT_KEY = None
 TWITTER_KEY = None    # Consumer Key (API Key)
 TWITTER_SECRET = None # Consumer Secret (API Secret)
 FACEBOOK_KEY = None
