@@ -23,6 +23,7 @@ admin.site.register(models.Data, DataAdmin)
 
 
 class DeviceLabelAdmin(admin.ModelAdmin):
+    list_display = ('name', 'id', 'shortname', 'description', 'slug', 'analyze', 'order')
     pass
 admin.site.register(models.DeviceLabel, DeviceLabelAdmin)
 
