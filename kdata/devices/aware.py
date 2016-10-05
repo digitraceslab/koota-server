@@ -11,6 +11,7 @@ import logging
 import textwrap
 from six.moves.urllib import parse as urlparse
 
+from django.conf import settings
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse, UnreadablePostError
 from django.utils import timezone
@@ -28,9 +29,12 @@ from .. import views as kviews
 
 LOGGER = logging.getLogger(__name__)
 
-AWARE_DOMAIN = 'https://aware.koota.zgib.net'
-AWARE_DOMAIN_SIGNED = 'https://data.koota.cs.aalto.fi'
+AWARE_DOMAIN = getattr(settings, 'AWARE_DOMAIN', 'https://aware.koota.zgib.net')
+AWARE_DOMAIN_SIGNED = getattr(settings, 'AWARE_DOMAIN_signed', 'https://data.koota.cs.aalto.fi')
 PACKET_CHUNK_SIZE = 1000
+AWARE_QRCODE_FORMAT = getattr(settings, 'AWARE_QRCODE_FORMAT', 'basic')
+AWARE_CRT_URL = getattr(settings, 'AWARE_CRT_URL', "https://data.koota.cs.aalto.fi/static/server-aware.crt")
+AWARE_CRT_PATH = getattr(settings, 'AWARE_CRT_PATH', "/srv/koota/static/server.crt")
 
 
 from django.utils.html import escape
@@ -103,15 +107,33 @@ class Aware(devices.BaseDevice):
                        pretty_aware_config=config,
                        install_url=self.install_url)
         return context
-    def qrcode_url(self):
-        """Return the data contained in the QRcode.
-
-        This is the data used for registration."""
+    def webservice_url(self):
+        """URL for webservice."""
         secret_id = self.data.secret_id
         url_ = reverse('aware-register', kwargs=dict(indexphp='index.php',
                                                     secret_id=secret_id,
                                                     ))
         url_ = self.AWARE_DOMAIN+url_
+        return url_
+    def qrcode_url(self):
+        """Return the data contained in the QRcode.
+
+        This is the data used for registration."""
+        url_ = self.webservice_url()
+        url_ = urlparse.urlparse(url_)
+        if AWARE_QRCODE_FORMAT == 'embed':
+            crt = open(AWARE_CRT_PATH, 'rb').read()
+            crt_sha256 = sha256(crt).hexdigest()
+            queryparams = dict(crt=crt,
+                               crt_sha256=crt_sha256)
+        elif AWARE_QRCODE_FORMAT == 'url':
+            crt = open(AWARE_CRT_PATH, 'rb').read()
+            crt_url = AWARE_CRT_URL
+            crt_sha256 = sha256(crt).hexdigest()
+            queryparams = dict(crt_url=crt_url,
+                               crt_sha256=crt_sha256)
+        url_ = url_._replace(query=urlparse.urlencode(queryparams))
+        url_ = url_.geturl()
         return url_
 
 @devices.register_device(default=True, alias='AwareValidCert',
@@ -188,18 +210,26 @@ def get_user_config(device):
         ts_create = (timezone.now()-timedelta(days=1)).timestamp()
     # AWARE parses study_start as int!
     config['sensors']['study_start'] = int(ts_create*1000)
-    config['sensors']['webservice_server'] = device.qrcode_url()
+    config['sensors']['webservice_server'] = device.webservice_url()
     config['sensors']['status_webservice'] = True
 
     # This is the difference between a user being able to edit a
     # config themselves and not.
     #config['sensors']['study_id'] = 1
 
+    # Site-global config
+    if hasattr(settings, 'AWARE_CONFIG'):
+        util.recursive_copy_dict(settings.AWARE_CONFIG, config)
+
     # Get the user's group config
     user = device.data.user
     user_config = group.user_merged_group_config(user)
     if 'aware_config' in user_config:
         util.recursive_copy_dict(user_config['aware_config'], config)
+
+    # Device-specific config
+    if 'aware-config' in device.attrs:
+        util.recursive_copy_dict(json.loads(device.attrs['aware-config']), config)
 
     # Aware requires it as a list of dicts.
     sensors = [dict(setting=k, value=aware_to_string(v))
@@ -419,7 +449,7 @@ def register_qrcode(request, public_id, indexphp=None):
     device_class = device.get_class()
     url = device_class.qrcode_url()
     data = url
-    img = qrcode.make(data, border=4, box_size=6,
+    img = qrcode.make(data, border=4, box_size=3,
                      error_correction=qrcode.constants.ERROR_CORRECT_L)
     cimage = io.BytesIO()
     img.save(cimage)
