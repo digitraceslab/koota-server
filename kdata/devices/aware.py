@@ -228,8 +228,8 @@ def get_user_config(device):
         util.recursive_copy_dict(user_config['aware_config'], config)
 
     # Device-specific config
-    if 'aware-config' in device.attrs:
-        util.recursive_copy_dict(json.loads(device.attrs['aware-config']), config)
+    if 'aware-config' in device.data.attrs:
+        util.recursive_copy_dict(json.loads(device.data.attrs['aware-config']), config)
 
     # Aware requires it as a list of dicts.
     sensors = [dict(setting=k, value=aware_to_string(v))
