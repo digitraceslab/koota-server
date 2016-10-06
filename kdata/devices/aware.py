@@ -164,8 +164,13 @@ BASE_CONFIG = dict(
         #webservice_server='https://aware.koota.zgib.net/'+xxx,
         status_webservice=True,
         frequency_webservice=15,
-        webservice_stateless=True,   # don't /create_table
-        webservice_only=True,        # delete data after uploading, no /latest
+        webservice_simple=True,     # don't /create_table
+        webservice_remove_data=True,# delete data after uploading, no /latest
+        webservice_stateless=True,  # don't /create_table
+        webservice_only=True,       # delete data after uploading, no /latest
+        webservice_silent=True,
+        #database_location="public",
+        key_strategy="once",
 
         # meta-options
         frequency_clean_old_data=4,  # (0 = never, 1 = weekly, 2 = monthly)
@@ -252,6 +257,7 @@ def register(request, secret_id, indexphp=None):
     device_cls = device.get_class()
     config = get_user_config(device_cls)
 
+    LOGGER.info("aware register: %s %s", request.POST, secret_id)
     # We have no other operation, basic study configuration.
     data = request.POST
     if 'device_id' in data:
@@ -408,6 +414,7 @@ def study_info(request, secret_id, indexphp=None):
     This function has no effect on config locking."""
     # pylint: disable=unused-argument
     public_id = None
+    LOGGER.info("aware get study info: %s %s", request.POST, secret_id)
     if not secret_id:
         return JsonResponse({ }, status_code=400)
 
