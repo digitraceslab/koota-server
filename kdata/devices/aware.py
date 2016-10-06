@@ -121,6 +121,7 @@ class Aware(devices.BaseDevice):
         This is the data used for registration."""
         url_ = self.webservice_url()
         url_ = urlparse.urlparse(url_)
+        queryparams = { }
         if AWARE_QRCODE_FORMAT == 'embed':
             crt = open(AWARE_CRT_PATH, 'rb').read()
             crt_sha256 = sha256(crt).hexdigest()
