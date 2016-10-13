@@ -198,6 +198,7 @@ def iter_group_data(group,
     hash_subject = util.safe_hash
     hash_device  = util.safe_hash
     salt = group.salt
+    group_config = loads(group.config)
 
     for subject, device in iter_users_devices(group, group_class, group_converter_class):
         # We can request group data from only one subject.  In that
@@ -212,8 +213,12 @@ def iter_group_data(group,
         # TODO: use subject_hash.  TODO: this duplicates code from
         # GroupSubject.hash(), unify (by getting the GroupSubject
         # object from above) if logic becomes complex.
-        subject_hash = hash_subject(salt+subject.username)
-        device_hash  = hash_device(salt+device.public_id)
+        if group_config.get('data_has_raw_usernames', False):
+            subject_hash = subject.username
+            device_hash = device.public_id
+        else:
+            subject_hash = hash_subject(salt+subject.username)
+            device_hash  = hash_device(salt+device.public_id)
 
         # Fetch all relevant data
         queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
