@@ -46,6 +46,8 @@ class Aware(devices.BaseDevice):
     """Basic Python class handling Aware devices"""
     desc = 'Aware device'
     AWARE_DOMAIN = AWARE_DOMAIN
+    #USABLE_QRCODE_METHODS = {'embed', 'url'}
+    USABLE_QRCODE_METHODS = {}
     converters = devices.BaseDevice.converters + [
         converter.AwareUploads,
         converter.AwareTimestamps,
@@ -122,12 +124,12 @@ class Aware(devices.BaseDevice):
         url_ = self.webservice_url()
         url_ = urlparse.urlparse(url_)
         queryparams = { }
-        if AWARE_QRCODE_FORMAT == 'embed':
+        if AWARE_QRCODE_FORMAT == 'embed' and 'embed' in self.USABLE_QRCODE_METHODS:
             crt = open(AWARE_CRT_PATH, 'rb').read()
             crt_sha256 = sha256(crt).hexdigest()
             queryparams = dict(crt=crt,
                                crt_sha256=crt_sha256)
-        elif AWARE_QRCODE_FORMAT == 'url':
+        elif AWARE_QRCODE_FORMAT == 'url' and 'url' in self.USABLE_QRCODE_METHODS:
             crt = open(AWARE_CRT_PATH, 'rb').read()
             crt_url = AWARE_CRT_URL
             crt_sha256 = sha256(crt).hexdigest()
@@ -144,7 +146,8 @@ class AwareValidCert(Aware):
     desc = 'Aware device (iOS)'
     AWARE_DOMAIN = AWARE_DOMAIN_SIGNED
     install_url = 'https://itunes.apple.com/us/app/aware-client-ios/id1065978412'
-
+    # iOS devices only work with
+    USABLE_QRCODE_METHODS = { }
 
 
 
