@@ -129,13 +129,17 @@ def group_detail(request, group_name):
     group = models.Group.objects.get(slug=group_name)
     logs.log(request, 'view group',
              obj='group='+group.slug, op='group_detail')
-    if not permissions.has_group_researcher_permission(request, group):
+    if not (permissions.has_group_researcher_permission(request, group)
+            or permissions.has_group_manager_permission(request, group)):
         logs.log(request, 'view group denied',
                  obj='group='+group.slug, op='denied_group_detail')
         raise exceptions.NoGroupPermission()
     group = c['group'] = group.get_class()
     # effective number of subjects: can be overridden
     c['n_subjects'] = sum(1 for _ in iter_subjects(group.dbrow, group))
+    c['is_researcher'] = group.dbrow.is_researcher(request.user)
+    c['is_manager'] = group.dbrow.is_manager(request.user)
+    #c['is_admin'] = group.dbrow.is_admin(request.user)
     #import IPython ; IPython.embed()
     return TemplateResponse(request, 'koota/group_detail.html',
                             context=context)
@@ -432,6 +436,8 @@ def group_subject_detail(request, group_name, gs_id):
     groupcls = c['group'] = group.get_class()
     groupsubject = c['groupsubject'] = \
                    models.GroupSubject.objects.get(id=gs_id, group=group)
+    c['is_researcher'] = group.is_researcher(request.user)
+    c['is_manager'] = group.is_manager(request.user)
 
     # Notes form
     if request.method == 'POST':

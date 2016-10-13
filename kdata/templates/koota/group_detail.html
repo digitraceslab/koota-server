@@ -20,6 +20,10 @@
 
 <h2>Available converters</h2>
 
+{% if not is_researcher %}
+<p>You do not have "researcher" permission, so you can not view
+  converters or individual subject data.</p>
+{% else %}
 <ul>
   {% for converter in group.converters %}
   <li><a href="{% url 'group-data' group_name=group.dbrow.slug converter=converter.name %}">{{converter.name}}</a>
@@ -27,7 +31,7 @@
   </li>
   {% endfor %}
 </ul>
-
+{% endif %}
 
 
 {% if group.dbrow.managed %}

@@ -57,8 +57,34 @@ def has_group_researcher_permission(request, group):
     # Default deny
     return False
 
-# Has permission to view/adjust user's devices
-has_group_manager_permission = has_group_researcher_permission
+
+
+def has_group_manager_permission(request, group):
+    """Test a researcher's permission to access a group's data.
+    """
+    researcher = request.user
+    if researcher.is_anonymous:
+        raise exceptions.LoginRequired()
+    group_class = group.get_class()
+    # Unconditionally allow if django superuser and 2FA verified,
+    # approve.  (is_verified tests for 2FA (django-otp)).
+    if researcher.is_superuser and researcher.is_verified():
+        return True
+    # If the group requires researchers to use 2FA, deny if they
+    # haven't logged in using it.
+    if group.otp_required and not researcher.is_verified():
+        return False
+    # We can delegate our logic to the group class, if it defines the
+    # is_researcher method.
+    if hasattr(group_class, 'is_manager'):
+        if group_class.is_manager(researcher):
+            return True
+        return False
+    # Normal test of the relevant database fields.
+    if group.is_manager(researcher):
+        return True
+    # Default deny
+    return False
 
 
 
