@@ -7,3 +7,11 @@ pytz
 pycrypto
 ujson (optional)
 django-otp
+psycopg2
+
+oauthlib
+numpy
+requests
+requests-oauthlib
+six
+uwsgi
