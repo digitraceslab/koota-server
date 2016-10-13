@@ -434,6 +434,12 @@ def group_subject_detail(request, group_name, gs_id):
 
 class GroupUserCreateForm(forms.Form):
     username = forms.CharField()
+    def clean_username(self):
+        User = django.contrib.auth.get_user_model()
+        if User.objects.filter(username=self.cleaned_data['username']).exists():
+            raise forms.ValidationError("Username already taken")
+        return self.cleaned_data['username']
+
 import django.contrib.auth
 def group_user_create(request, group_name):
     context = c = { }
@@ -453,8 +459,6 @@ def group_user_create(request, group_name):
             email = None
             password = None
             User = django.contrib.auth.get_user_model()
-            if User.objects.filter(username=username).exists():
-                raise forms.ValidationError("Username already taken")
             user = User.objects.create_user(username,
                                             email,
                                             password)
