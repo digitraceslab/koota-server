@@ -31,10 +31,11 @@ LOGGER = logging.getLogger(__name__)
 
 AWARE_DOMAIN = getattr(settings, 'AWARE_DOMAIN', 'https://aware.koota.zgib.net')
 AWARE_DOMAIN_SIGNED = getattr(settings, 'AWARE_DOMAIN_signed', 'https://data.koota.cs.aalto.fi')
-PACKET_CHUNK_SIZE = 1000
 AWARE_QRCODE_FORMAT = getattr(settings, 'AWARE_QRCODE_FORMAT', 'basic')
 AWARE_CRT_URL = getattr(settings, 'AWARE_CRT_URL', "https://data.koota.cs.aalto.fi/static/server-aware.crt")
 AWARE_CRT_PATH = getattr(settings, 'AWARE_CRT_PATH', "/srv/koota/static/server.crt")
+
+PACKET_CHUNK_SIZE = 1000
 
 
 from django.utils.html import escape
