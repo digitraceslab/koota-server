@@ -240,6 +240,7 @@ def get_user_config(device):
     # Aware requires it as a list of dicts.
     sensors = [dict(setting=k, value=aware_to_string(v))
                for k,v in config['sensors'].items()]
+    sensors.sort(key=lambda x: x.get('setting', ''))
 
     config = [{'sensors': sensors}]
     return config
