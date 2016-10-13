@@ -415,6 +415,11 @@ class TestersGroup(BaseGroup):
 #
 # Manager functions
 #
+class GroupSubjectForm(forms.ModelForm):
+    class Meta:
+        model = models.GroupSubject
+        fields = ['notes']
+
 @login_required
 def group_subject_detail(request, group_name, gs_id):
     context = c = { }
@@ -427,6 +432,19 @@ def group_subject_detail(request, group_name, gs_id):
     groupcls = c['group'] = group.get_class()
     groupsubject = c['groupsubject'] = \
                    models.GroupSubject.objects.get(id=gs_id, group=group)
+
+    # Notes form
+    if request.method == 'POST':
+        form = c['form'] = GroupSubjectForm(request.POST, instance=groupsubject)
+        if form.is_valid():
+            logs.log(request, 'group subject notes updating',
+                obj='group=%s+sid=%s'%(group.slug,gs_id),
+                op='group_subject_detail_notes',
+                data_of=groupsubject.user)
+            form.save()
+    else:
+        form = c['form'] = GroupSubjectForm(instance=groupsubject)
+
     logs.log(request, 'group subject detail',
              obj='group=%s+sid=%s'%(group.slug,gs_id),
              op='group_subject_detail',

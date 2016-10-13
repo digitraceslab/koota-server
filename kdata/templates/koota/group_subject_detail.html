@@ -12,6 +12,13 @@
 </ul>
 
 
+<h2>Subject info</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input class="btn btn-primary" type="submit" value="Update info" />
+</form>
+
 <h2>Available analyzes</h2>
 
 <ul>
