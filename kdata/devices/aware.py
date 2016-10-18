@@ -241,6 +241,9 @@ def get_user_config(device):
     if 'aware-config' in device.data.attrs:
         util.recursive_copy_dict(json.loads(device.data.attrs['aware-config']), config)
 
+    if config.get('study_id', '') or config.get('unlocked', False):
+        config['aware_unlocked'] = True
+
     # Aware requires it as a list of dicts.
     sensors = [dict(setting=k, value=aware_to_string(v))
                for k,v in config['sensors'].items()]
