@@ -225,6 +225,8 @@ class Group(models.Model):
                       help_text="If true, managers will be able to control devices.")
     leaveable = models.BooleanField(default=False,
                       help_text="Can subjects can leave this study by themselves?")
+    locked = models.BooleanField(default=False,
+                      help_text="If locked, subjects can not adjust parameters themselves.")
     #
     salt = models.CharField(max_length=128,
                             default=util.random_salt_b64, blank=True,
