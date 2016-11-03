@@ -260,7 +260,7 @@ def get_user_config(device):
 
     # Adjust config.
     # Should the study be locked?  Locked by default, see conditions for locking.
-    if config.get('study_id', '') or config.get('unlocked', False):
+    if config.get('study_id', '') or config.get('unlocked', True):
         config['aware_unlocked'] = True
 
     # Plugins
