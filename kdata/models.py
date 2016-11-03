@@ -45,7 +45,7 @@ class Device(models.Model):
     archived = models.BooleanField(default=False,
                                    help_text="Is this device no longer in use?  "
                                              "This hides this device from some views "
-                                             "but doesn't change anything else.  This has"
+                                             "but doesn't change anything else.  This has "
                                              "no effect on analysis.")
     _public_id = models.CharField(db_column='public_id', max_length=64, null=True, blank=True, db_index=True)
     _secret_id = models.CharField(db_column='secret_id', max_length=64, null=True, blank=True, db_index=True)
