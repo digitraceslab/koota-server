@@ -15,6 +15,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, F
 
 from . import devices
 from . import exceptions
+from . import group
 from . import logs
 from . import models
 from . import permissions
@@ -274,41 +275,58 @@ class DeviceConfig(UpdateView):
         self.object = self.get_object()   # Permissions handled HERE.
         device = self.object.get_class()
         #device_config_form = self.get_form()  # done in get_context_data
-        all_valid = True
-        any_changed = False
+        all_valid = True        # are any forms invalid?
+        any_changed = False     # did any forms change?
         context = self.get_context_data()
+        del context['form']     # this is added below, not automatically
 
-        # Main model form:
-        form_class = self.get_form_class()
-        if method == 'POST' and 'submit_device_config' in request.POST:
-            form = form_class(data=request.POST, instance=self.object, prefix='config_')
-            if form.has_changed():    any_changed = True
-            if not form.is_valid():   all_valid = False
-            if form.is_valid():
-                self.object = form.save()
-                device = self.object.get_class()
+        # Allow this configuration only if unlocked OR researcher.
+        is_staff = False
+        is_locked = False
+        for grp in group.user_groups(self.object.user):
+            if grp.locked:
+                is_locked = True
+        if is_locked:
+            if permissions.has_device_manager_permission(self.request, self.object):
+                is_staff = True
+
+        if not is_locked:# or is_staff:
+
+            # Main model form:
+            form_class = self.get_form_class()
+            if method == 'POST' and 'submit_device_config' in request.POST:
+                form = form_class(data=request.POST, instance=self.object, prefix='config_')
+                if form.has_changed():    any_changed = True
+                if not form.is_valid():   all_valid = False
+                if form.is_valid():
+                    self.object = form.save()
+                    device = self.object.get_class()
+                    logs.log(self.request, 'edit device', user=self.request.user,
+                             obj=self.object.public_id, op='update',
+                             data_of=self.object.user)
+                else:
+                    pass
             else:
-                pass
-        else:
-            form = form_class(instance=self.object, prefix='config_')
-        context['form'] = form
+                form = form_class(instance=self.object, prefix='config_')
+            context['form'] = form
 
-        # TODO: only if user is unlocked
-        if hasattr(device, 'config_forms'):
-            log_func = functools.partial(logs.log, request=request, data_of=self.object.user,
+            # TODO: only if user is unlocked
+            if hasattr(device, 'config_forms'):
+                log_func = functools.partial(logs.log, request=request,
+                                             data_of=self.object.user,
                                              obj=self.object.public_id)
-            custom_forms = util.run_config_form(forms=device.config_forms,
-                                                attrs=self.object.attrs,
-                                                method=method,
-                                                POST=request.POST,
-                                                log_func=log_func)
-            if method == 'POST':
-                any_changed = functools.reduce(operator.or_,
-                                               (f['form'].has_changed() for f in custom_forms))
-                all_valid = functools.reduce(operator.and_,
-                                             (f['form'].is_valid() for f in custom_forms))
+                custom_forms = util.run_config_form(forms=device.config_forms,
+                                                    attrs=self.object.attrs,
+                                                    method=method,
+                                                    POST=request.POST,
+                                                    log_func=log_func)
+                if method == 'POST':
+                    any_changed = functools.reduce(operator.or_,
+                                       (f['form'].has_changed() for f in custom_forms))
+                    all_valid = functools.reduce(operator.and_,
+                                       (f['form'].is_valid() for f in custom_forms))
 
-        context['custom_forms'] = custom_forms
+                context['custom_forms'] = custom_forms
         context['all_valid'] = all_valid
         context['any_changed'] = any_changed
         return self.render_to_response(context)

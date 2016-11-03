@@ -42,6 +42,7 @@ Scan this with the device<p>
 <img src="{% url 'device-qr' public_id=object.public_id %}">
 {% endif %}
 
+{% if form %}
 <h2>Change device properties</h2>
 
 <div class="alert alert-danger">
@@ -69,6 +70,10 @@ a new server device if you need to test other device types.</p>
     </form>
   </div>
 </div>
+{% endif %}
+
+{% if custom_forms %}
+<h2>Extra device configuration</h2>
 
 {% for custom_form in custom_forms %}
 <div class="panel panel-default">
@@ -84,5 +89,6 @@ a new server device if you need to test other device types.</p>
 </div>
 {% endfor %}
 
+{% endif %}
 
 {% endblock %}
