@@ -428,7 +428,8 @@ class GroupSubjectForm(forms.ModelForm):
 def group_subject_detail(request, group_name, gs_id):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
-    if not permissions.has_group_manager_permission(request, group):
+    if not (permissions.has_group_researcher_permission(request, group)
+            or permissions.has_group_manager_permission(request, group)):
         logs.log(request, 'group subject detail denied',
                  obj='group=%s+sid=%s'%(group.slug,gs_id),
                  op='denied_group_subject_detail')
