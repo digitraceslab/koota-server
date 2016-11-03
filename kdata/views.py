@@ -1,5 +1,7 @@
+import functools
 from hashlib import sha256
 import json
+import operator
 import six
 
 from django.shortcuts import render
@@ -260,6 +262,63 @@ class DeviceConfig(UpdateView):
                                      base_form=base_form,
                                      user=DeviceCreate.get_user(self))
         return form
+
+    def get(self, request, *args, **kwargs):
+        return self.handle(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
+        return self.handle(request, *args, **kwargs)
+    def handle(self, request, *args, **kwargs):
+        method = request.method
+        # self.object: django model
+        # device: Python class
+        self.object = self.get_object()   # Permissions handled HERE.
+        device = self.object.get_class()
+        #device_config_form = self.get_form()  # done in get_context_data
+        all_valid = True
+        any_changed = False
+        context = self.get_context_data()
+
+        # Main model form:
+        form_class = self.get_form_class()
+        if method == 'POST' and 'submit_device_config' in request.POST:
+            form = form_class(data=request.POST, instance=self.object, prefix='config_')
+            if form.has_changed():    any_changed = True
+            if not form.is_valid():   all_valid = False
+            if form.is_valid():
+                self.object = form.save()
+                device = self.object.get_class()
+            else:
+                pass
+        else:
+            form = form_class(instance=self.object, prefix='config_')
+        context['form'] = form
+
+        # TODO: only if user is unlocked
+        if hasattr(device, 'config_forms'):
+            log_func = functools.partial(logs.log, request=request, data_of=self.object.user,
+                                             obj=self.object.public_id)
+            custom_forms = util.run_config_form(forms=device.config_forms,
+                                                attrs=self.object.attrs,
+                                                method=method,
+                                                POST=request.POST,
+                                                log_func=log_func)
+            if method == 'POST':
+                any_changed = functools.reduce(operator.or_,
+                                               (f['form'].has_changed() for f in custom_forms))
+                all_valid = functools.reduce(operator.and_,
+                                             (f['form'].is_valid() for f in custom_forms))
+
+        context['custom_forms'] = custom_forms
+        context['all_valid'] = all_valid
+        context['any_changed'] = any_changed
+        return self.render_to_response(context)
+
+
+
+
+
+
+
 
 
 import qrcode

@@ -375,6 +375,66 @@ def filter_removed(val, removed_fields):
                     dct.pop(field)
 
 
+# Tool for arbitrary device and group configuration
+def run_config_form(forms, attrs, method, POST, log_func=None):
+    """Return arbitrary configuraiton forms
+
+    forms: a list of forms
+    attrs: device.attrs or group.attrs (dict-like) which stores json of forms
+    method: 'GET' or 'POST'
+    POST: request.POST data
+
+    """
+    custom_forms = [ ]
+    for form_data in forms:
+        form_class = form_data['form']
+        form_key   = form_data['key']
+        initial = json.loads(attrs.get(form_key, 'null'))
+        # find extra fields:
+        # we may have extra fields in data which are not reflected
+        # in the form.  Allow these to be edited by the "extra"
+        # CharField, if it exists.
+        if initial:
+            extra_fields = set(initial.keys()) - set(form_class.base_fields.keys())
+            if 'extra' in form_class.base_fields:
+                initial['extra'] = dumps(dict((k,initial[k]) for k in extra_fields))
+        else:
+            extra_fields = set()
+        # Core form logic.  GET/POST handle it.
+        if method == 'POST'  and 'submit_'+form_key in POST:
+            form = form_class(POST, initial=initial, prefix=form_key)
+            if form.is_valid():
+                # valid, save the data.
+                if initial is None:
+                    initial = { }
+                initial.update(form.cleaned_data)
+                # Remove None attribute, if config is empty, make it None
+                for name, value in list(initial.items()):
+                    if value is None: del initial[name]
+                if len(initial) == 0:
+                    initial = None
+                if 'extra' in form_class.base_fields and form.cleaned_data['extra']:
+                    # remove any extra keys from initial (they have been round-tripped to the user.)
+                    for name in form_class.base_fields.keys():
+                        initial.pop(name, None)
+                    # find our new data from the extra field and update our data
+                    extra_data = set(loads(form.cleaned_data['extra']))
+                    initial.update(extra_data)
+                attrs[form_key] = json.dumps(initial)
+                if log_func:
+                    log_func(op="form_change", message=json.dumps(initial))
+        else:  # GET
+            form = form_class(initial=initial, prefix=form_key)
+        # Create the object that will be iterated in the django template.
+        custom_forms.append(dict(form=form,
+                                 key=form_key,
+                                 name=getattr(form_data, 'name', form_class.__name__),
+                                 title=getattr(form_data, 'title', form_class.__name__),
+                                 ))
+    return custom_forms
+
+
+
 
 #
 # The following functions deal with device checkdigits.

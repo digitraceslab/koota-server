@@ -2,6 +2,18 @@
 
 {% block body %}
 
+{% if not all_valid %}
+<div class="alert alert-danger">
+  Your edits need corrections!  Please see below.
+</div>
+{% endif %}
+{% if any_changed and all_valid %}
+<div class="alert alert-success">
+  Your edits have been recorded.
+</div>
+{% endif %}
+
+
 <h2>Basic information</h2>
 <ul>
 <li>Name: {{ object.name }}</li>
@@ -47,14 +59,30 @@ normally be changed unless you configured it wrong at the start.  Make
 a new server device if you need to test other device types.</p>
 
 <div class="panel panel-default">
+  <div class="panel-heading">Standard device configuration</div>
   <div class="panel-body">
     <form method="post">{% csrf_token %}
       <table class="table">
       {{ form.as_table }}
       </table>
-      <input class="btn btn-primary" type="submit" value="Submit" />
+      <input class="btn btn-primary" type="submit" value="Submit" name="submit_device_config"/>
     </form>
   </div>
 </div>
+
+{% for custom_form in custom_forms %}
+<div class="panel panel-default">
+  <div class="panel-heading">{{custom_form.name}}</div>
+  <div class="panel-body">
+    <form method="post">{% csrf_token %}
+      <table class="table">
+      {{ custom_form.form.as_table }}
+      </table>
+      <input class="btn btn-primary" type="submit" value="Submit" name="submit_{{custom_form.key}}"/>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
 
 {% endblock %}
