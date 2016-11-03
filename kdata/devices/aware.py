@@ -12,6 +12,7 @@ import textwrap
 from six.moves.urllib import parse as urlparse
 
 from django.conf import settings
+from django import forms
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse, UnreadablePostError
 from django.utils import timezone
@@ -38,6 +39,12 @@ AWARE_CRT_PATH = getattr(settings, 'AWARE_CRT_PATH', "/srv/koota/static/server.c
 PACKET_CHUNK_SIZE = 1000
 
 
+# Aware config forms
+class AwareConfigForm(forms.Form):
+    is_locked = forms.NullBooleanField(help_text="Is user blocked from making changes?")
+    extra = forms.CharField(help_text="Extra data?", required=False)
+
+
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
@@ -49,6 +56,7 @@ class Aware(devices.BaseDevice):
     AWARE_DOMAIN = AWARE_DOMAIN
     #USABLE_QRCODE_METHODS = {'embed', 'url'}
     USABLE_QRCODE_METHODS = {}
+    config_forms = [{'form':AwareConfigForm, 'key': 'aware_config'}]
     converters = devices.BaseDevice.converters + [
         converter.AwareUploads,
         converter.AwareTimestamps,
@@ -206,12 +214,21 @@ def aware_to_string(value):
     if isinstance(value, bool):
         return str(value).lower()
     return str(value)
+def dict_to_settings(config):
+    """Dict to aware's [{setting:xxx value:xxx}, ...] format"""
+    cfg = [ dict(setting=k, value=aware_to_string(v))
+            for k,v in config['sensors'].items() ]
+    cfg.sort(key=lambda x: x.get('setting', ''))
+    return cfg
+
 def get_user_config(device):
     """Get a device's remote configuration.
 
     return value: Python dict object."""
     import copy
     config = copy.deepcopy(BASE_CONFIG)
+
+    # Create some basic info
     #config['sensors']['mqtt_username'] = device.data.public_id
     #config['sensors']['mqtt_password'] = device.data.secret_id
     if device.data.ts_create is not None:
@@ -231,25 +248,37 @@ def get_user_config(device):
     if hasattr(settings, 'AWARE_CONFIG'):
         util.recursive_copy_dict(settings.AWARE_CONFIG, config)
 
-    # Get the user's group config
+    # Merge configs from all of the user's groups
     user = device.data.user
     user_config = group.user_merged_group_config(user)
     if 'aware_config' in user_config:
         util.recursive_copy_dict(user_config['aware_config'], config)
 
-    # Device-specific config
+    # Merge config from this particular device.
     if 'aware-config' in device.data.attrs:
         util.recursive_copy_dict(json.loads(device.data.attrs['aware-config']), config)
 
+    # Adjust config.
+    # Should the study be locked?  Locked by default, see conditions for locking.
     if config.get('study_id', '') or config.get('unlocked', False):
         config['aware_unlocked'] = True
 
-    # Aware requires it as a list of dicts.
-    sensors = [dict(setting=k, value=aware_to_string(v))
-               for k,v in config['sensors'].items()]
-    sensors.sort(key=lambda x: x.get('setting', ''))
+    # Plugins
+    # [ {sensors: [ ] }
+    #   {plugins: [{plugin:"string", settings:[ {setting:"name", value:"config" }, ... ] } ] }
 
-    config = [{'sensors': sensors}]
+    sensors_config = config
+    plugins_config = [
+        { "plugin": plugin_name,
+          "settings": dict_to_settings(plugin_settings)}
+        for plugin_name, plugin_settings in config.get('plugins', {}).values()
+        ]
+    sensors_config.pop('plugins', None)
+
+    # Aware requires it as a list of dicts.
+    config = [{'sensors': dict_to_settings(sensors_config)},
+              {'plugins': plugins_config},
+             ]
     return config
 
 
