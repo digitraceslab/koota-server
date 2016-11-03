@@ -7,11 +7,13 @@ import importlib
 import itertools
 import json
 from json import dumps, loads
+from math import log
 import os
 import time
 import six
 from six import StringIO as IO
 
+from django.utils import timezone
 import django.db.models
 import django.forms
 
@@ -433,6 +435,39 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
                                  ))
     return custom_forms
 
+
+
+# Functions for human readability
+def human_bytes(x):
+    """Add proper binary prefix to number in bytes, returning string"""
+    if x <= 0:
+        return '%6.2f %-3s'%(x, 'B')
+    unit_list = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+    exponent = int(log(x, 1024))
+    quotient = x / 1024**exponent
+    return '%6.2f %-3s'%(quotient, unit_list[exponent])
+def human_number(x):
+    """Add proper binary prefix to number in bytes, returning string"""
+    if x <= 0:
+        return '%6.2f %-3s'%(x, 'B')
+    unit_list = [ '', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+    exponent = int(log(x, 1000))
+    quotient = x / 1000**exponent
+    return '%d%s'%(quotient, unit_list[exponent])
+def human_interval(dt):
+    """Convert a number of seconds, timedelta, or datetime to human readable"""
+    if isinstance(dt, int):
+        secs = dt
+    elif isinstance(dt, timedelta):
+        secs = dt.total_seconds()
+    else:
+        secs = (timezone.now() - dt).total_seconds()
+    if secs < 60*5:               return "%ds"%secs
+    elif secs < 3600*5:           return "%dm"%(secs//60)
+    elif secs < 3600*24*3:        return "%dh"%(secs//3600)
+    elif secs < 3600*24*35:       return "%dd"%(secs//(3600*24))
+    elif secs < 3600*24*7*200:    return "%dw"%(secs//(3600*24*7))
+    else:                         return "%ds"%(secs//(3600*24*365.24))
 
 
 

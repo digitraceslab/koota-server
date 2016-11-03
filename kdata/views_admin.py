@@ -19,18 +19,11 @@ from . import devices
 from . import group
 from . import logs
 from . import util
+from .util import human_bytes
 
 import logging
 logger = logging.getLogger(__name__)
 
-def human_bytes(x):
-    """Add proper binary prefix to number in bytes, returning string"""
-    if x <= 0:
-        return '%6.2f %-3s'%(x, 'B')
-    unit_list = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
-    exponent = int(log(x, 1024))
-    quotient = x / 1024**exponent
-    return '%6.2f %-3s'%(quotient, unit_list[exponent])
 
 
 

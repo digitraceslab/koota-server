@@ -8,6 +8,7 @@ from django.utils import timezone
 from . import devices
 from . import exceptions
 from . import util
+from . import backend
 # Create your models here.
 
 import logging
@@ -106,6 +107,20 @@ class Device(models.Model):
             return self.get_type_display()
         except AttributeError:
             return self.type.rsplit('.')[-1]
+    def summary_text(self):
+        be = backend.Backend(self)
+        count = be.count()
+        if count == 0:
+            return "-"
+        mostrecent = be[-1].ts
+        secs = (timezone.now() - mostrecent).total_seconds()
+        if secs > 604800: # 1 week
+            self.summary_color, self.summary_char = ('#FF0000', '&#x2297;') # x
+        elif secs > 86400:  # 1 day
+            self.summary_color, self.summary_char = ('#000000', '&#x29BF;') # bullet-circle
+        else:
+            self.summary_color, self.summary_char = ('#000000', '&#x25CF;') # circle
+        return "%s (%s)"%(util.human_number(count), util.human_interval(mostrecent))
 # See comment in kdata.devices.register_device to know why this is
 # here. It is a hack to work around a circular import.
 Device._meta.get_field('type').choices = devices.all_device_choices

@@ -50,7 +50,7 @@
     <th></th>
     <th>Type</th>
     <th>Usage</th>
-    <th></th>
+    <th>#/lasty</th>
   </tr>
 {% for groupsubject in group.dbrow.groupsubject_set.all %}
   <tr>
@@ -68,6 +68,7 @@
         {# <td><a href="{% url 'group-subject-device-detail' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Data</a></td> #}
         <td>{% if device.label.slug == "primary" %}<b>{% endif %}{{device.human_name}}{% if device.label.slug == "primary" %}</b>{% endif %}</td>
         <td>{{ device.label.shortname }}</td>
+        <td>{{ device.summary_text}} <span style="color: {{device.summary_color|safe}}; float:right; border-radius: 50%">{{device.summary_char|safe}}</span></td>
       </tr>
     {% endfor %}
 {% endfor %}
