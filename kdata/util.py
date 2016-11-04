@@ -277,6 +277,7 @@ def hash_mosquitto_password(passwd):
 
 
 class JsonConfigFormField(django.forms.Field):
+    widget = django.forms.Textarea
     def __init__(self, *args, **kwargs):
         # Somehow max_length gets added again, and we have to remove it.
         kwargs.pop('max_length', None)
@@ -407,7 +408,7 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
             form = form_class(POST, initial=initial, prefix=form_key)
             if form.is_valid():
                 # valid, save the data.
-                if initial is None:
+                if initial is None or 'extra' in form_class.base_fields:
                     initial = { }
                 initial.update(form.cleaned_data)
                 # Remove None attribute, if config is empty, make it None
@@ -416,11 +417,10 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
                 if len(initial) == 0:
                     initial = None
                 if 'extra' in form_class.base_fields and form.cleaned_data['extra']:
-                    # remove any extra keys from initial (they have been round-tripped to the user.)
-                    for name in form_class.base_fields.keys():
-                        initial.pop(name, None)
                     # find our new data from the extra field and update our data
-                    extra_data = set(loads(form.cleaned_data['extra']))
+                    extra_data = form.cleaned_data['extra']
+                    if isinstance(extra_data, str):
+                        extra_data = loads(extra_data)
                     initial.update(extra_data)
                 attrs[form_key] = json.dumps(initial)
                 if log_func:
