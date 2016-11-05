@@ -141,7 +141,7 @@ class BaseAttr(models.Model):
     #device = models.ForeignKey(Device)
     name = models.CharField(max_length=64,
                             help_text='Attribute name')
-    value = models.CharField(max_length=128,
+    value = models.CharField(max_length=4096,
                             help_text='Attribute value')
     ts = models.DateTimeField(auto_now=True)
 
