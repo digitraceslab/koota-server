@@ -42,7 +42,7 @@ PACKET_CHUNK_SIZE = 1000
 # Aware config forms
 class AwareConfigForm(forms.Form):
     is_locked = forms.NullBooleanField(help_text="Is user blocked from making changes?")
-    extra = forms.CharField(help_text="Extra data?", required=False)
+    extra = util.JsonConfigFormField(help_text="Extra data?", required=False)
 
 
 from django.utils.html import escape
@@ -217,14 +217,22 @@ def aware_to_string(value):
 def dict_to_settings(config):
     """Dict to aware's [{setting:xxx value:xxx}, ...] format"""
     cfg = [ dict(setting=k, value=aware_to_string(v))
-            for k,v in config['sensors'].items() ]
+            for k,v in config.items() ]
     cfg.sort(key=lambda x: x.get('setting', ''))
     return cfg
 
 def get_user_config(device):
-    """Get a device's remote configuration.
+    """Get an Aware device's configuration.
 
-    return value: Python dict object."""
+    This is the main function which creates the configuration for an
+    Aware device.  It will take into account many sources of data:
+    global config from this module config, global config from django,
+    the user's group configuration properties, and configuration on the
+    device itself.
+
+    return value: Python object which will be JSON encoded for sending
+    to Aware.
+    """
     import copy
     config = copy.deepcopy(BASE_CONFIG)
 
@@ -240,44 +248,82 @@ def get_user_config(device):
     config['sensors']['webservice_server'] = device.webservice_url()
     config['sensors']['status_webservice'] = True
 
-    # This is the difference between a user being able to edit a
-    # config themselves and not.
-    #config['sensors']['study_id'] = 1
+    # Merge in all our config locations:
 
-    # Site-global config
+    # Config from django settings
     if hasattr(settings, 'AWARE_CONFIG'):
         util.recursive_copy_dict(settings.AWARE_CONFIG, config)
 
-    # Merge configs from all of the user's groups
+    # Config from a user's groups:
     user = device.data.user
-    user_config = group.user_merged_group_config(user)
-    if 'aware_config' in user_config:
-        util.recursive_copy_dict(user_config['aware_config'], config)
+    user_group_config = group.user_merged_group_config(user)
+    if 'aware_config' in user_group_config:
+        util.recursive_copy_dict(user_group_config['aware_config'], config)
 
-    # Merge config from this particular device.
-    if 'aware-config' in device.data.attrs:
-        util.recursive_copy_dict(json.loads(device.data.attrs['aware-config']), config)
+    # Config from this device in particular (device attrs)
+    if 'aware_config' in device.data.attrs:
+        util.recursive_copy_dict(json.loads(device.data.attrs['aware_config']), config)
 
-    # Adjust config.
+
+    # Config adjustments that should be done after config merging:
     # Should the study be locked?  Locked by default, see conditions for locking.
     if config.get('study_id', '') or config.get('unlocked', True):
         config['aware_unlocked'] = True
 
+
     # Plugins
     # [ {sensors: [ ] }
     #   {plugins: [{plugin:"string", settings:[ {setting:"name", value:"config" }, ... ] } ] }
-
-    sensors_config = config
     plugins_config = [
         { "plugin": plugin_name,
           "settings": dict_to_settings(plugin_settings)}
         for plugin_name, plugin_settings in config.get('plugins', {}).values()
         ]
-    sensors_config.pop('plugins', None)
+    config.pop('plugins', None)
 
-    # Aware requires it as a list of dicts.
-    config = [{'sensors': dict_to_settings(sensors_config)},
+
+    # Schedules
+    #schedule_NAME = [ {"package": "xxx", "schedule":{} }, { } ]
+    # schedule =
+    #  {"schedule_id": "greeting_active",
+    #   "action":{"type":"service","class":"com.aware.phone/com.aware.utils.Aware_TTS",
+    #             "extras":[{"extra_key":"tts_text",
+    #                        "extra_value":"Hello there."},
+    #                       {"extra_key":"tts_requester","extra_value":"com.aware.phone"}]},
+    #   "trigger":{"condition":[{"condition_uri": "content://com.aware.phone.provider.screen/screen",
+    #                            "condition_where":"screen_status=3"}]}}}
+    #
+    # Example with ESM
+    # {"schedule_id": "ask_stars",
+    #   "action":{"type":"service","class":"com.aware.phone/com.aware.ESM",
+    #             "extras":[{"extra_key":"esms",
+    #                        "extra_value":dumps([esm1, esm2, ...])},
+    #                       ]},
+    #  "schedule": { }
+    # }
+    # esm1 = {"esm_type": 1=text, 2=radio, 3=checkbox, 4=likert, 5=quickans, 6=scale, 7=num
+    #         "esm_title": str
+    #         "esm_instructions": str
+    #         "esm_submit": str
+    #         "esm_expiration_threshold": int,
+    #         "esm_notification_timeout": int,
+    #         "esm_trigger": str,
+    #         ""}
+    schedules_config = [ ]
+    for key in list(config):
+        if key.startswith('schedule_'):
+            val = config[key]
+            if isinstance(val, (list,tuple)):
+                schedules_config.extend(val)
+            else:
+                schedules_config.extend(val)
+            config.pop(key)
+
+
+    # Make final configuration.  Aware requires it as a list of dicts.
+    config = [{'sensors': dict_to_settings(config['sensors'])},
               {'plugins': plugins_config},
+              {'schedulers': schedules_config},
              ]
     return config
 
