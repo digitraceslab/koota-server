@@ -210,15 +210,19 @@ for name in ("accelerometer", "barometer", "gravity", "gyroscope",
     BASE_CONFIG['sensors']['threshold_'+name] = 0.05
 
 def aware_to_string(value):
-    """AWARE requires setting values to be string.  Convert them"""
-    if isinstance(value, bool):
-        return str(value).lower()
-    return str(value)
-def dict_to_settings(config):
-    """Dict to aware's [{setting:xxx value:xxx}, ...] format"""
-    cfg = [ dict(setting=k, value=aware_to_string(v))
+    """AWARE requires setting values to be string.  Convert them."""
+    if isinstance(value, str):
+        return str(value)
+    return json.dumps(value)
+def dict_to_settings(config, key_name='setting', value_name='value'):
+    """Dict to aware's [{setting:xxx value:xxx}, ...] format.
+
+    {"aaa":xxx, "bbb":yyy} -> [{"setting":"aaa", "value":"xxx"},
+    {"setting":"bbb", "value":"yyy"}
+    """
+    cfg = [ {key_name:k, value_name:aware_to_string(v)}
             for k,v in config.items() ]
-    cfg.sort(key=lambda x: x.get('setting', ''))
+    cfg.sort(key=lambda x: x.get(key_name, ''))
     return cfg
 
 def get_user_config(device):
@@ -247,6 +251,7 @@ def get_user_config(device):
     config['sensors']['study_start'] = int(ts_create*1000)
     config['sensors']['webservice_server'] = device.webservice_url()
     config['sensors']['status_webservice'] = True
+    config['sensors']['device_label'] = device.dbrow.public_id
 
     # Merge in all our config locations:
 
@@ -318,6 +323,24 @@ def get_user_config(device):
             else:
                 schedules_config.extend(val)
             config.pop(key)
+    # Do we need to make the {'key':x, 'value':y} format ESM settings
+    # for schedules?  This automatically converts dicts to this
+    # format.  It will be converted to string (dumps) before sending
+    # to the client.
+    for sched in schedules_config:
+        if ('schedule' in sched
+              and 'action' in sched['schedule']
+              and 'extras' in sched['schedule']['action']
+              and isinstance( sched['schedule']['action']['extras'], dict)):
+            # dict_to_settings makes the settings in the right format
+            # - with the right key/value names.
+            sched['schedule']['action']['extras'] = \
+              dict_to_settings(sched['schedule']['action']['extras'],
+                               key_name='extra_key', value_name='extra_value')
+    # If we have ESMs, then turn it on.
+    if len(schedules_config) > 0:
+        config['sensors']['status_esm'] = True
+
 
 
     # Make final configuration.  Aware requires it as a list of dicts.
