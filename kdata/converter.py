@@ -1914,6 +1914,26 @@ class AwareMessages(BaseAwareConverter):
 class AwareRecentDataCounts(BaseDataCounts):
     device_class = ('Aware', 'AwareValidCert')
     timestamp_converter = AwareTimestamps
+class AwareEsms(BaseAwareConverter):
+    desc = "ESMs"
+    header = ['time_asked', 'time_answer', 'user_answer', 'title', 'type', 'instructions', 'submit', 'notification_timeout']
+    def convert(self, queryset, time=lambda x:x):
+        types = {"1": "incoming", "2":"outgoing"}
+        for ts, data in queryset:
+            data = loads(data)
+            if data['table'] != 'esms': continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                esm_json = loads(row['esm_json'])
+                yield (time(row['timestamp']/1000.),
+                       time(row['double_esm_user_answer_timestamp']/1000.),
+                       row['esm_user_answer'],
+                       esm_json.get('esm_type',''),
+                       esm_json.get('esm_title',''),
+                       esm_json.get('esm_instructions',''),
+                       esm_json.get('esm_submit',''),
+                       esm_json.get('esm_notification_timeout',''),
+                       )
 
 
 
