@@ -212,6 +212,8 @@ def device_data(request, public_id, converter, format):
                                    ('json',  'json (browser)'),
                                    ('json-lines2', 'json, in lines (dl)'),
                                    ('json-lines',  'json, in lines (browser)'),
+                                   ('sqlite3dump2','sqlite3 dump (dl)'),
+                                   ('sqlite3dump', 'sqlite3 dump (browser)'),
                                   ]
     filename_base = '%s_%s_%s_%s-%s'%(
         device.public_id,
@@ -266,6 +268,14 @@ def handle_format_downloads(table, format, converter, header, filename_base):
         # Force download for the '2' options.
         if format.endswith('2'):
             filename = filename_base+'.json'
+            response['Content-Disposition'] = 'attachment; filename="%s"'%filename
+        return response
+    elif format and format.startswith('sqlite3dump'):
+        filename = filename_base+'.sqlite3'
+        lines = util.sqlite3dump_iter(table, converter=converter, header=header, filename=filename)
+        response = StreamingHttpResponse(lines, content_type='text/plain')
+        # Force download for the '2' options.
+        if format.endswith('2'):
             response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
     else:

@@ -178,6 +178,27 @@ def json_iter(table, converter=None, header=None):
         yield 'The following errors were found at unspecified points in processing:\n'
         for error in converter.errors:
             yield str(error)+'\n'
+def sqlite3dump_iter(table, converter=None, header=None, filename=None):
+    table_name = converter.__class__.__name__ if converter else 'data'
+    yield '-- Koota sqlite3 dump\n'
+    if filename:
+        yield '-- filename: %s\n'%filename
+    yield '-- generated_at: %s\n'%time.time()
+    yield '-- Easily load to sqlite with:  sqlite3 -cmd ".read FILENAMe"\n'
+    yield 'BEGIN TRANSACTION;\n'
+    yield 'CREATE TABLE IF NOT EXISTS "%s" (%s);\n'%(table_name, ", ".join('"%s"'%x for x in header))
+    for row in table:
+        yield 'INSERT INTO %s VALUES(%s);\n'%(
+            table_name,
+            ", ".join(''.join(("'", x.replace("'","''"), "'"))
+                          if isinstance(x, str) else repr(x) for x in row))
+    yield 'CREATE VIEW IF NOT EXISTS "data" AS SELECT * from "%s";\n'%(table_name)
+    if converter and converter.errors:
+        yield 'CREATE TABLE IF NOT EXIST errors ("table", "name", "count");\n'
+        for error, count in converter.errors_dict.items():
+            yield "INSERT INTO errors VALUES('%s', '%s', %s);\n"%(
+                table_name, error.replace("'", "''"), count)
+    yield 'COMMIT;\n'
 
 
 
