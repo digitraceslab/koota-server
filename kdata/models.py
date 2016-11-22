@@ -121,6 +121,9 @@ class Device(models.Model):
         else:
             self.summary_color, self.summary_char = ('#000000', '&#x25CF;') # circle
         return "%s (%s)"%(util.human_number(count), util.human_interval(mostrecent))
+    @property
+    def backend(self):
+        return backend.get_device_backend(self)
 # See comment in kdata.devices.register_device to know why this is
 # here. It is a hack to work around a circular import.
 Device._meta.get_field('type').choices = devices.all_device_choices

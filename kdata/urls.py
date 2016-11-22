@@ -96,10 +96,13 @@ urls_ui = [
     url(r'^group/$', group.group_join, name='group-join'),
     # /group/name/
     url(r'^group/(?P<group_name>[\w-]+)/$', group.group_detail, name='group-detail'),
+    # /group/name/stats
+    url(r'^group/(?P<group_name>[\w-]+)/stats/?$',
+        group.group_stats, name='group-stats'),
     # /group/name/converter(.ext)
     url(r'^group/(?P<group_name>[\w-]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
         group.group_data, name='group-data'),
-    # /group/name/converter(.ext)
+    # /group/name/user-create/
     url(r'^group/(?P<group_name>[\w-]+)/user-create/$',
         group.group_user_create, name='group-user-create'),
     # Subject related

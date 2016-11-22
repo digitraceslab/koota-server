@@ -159,6 +159,12 @@ def iter_subjects(group, group_class):
         yield subject
 def iter_users_devices(group, group_class, group_converter_class):
     """Iterate (user, device_id) pairs in group"""
+    if group_converter_class is None:
+        for subject in iter_subjects(group, group_class):
+            for device in models.Device.objects.filter(user=subject,
+                                                label__analyze=True):
+                yield subject, device
+        return
     # device_class can be a list, in which case we check all of them.
     # If it is not a list, make it a list.
     device_classes = group_converter_class.device_class
@@ -510,6 +516,33 @@ def group_user_create(request, group_name):
                             context=context)
 
 
+def group_stats(request, group_name):
+    context = c = { }
+    group = models.Group.objects.get(slug=group_name)
+    if not (permissions.has_group_researcher_permission(request, group)
+            or permissions.has_group_manager_permission(request, group)):
+        logs.log(request, 'group subject detail denied',
+                 obj='group=%s+sid=%s'%(group.slug,gs_id),
+                 op='denied_group_subject_detail')
+        raise exceptions.NoGroupPermission()
+    groupcls = c['group'] = group.get_class()
+
+    devices = 0
+    count = 0
+    bytes = 0
+
+    for subject, device in iter_users_devices(group, groupcls, group_converter_class=None):
+        devices += 1
+        print(device.backend.count())
+        count += device.backend.count()
+        bytes_device = device.backend.bytes_total()
+        if bytes_device:
+            bytes += bytes_device
+    data = ["devices: %s"%devices,
+            "count: %s"%count,
+                "bytes: %s"%util.human_bytes(bytes)]
+    data = '\n'.join(data)
+    return HttpResponse(data, content_type='text/plain')
 
 
 def ensure_user_has_devices(user, devs, group):
