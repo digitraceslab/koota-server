@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib import messages
 from django.shortcuts import render
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
@@ -107,6 +108,10 @@ class KootaOTPAuthenticationForm(OTPAuthenticationForm):
             pass
         elif token:
             user.otp_device = self._verify_token(user, token, device)
+            if not user.otp_device:
+                raise forms.ValidationError("2FA token is wrong.")
+            messages.add_message(self.request, messages.SUCCESS, '2FA succeeded')
+
 
         #if user.otp_device is None:
         #    self._update_form(user)

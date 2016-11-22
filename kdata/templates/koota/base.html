@@ -53,6 +53,14 @@
     </ol>
   <!--</div>-->
 
+  {% if messages %}
+  <!-- Messages -->
+  <div name="messages">
+    {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+	{% endfor %}
+  </div>
+  {% endif %}
 
 {% block body %}
 {{ body }}

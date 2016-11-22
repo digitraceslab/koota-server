@@ -1,3 +1,7 @@
+import urllib
+
+from django.contrib import messages
+from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -80,6 +84,13 @@ class KdataMiddleware(object):
 
 
     def process_exception(self, request, exception):
+        if isinstance(exception, exceptions.LoginRequired):
+            querystring = urllib.parse.urlencode({'next':request.path})
+            messages.warning(request, "Please log in to see this page (trace: %s)."%
+                             exception.id_)
+            return HttpResponseRedirect(reverse('login')+'?'+querystring,
+                                        status=307, reason="Please log in")
+
         if isinstance(exception, exceptions.BaseMessageKootaException):
             response = TemplateResponse(request, 'koota/exception.html',
                                         context=dict(exception=exception),
