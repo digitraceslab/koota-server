@@ -26,6 +26,15 @@ from . import util
 import logging
 logger = logging.getLogger(__name__)
 
+DOWNLOAD_FORMATS = [('csv2',  'csv (download)'),
+                    ('csv',   'csv (in browser)'),
+                    ('json2', 'json (dl)'),
+                    ('json',  'json (browser)'),
+                    ('json-lines2', 'json, in lines (dl)'),
+                    ('json-lines',  'json, in lines (browser)'),
+                    ('sqlite3dump2','sqlite3 dump (dl)'),
+                    ('sqlite3dump', 'sqlite3 dump (browser)'),
+                    ]
 
 
 class DeviceDetail(DetailView):
@@ -206,15 +215,7 @@ def device_data(request, public_id, converter, format):
     del data, queryset
 
     # Convert to custom formats if it was requested.
-    context['download_formats'] = [('csv2',  'csv (download)'),
-                                   ('csv',   'csv (in browser)'),
-                                   ('json2', 'json (dl)'),
-                                   ('json',  'json (browser)'),
-                                   ('json-lines2', 'json, in lines (dl)'),
-                                   ('json-lines',  'json, in lines (browser)'),
-                                   ('sqlite3dump2','sqlite3 dump (dl)'),
-                                   ('sqlite3dump', 'sqlite3 dump (browser)'),
-                                  ]
+    context['download_formats'] = DOWNLOAD_FORMATS
     filename_base = '%s_%s_%s_%s-%s'%(
         device.public_id,
         device.type,

@@ -335,13 +335,7 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
     c['table'] = table
 
 
-    context['download_formats'] = [('csv2',  'csv (download)'),
-                                   ('csv',   'csv (in browser)'),
-                                   ('json2', 'json (dl)'),
-                                   ('json',  'json (browser)'),
-                                   ('json-lines2', 'json, in lines (dl)'),
-                                   ('json-lines',  'json, in lines (browser)'),
-                                  ]
+    context['download_formats'] = views_data.DOWNLOAD_FORMATS
     filename_base = '%s_%s_%s-%s'%(
         group.slug,
         converter_class.name(),
