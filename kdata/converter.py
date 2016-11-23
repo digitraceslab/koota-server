@@ -1595,9 +1595,9 @@ class ActiwatchMarkers(_Converter):
 
 class BaseAwareConverter(_Converter):
     device_class = ('Aware', 'AwareValidCert')
+    ts_column = 'timestamp'
     #table = 'screen'
     #desc = "Generic Aware converter"
-    #ts_column = 'timestamp'
     #fields = ['screen_status',
     #          ]
     @classmethod
@@ -1620,6 +1620,23 @@ class BaseAwareConverter(_Converter):
             for row in table_data:
                 yield (time(row[ts_column]/1000.),
                        ) + tuple(row.get(colname,'') for colname in fields)
+class AwareAuto(BaseAwareConverter):
+    header = ['time', 'data']
+    def convert(self, queryset, time=lambda x:x):
+        table = self.table
+        ts_column = self.ts_column
+
+        for ts, data in queryset:
+            data = loads(data)
+            if not isinstance(data, dict): continue
+            if data['table'] != table:
+                continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                ts = time(row[ts_column]/1000.)
+                row.pop('device_id')
+                row.pop(ts_column)
+                yield (ts, json.dumps(row, sort_keys=True))
 class AwareUploads(BaseAwareConverter):
     header = ['packet_time', 'table', 'len_data']
     desc = "Uploaded tables and times"
@@ -1661,12 +1678,15 @@ class AwarePacketTimeRange(BaseAwareConverter):
         for ts, data in queryset:
             data = loads(data)
             data_decoded = loads(data['data'])
-            time_range = (data_decoded[-1]['timestamp']
-                          -data_decoded[0]['timestamp']) / 1000
+            try:
+                time_range = (data_decoded[-1]['timestamp']
+                                -data_decoded[0]['timestamp']) / 1000
+            except (KeyError, IndexError, ValueError):
+                time_range = None
             yield (time(timegm(ts.utctimetuple())),
                    data['table'],
-                   time(data_decoded[ 0]['timestamp']/1000),
-                   time(data_decoded[-1]['timestamp']/1000),
+                   time(data_decoded[ 0]['timestamp']/1000) if time_range else '',
+                   time(data_decoded[-1]['timestamp']/1000) if time_range else '',
                    len(data_decoded),
                    len(data['data']),
                    len(data_decoded)/float(time_range) if time_range else '',
@@ -1692,17 +1712,20 @@ class AwareDeviceInfo(BaseAwareConverter):
     # "[{\"device\":\"hammerhead\",\"build_id\":\"MOB30H\",\"sdk\":\"23\",\"release_type\":\"user\",\"release\":\"6.0.1\",\"timestamp\":1465242186982,\"board\":\"hammerhead\",\"device_id\":\"UID\",\"brand\":\"google\",\"label\":\"\",\"serial\":\"NNNNNN\",\"manufacturer\":\"LGE\",\"hardware\":\"hammerhead\",\"product\":\"hammerhead\",\"model\":\"Nexus
     # 5\"}]"}
     desc = "Hardware info"
-    fields = ['device', 'label', 'sdk', 'device_id', 'brand']
+    table = "aware_device"
+    fields = ['device', 'release', 'label', 'sdk', 'brand', 'manufacturer',
+              'hardware', 'build_id', 'product', 'model']
+class AwareDeviceInfo2(AwareAuto):
+    desc = "Hardware meta-info."
+    table = "aware_device"
 class AwareScreen(BaseAwareConverter):
     desc = "Screen on/off"
     table = 'screen'
-    ts_column = 'timestamp'
     fields = ['screen_status',
               ]
 class AwareBattery(BaseAwareConverter):
     desc = "Battery"
     table = 'battery'
-    ts_column = 'timestamp'
     fields = ['battery_level',
               'battery_status',
               'battery_health',
@@ -1711,14 +1734,12 @@ class AwareBattery(BaseAwareConverter):
 class AwareLight(BaseAwareConverter):
     desc = "Light sensor"
     table = 'light'
-    ts_column = 'timestamp'
     fields = ['double_light_lux',
               'accuracy',
               ]
 class AwareWifi(BaseAwareConverter):
     desc = "Wifi scans"
     table = 'wifi'
-    ts_column = 'timestamp'
     fields = ['ssid',
               'bssid',
               'mac_address',
@@ -1727,7 +1748,6 @@ class AwareWifi(BaseAwareConverter):
 class AwareSensorWifi(BaseAwareConverter):
     desc = "Wifi scans"
     table = 'sensor_wifi'
-    ts_column = 'timestamp'
     fields = ['ssid',
               'bssid',
               'mac_address',
@@ -1735,7 +1755,6 @@ class AwareSensorWifi(BaseAwareConverter):
 class AwareBluetooth(BaseAwareConverter):
     desc = "Bluetooth"
     table = 'bluetooth'
-    ts_column = 'timestamp'
     fields = ['bt_address',
               'bt_rssi',
               'device_id',
@@ -1744,7 +1763,6 @@ class AwareBluetooth(BaseAwareConverter):
 class AwareLocation(BaseAwareConverter):
     desc = "Location"
     table = 'locations'
-    ts_column = 'timestamp'
     fields = ['double_latitude',
               'double_longitude',
               'double_altitude',
@@ -1757,7 +1775,6 @@ class AwareLocation(BaseAwareConverter):
 class AwareNetwork(BaseAwareConverter):
     desc = "Networks"
     table = 'network'
-    ts_column = 'timestamp'
     fields = ['network_state',
               'network_type',
               'network_subtype',
@@ -1765,7 +1782,6 @@ class AwareNetwork(BaseAwareConverter):
 class AwareApplicationNotifications(BaseAwareConverter):
     desc = "Notifications"
     table = 'applications_notifications'
-    ts_column = 'timestamp'
     fields = ['application_name',
               'defaults',
               'sound',
@@ -1774,7 +1790,6 @@ class AwareApplicationNotifications(BaseAwareConverter):
 class AwareApplicationCrashes(BaseAwareConverter):
     desc = "Notifications"
     table = 'applications_crashes'
-    ts_column = 'timestamp'
     fields = ['error_short',
               'error_long',
               'application_name',
@@ -1785,7 +1800,6 @@ class AwareApplicationCrashes(BaseAwareConverter):
 class AwareAmbientNoise(BaseAwareConverter):
     desc = "Ambient noise plugin"
     table = 'plugin_ambient_noise'
-    ts_column = 'timestamp'
     fields = ['is_silent',
               'double_decibels',
               'double_silence_threshold',
@@ -1796,7 +1810,6 @@ class AwareAmbientNoise(BaseAwareConverter):
 class AwareAccelerometer(BaseAwareConverter):
     desc = "Accelerometer"
     table = 'accelerometer'
-    ts_column = 'timestamp'
     fields = ['double_values_0',
               'double_values_1',
               'double_values_2',
@@ -1804,7 +1817,6 @@ class AwareAccelerometer(BaseAwareConverter):
 class AwareGravity(BaseAwareConverter):
     desc = "gravity"
     table = 'gravity'
-    ts_column = 'timestamp'
     fields = ['double_values_0',
               'double_values_1',
               'double_values_2',
@@ -1813,7 +1825,6 @@ class AwareGravity(BaseAwareConverter):
 class AwareGyroscope(BaseAwareConverter):
     desc = "gyroscope"
     table = 'gyroscope'
-    ts_column = 'timestamp'
     fields = ['axis_z',
               'axis_y',
               'axis_x',
@@ -1822,7 +1833,6 @@ class AwareGyroscope(BaseAwareConverter):
 class AwareLinearAccelerometer(BaseAwareConverter):
     desc = "linear_accelerometer"
     table = 'linear_accelerometer'
-    ts_column = 'timestamp'
     fields = ['double_values_0',
               'double_values_1',
               'double_values_2',
@@ -1830,7 +1840,6 @@ class AwareLinearAccelerometer(BaseAwareConverter):
 class AwareMagnetometer(BaseAwareConverter):
     desc = "magnetometer"
     table = 'magnetometer'
-    ts_column = 'timestamp'
     fields = ['double_values_0',
               'double_values_1',
               'double_values_2',
@@ -1839,7 +1848,6 @@ class AwareMagnetometer(BaseAwareConverter):
 class AwareRotation(BaseAwareConverter):
     desc = "rotation"
     table = 'rotation'
-    ts_column = 'timestamp'
     fields = ['double_values_0',
               'double_values_1',
               'double_values_2',
@@ -1848,14 +1856,12 @@ class AwareRotation(BaseAwareConverter):
 class AwareProximity(BaseAwareConverter):
     desc = "proximity"
     table = 'sensor_proximity'
-    ts_column = 'timestamp'
     fields = ['double_sensor_power_ma',
               'double_sensor_resolution',
               ]
 class AwareNetworkTraffic(BaseAwareConverter):
     desc = "network_traffic"
     table = 'network_traffic'
-    ts_column = 'timestamp'
     fields = ['double_sent_bytes',
               'double_received_bytes',
               'network_type',
@@ -1865,7 +1871,6 @@ class AwareNetworkTraffic(BaseAwareConverter):
 class AwareAppNotifications(BaseAwareConverter):
     desc = "applications_notifications"
     table = 'applications_notifications'
-    ts_column = 'timestamp'
     fields = ['application_name',
               'sound',
               'vibrate',
@@ -1875,12 +1880,15 @@ class AwareAppNotifications(BaseAwareConverter):
 class AwareTelephony(BaseAwareConverter):
     desc = "telephony"
     table = 'telephony'
-    ts_column = 'timestamp'
     fields = ['network_type',
               'phone_type',
               'data_enabled',
               'sim_state',
               ]
+class AwareLog(BaseAwareConverter):
+    desc = "Status log"
+    table = 'aware_log'
+    fields = ['log_message']
 class AwareCalls(BaseAwareConverter):
     desc = "Calls (incoming=1, outgoing=2, missed=3)"
     header = ['time', 'call_type', 'call_duration', 'trace', ]

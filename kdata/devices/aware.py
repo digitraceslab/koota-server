@@ -9,6 +9,7 @@ import json  # use stdlib json for pretty formatting
 from json import loads, dumps
 import logging
 import textwrap
+import time
 from six.moves.urllib import parse as urlparse
 
 from django.conf import settings
@@ -74,11 +75,14 @@ class Aware(devices.BaseDevice):
         converter.AwareBattery,
         converter.AwareBluetooth,
         converter.AwareCalls,
+        converter.AwareDeviceInfo,
+        converter.AwareDeviceInfo2,
         converter.AwareEsms,
         converter.AwareGravity,
         converter.AwareGyroscope,
         converter.AwareLight,
         converter.AwareLinearAccelerometer,
+        converter.AwareLog,
         converter.AwareLocation,
         converter.AwareMagnetometer,
         converter.AwareMessages,
@@ -377,6 +381,7 @@ def register(request, secret_id, indexphp=None):
         # Save registration data
         data_to_save = dict(table="register",
                             data=json.dumps(request.POST),
+                            timestamp=time.time(),
                             version=1)
         data_to_save = dumps(data_to_save)
         kviews.save_data(data_to_save, device_id=device.device_id, request=request)
@@ -488,6 +493,7 @@ def insert(request, secret_id, table, indexphp=None):
             # pylint: disable=redefined-variable-type
             data_to_save = dict(table=table,
                                 data=data_chunk,
+                                timestamp=time.time(),
                                 version=1)
             data_to_save = dumps(data_to_save)
             #max_ts = max(float(row[timestamp_column_name]) for row in data_chunk)
