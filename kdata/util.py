@@ -184,7 +184,7 @@ def sqlite3dump_iter(table, converter=None, header=None, filename=None):
     if filename:
         yield '-- filename: %s\n'%filename
     yield '-- generated_at: %s\n'%time.time()
-    yield '-- Easily load to sqlite with:  sqlite3 -cmd ".read FILENAMe"\n'
+    yield '-- Easily load to sqlite with:  sqlite3 -cmd ".read FILENAME"\n'
     yield 'BEGIN TRANSACTION;\n'
     yield 'CREATE TABLE IF NOT EXISTS "%s" (%s);\n'%(table_name, ", ".join('"%s"'%x for x in header))
     for row in table:
