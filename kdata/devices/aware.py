@@ -328,6 +328,27 @@ def get_user_config(device):
             else:
                 schedules_config.extend(val)
             config.pop(key)
+    config['frequency_update'] = 5
+    if 'frequency_update' in config:
+        # Periodic updates
+        update_config = {
+            "package": "com.aware.phone",
+            "schedule": {
+                "action": {
+                    "class": "com.aware.phone/com.aware.utils.StudyUtils",
+                    "extras": {
+                        "study_url": device.qrcode_url(),
+                        },
+                    "type": "service",
+                    },
+                "schedule_id": "update_config",
+                "trigger": {
+                    "interval_delayed": int(float(config['frequency_update']))
+                    },
+                }
+            }
+        schedules_config.append(update_config)
+
     # Do we need to make the {'key':x, 'value':y} format ESM settings
     # for schedules?  This automatically converts dicts to this
     # format.  It will be converted to string (dumps) before sending
