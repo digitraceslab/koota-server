@@ -9,7 +9,9 @@ import json
 from json import dumps, loads
 from math import log
 import os
+import random
 import time
+
 import six
 from six import StringIO as IO
 
@@ -616,3 +618,39 @@ def replace1(num):
         x = random.choice(string.hexdigits[:16])
         if x != num[pos]: break
     return num[:pos] + x + num[pos+1:]
+
+
+
+def random_intervals(start, end, N, seed=None, min=None, max=None):
+    """Generate random points, enforcing minimum spacing.
+
+    Generate N randomly spaced points in the interval [start, end].  The
+    generated points may be constrained by a min spacing (always
+    satisfied) or a max spacing (currently satisfied by a probabilistic
+    algorithm).
+    """
+    if min is None:
+        min = 0
+    if start >= end:
+        raise ValueError("start >= end: %s %s"%(start, end))
+    if min and end-start < (N-1)*min:
+        raise ValueError("min spacing too great for range: "
+                         "end-start < (N-1)*min (%s-%s < (%s-1)*%s)"%(
+                         end, start, N, min))
+    if max is not None and (N-1)*(max-min) < 1.5*((end-start)-(N-1)*min):
+        raise ValueError("Satisfying max spacing requirement will be difficult "
+                         "(%s-%s >> (%s-1)*%s)"%(end, start, N, max))
+    # Repeat until we satisfy the max requirement.  The min requirement
+    # is satisfied as part of the algorithm.
+    rng = random.Random(seed)
+    # Our algorithm automatically satisfies the min value requirement.
+    # Repeat until we satisfy the max value requirement.
+    end = end - min*(N-1)
+    for rounds in itertools.count():
+        xs = [ rng.uniform(start, end) for _ in range(N) ]
+        xs.sort()
+        xs = [ x+i*min for i,x in enumerate(xs) ]
+        if max is not None and any(xs[i+1]-xs[i] >= max for i in range(N-1)):
+            if rounds > 1000: raise ValueError("1000 rounds exceeded, aborting.")
+            continue
+        return xs
