@@ -3,6 +3,7 @@
 http://www.awareframework.com/
 """
 
+import datetime
 from datetime import timedelta
 from hashlib import sha256
 import json  # use stdlib json for pretty formatting
@@ -363,6 +364,39 @@ def get_user_config(device):
             sched['schedule']['action']['extras'] = \
               dict_to_settings(sched['schedule']['action']['extras'],
                                key_name='extra_key', value_name='extra_value')
+    # Handle random interval schedules.  Go through all schedules and
+    # deplicate the ones that have multiple times.
+    schedules_config2 = [ ]
+    for sched in schedules_config:
+        print(sched['schedule']['trigger'])
+        if 'random_intervals' in sched['schedule']['trigger']:
+            print(sched)
+            now_ts = timezone.now().timestamp()
+            # Loop over several days
+            today = timezone.now().date()
+            for day_n in range(3):
+                day = today + timedelta(days=day_n)
+                params = sched['schedule']['trigger']['random_intervals']
+                N = params['N']
+                start, end = params['start'], params['end']
+                start_dt = datetime.datetime(*day.timetuple()[:3], hour=start[0], minute=start[1], tzinfo=timezone.get_current_timezone())
+                end_dt = datetime.datetime(*day.timetuple()[:3], hour=end[0], minute=end[1], tzinfo=timezone.get_current_timezone())
+                start_ts = start_dt.timestamp()
+                end_ts   = end_dt.timestamp()
+                times = util.random_intervals(start=start_ts, end=end_ts, N=params['N'], min=params.get('min', 0)*60,
+                                              max=params['max']*60 if 'max' in params else None,
+                                              seed='u436on'+day.strftime('%Y-%m-%d'))
+                for ts in times:
+                    print(ts, datetime.datetime.fromtimestamp(ts))
+                    if now_ts > ts or ts > ts+3600*24*2:
+                        continue
+                    sched2 = copy.deepcopy(sched)
+                    sched2['schedule']['trigger']['timer'] = int(ts*1000)
+                    sched2['schedule']['schedule_id'] = sched2['schedule']['schedule_id']+'_'+str(int(ts))
+                    schedules_config2.append(sched2)
+        else:
+            schedules_config2.append(sched)
+    schedules_config = schedules_config2
     # If we have ESMs, then turn it on.
     if len(schedules_config) > 0:
         config['sensors']['status_esm'] = True
