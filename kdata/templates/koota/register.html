@@ -9,11 +9,11 @@ In particular, you understand that:
 <ul>
   <li>Use of this service is voluntary.</li>
   <li>We store all data sent to the collection system.</li>
-  <li>The data stored may contain detailed records of human behavior,
-  and if shared sensitive information may be irferable from this.</li>
-  <li>You consent to this data collection.</li>
-  <li>Data may be provided for research <b>after</b> a separate
-  research agreement is made.</li>
+  <li>The data stored may contain detailed records of human behavior.</li>
+  <li>You consent to this data collection, but nothing is collected
+  without a separate agreement.</li>
+  <li>Data is private to you, but may be provided for research <b>after</b> a separate
+  consent is given.</li>
 </ul>
 <p>
 
@@ -28,5 +28,9 @@ In particular, you understand that:
     </form>
   </div>
 </div>
+
+{% if random_username %}
+<p>Want a random anonymous username?  Try "{{ random_username }}".</p>
+{% endif %}
 
 {% endblock %}

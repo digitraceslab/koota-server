@@ -13,7 +13,9 @@ from django.template.response import TemplateResponse
 
 from math import log
 from datetime import timedelta
+import hashlib
 import json
+import os
 
 from . import models
 from . import devices
@@ -75,6 +77,15 @@ class RegisterView(FormView):
         auth.login(self.request, user)
         return super(RegisterView, self).form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super(RegisterView, self).get_context_data(**kwargs)
+        User = auth.get_user_model()
+        for _ in range(10):
+            random_username = hashlib.sha256(os.urandom(32)).hexdigest()[:6]
+            if not User.objects.filter(username=random_username).exists():
+                context['random_username'] = random_username
+                break
+        return context
 
 
 
