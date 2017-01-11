@@ -208,7 +208,10 @@ def iter_group_data(group,
     hash_subject = util.safe_hash
     hash_device  = util.safe_hash
     salt = group.salt
-    group_config = loads(group.config)
+    if group.config:
+        group_config = loads(group.config)
+    else:
+        group_config = { }
 
     for subject, device in iter_users_devices(group, group_class, group_converter_class):
         # We can request group data from only one subject.  In that
