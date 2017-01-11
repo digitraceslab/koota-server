@@ -1,0 +1,27 @@
+_prompt_log () (
+    DEVICE_ID=
+    URL=https://koota.cs.aalto.fi/post/
+
+    filename=~/.bash_prompt_log_`hostname`
+    # Record time of this prompt
+    date '+%s' >> "$filename"
+    # do the upload if the file is large enough (1kb or more)
+    if [ -e "$filename" \
+	 -a `stat -c '%s' "$filename"` -ge 1024 ] ; then
+	response=`curl --silent --fail --header "Device-id: $DEVICE_ID" --data-binary v=1&hostname=ramanujan --data-binary @"$filename" "$URL"`
+	ret=$?
+	# Remove filename if return value was success.  There are
+	# still race conditions and syncronization problems, though.
+	# It is possible that there will be duplicate timepoints on
+	# the server.
+	if [ $ret -eq 0 ] && echo $response | egrep '"ok"' > /dev/null ; then
+	    rm "$filename"
+	fi
+    fi
+)
+
+# Add to the PROMPT_COMMAND.  It is possible that this fails in
+# advanced cases.
+if ! echo $PROMPT_COMMAND | grep _prompt_log_log > /dev/null ; then
+    PROMPT_COMMAND="_prompt_log ; $PROMPT_COMMAND"
+fi
