@@ -12,10 +12,11 @@ from django.db.models.functions import Length
 from django.template.response import TemplateResponse
 
 from math import log
-from datetime import timedelta
+from datetime import datetime, timedelta
 import hashlib
 import json
 import os
+import time
 
 from . import models
 from . import devices
@@ -329,3 +330,17 @@ def stats(request):
         stats.append('')
 
     return HttpResponse('\n'.join(stats), content_type='text/plain')
+
+
+
+def current_time(request):
+    """Function to return current server time: debugging purposes."""
+    ret = "\n".join([
+        "This file contains the current server time",
+        "",
+        "unixtime: %s"%time.time(),
+        "web server local time: %s"%datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+        "django local time: %s"%timezone.now(),
+        "system local time: %s"%time.ctime(),
+        ])
+    return HttpResponse(ret, content_type='text/plain')

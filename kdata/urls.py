@@ -82,6 +82,7 @@ urls_ui = [
 
     # Various admin things
     url(r'^stats/', views_admin.stats),
+    url(r'^time/', views_admin.current_time),
 
     # Misc
     #
