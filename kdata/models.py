@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import hashlib
+
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.db import models
@@ -460,6 +462,24 @@ class MosquittoAcl(models.Model):
                              help_text="mosquitto topic filter, including + and #.")
     rw = models.IntegerField(default=1,
                              help_text="1=ro, 2=rw")
+
+
+
+# Consents
+class Consent(models.Model):
+    user         = models.ForeignKey(settings.AUTH_USER_MODEL)
+    group        = models.ForeignKey(Group, null=True, blank=True)
+    ts_create    = models.DateTimeField(auto_now_add=True)
+    data         = util.JsonConfigField(blank=True,
+                      help_text="Context data about what this consent means.")
+    text         = models.TextField(null=True, blank=True)
+    sha256       = models.TextField(null=True, blank=True)
+    @classmethod
+    def create(cls, user, group, data, text):
+        sha256 = hashlib.sha256(text.encode()).hexdigest()
+        consent = cls(user=user, group=group, data=data, text=text,
+                        sha256=sha256)
+        consent.save()
 
 
 

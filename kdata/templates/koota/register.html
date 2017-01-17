@@ -29,8 +29,14 @@ In particular, you understand that:
   </div>
 </div>
 
+<h4>Need a username?</h4>
 {% if random_username %}
 <p>Want a random anonymous username?  Try "{{ random_username }}".</p>
+{% endif %}
+
+{% if privacy_text %}
+<h4>Full privacy policy:</h4>
+{{ privacy_text|safe }}
 {% endif %}
 
 {% endblock %}

@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import render
 from django.urls import reverse
@@ -9,6 +10,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Func, F, Q, Sum #, RawSQL
 from django.db.models.functions import Length
+from django.template import loader as template_loader
 from django.template.response import TemplateResponse
 
 from math import log
@@ -20,6 +22,7 @@ import time
 
 from . import models
 from . import devices
+from . import exceptions
 from . import group
 from . import logs
 from . import util
@@ -43,6 +46,8 @@ class RegisterForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
     password2 = forms.CharField(widget=forms.PasswordInput, label='Confirm password')
     email = forms.EmailField()
+    privacy_stmt = forms.CharField(widget=forms.HiddenInput, required=False,
+                             help_text="This is used to verify the privacy statement agreed to.")
     def clean(self):
         User = auth.get_user_model()
         if self.cleaned_data['password'] != self.cleaned_data['password2']:
@@ -59,8 +64,30 @@ class RegisterView(FormView):
     template_name = 'koota/register.html'
     form_class = RegisterForm
     success_url = '/'
-
+    def _get_privacy_stmt(self):
+        """Return current privacy statement text, for registration."""
+        if settings.PRIVACY_TEMPLATE.startswith('/'):
+            privacy_current = open(settings.PRIVACY_TEMPLATE, 'rU').read()
+        else:
+            privacy_current = template_loader.get_template(settings.PRIVACY_TEMPLATE).render()
+        return privacy_current
+    def get_initial(self):
+        initial = super(RegisterView, self).get_initial()
+        initial['privacy_stmt'] = self._get_privacy_stmt()
+        return initial
     def form_valid(self, form):
+        # Make sure that our privacy policy has not changed between
+        # when the page was loaded and when the form was submitted.
+        # This is being a bit paranoid, but why not?
+        if settings.PRIVACY_TEMPLATE:
+            privacy_stmt = form.cleaned_data['privacy_stmt'].replace('\r\n', '\n')
+            privacy_current = self._get_privacy_stmt()
+            if privacy_stmt.strip() != privacy_current.strip():
+                raise exceptions.BaseMessageKootaException(
+                    message="Something went wrong with registering (privacy text changed),"
+                            "refresh the page completly and try again.",
+                    log="[%r][%r]"%(privacy_stmt[:50], privacy_current[:50]))
+
         # This method is called when valid form data has been POSTed.
         # It should return an HttpResponse.
         User = auth.get_user_model()
@@ -72,6 +99,11 @@ class RegisterView(FormView):
         logs.log(self.request, 'user registration',
                  obj='user='+user.username,
                  op='register')
+
+        # Record the receipt of consent
+        models.Consent.create(user=user, group=None,
+                              text=privacy_current, data={'login': True})
+
         # Log the user in
         user = auth.authenticate(username=form.cleaned_data['username'],
                                                 password=form.cleaned_data['password'])
@@ -86,6 +118,9 @@ class RegisterView(FormView):
             if not User.objects.filter(username=random_username).exists():
                 context['random_username'] = random_username
                 break
+        if settings.PRIVACY_TEMPLATE:
+            privacy_current = self._get_privacy_stmt()
+            context['privacy_text'] = privacy_current
         return context
 
 
