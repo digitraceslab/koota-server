@@ -135,7 +135,7 @@ class Command(BaseCommand):
             printer = getattr(util, options['format'].replace('-','_')+'_iter')
             for line in printer(table, converter=converter,
                                 header=header):
-                print(line, end='', file=output)
+                output.write(line)
         else:
             for line in table:
                 print(line, file=output)
