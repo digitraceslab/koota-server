@@ -482,6 +482,33 @@ class Consent(models.Model):
         consent.save()
 
 
+# Tokens
+class Token(models.Model):
+    user         = models.ForeignKey(settings.AUTH_USER_MODEL)
+    token        = models.TextField(null=True, blank=True, db_index=True, unique=True)
+    type         = models.TextField(null=True, blank=True)
+    ts_create    = models.DateTimeField(auto_now_add=True)
+    ts_expire    = models.DateTimeField(db_index=True)
+    delete_permanently = models.BooleanField(default=False)
+    data         = models.TextField()
+    @classmethod
+    def create(cls, user, type, data, delete_permanently=False, length=9,
+                   ts_expire=None, t_remaining=None):
+        import base64
+        import os
+        token = base64.b64encode(os.urandom(length))
+        if t_remaining is not None:
+            ts_expire = timezone.now() + t_remaining
+        if ts_expire is None:
+            raise ValueError("Expiration time must be given.")
+        T = cls(user=user, token=token, type=type, ts_expire=ts_expire,
+                delete_permanently=delete_permanently, data=data)
+        T.save()
+        return T
+    def t_remaining(self):
+        return self.ts_expire - timezone.now()
+
+
 
 # These at bottom to avoid circular import problems
 from . import group

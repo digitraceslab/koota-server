@@ -7,6 +7,11 @@
 
 <p><a class="btn btn-default btn-success" href="{% url 'device-list' %}">Your device list</a></p>
 
+{% if anon_id_token %}
+<p>Your anonymous ID: "{{ anon_id_token.token }}".  Use this to keep
+  your account name secret if you contact the administrators.</p>
+{% endif %}
+
 <h1>Your groups</h1>
 <p><a class="btn btn-default btn-success" href="{% url 'group-join' %}">Join a group</a></p>
 

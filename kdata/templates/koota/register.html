@@ -11,9 +11,9 @@ In particular, you understand that:
   <li>We store all data sent to the collection system.</li>
   <li>The data stored may contain detailed records of human behavior.</li>
   <li>You consent to this data collection, but nothing is collected
-  without a separate agreement.</li>
-  <li>Data is private to you, but may be provided for research <b>after</b> a separate
-  consent is given.</li>
+  unless you agree separately.</li>
+  <li>Data is private to you, but may be provided for
+  research <b>after</b> you give a separate consent .</li>
 </ul>
 <p>
 
@@ -29,13 +29,13 @@ In particular, you understand that:
   </div>
 </div>
 
-<h4>Need a username?</h4>
+<h2>Need a username?</h2>
 {% if random_username %}
 <p>Want a random anonymous username?  Try "{{ random_username }}".</p>
 {% endif %}
 
 {% if privacy_text %}
-<h4>Full privacy policy:</h4>
+<h2>Full privacy policy:</h2>
 {{ privacy_text|safe }}
 {% endif %}
 

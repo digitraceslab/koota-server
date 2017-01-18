@@ -11,7 +11,8 @@ from django.utils import timezone
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
+from django.views.generic import CreateView, DetailView, FormView, ListView
+from django.views.generic import TemplateView, UpdateView
 
 from . import devices
 from . import exceptions
@@ -19,6 +20,7 @@ from . import group
 from . import logs
 from . import models
 from . import permissions
+from . import tokens
 from . import util
 
 import logging
@@ -185,6 +187,16 @@ def config(request, device_class=None):
     return JsonResponse(data)
 
 
+#
+# General
+#
+class MainView(TemplateView):
+    template_name = 'koota/main.html'
+    def get_context_data(self):
+        context = super(MainView, self).get_context_data()
+        if not self.request.user.is_anonymous:
+            context['anon_id_token'] = tokens.get_user_anon_id_token(self.request.user)
+        return context
 
 #
 # Device management

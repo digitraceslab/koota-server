@@ -137,7 +137,7 @@ urls_ui = [
     url(r'^instagram/', include(instagram.urlpatterns)),
 
     # Main frontpage
-    url(r'^$', TemplateView.as_view(template_name='koota/main.html'), name='main'),
+    url(r'^$', kviews.MainView.as_view(), name='main'),
     ]
 
 urlpatterns = [ ]
