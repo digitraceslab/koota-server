@@ -7,7 +7,7 @@ import datetime
 from datetime import timedelta
 from hashlib import sha256
 import json  # use stdlib json for pretty formatting
-from json import loads, dumps
+from json import loads, dumps, JSONDecodeError
 import logging
 import textwrap
 import time
@@ -521,9 +521,14 @@ def insert(request, secret_id, table, indexphp=None):
         POST = request.POST
     except UnreadablePostError:
         return JsonResponse(dict(error="Data not received"),
-                            status_code=400, reason_phrase="Data not received")
+                            status=400, reason="Data not received")
     data = POST['data']
-    data_decoded = loads(data)
+    try:
+        data_decoded = loads(data)
+    except JSONDecodeError as e:
+        LOGGER.error("Aware JsonDecodeError 1: (%s) (%s): %s %s",
+                     e.message, len(data), device.public_id, data[-10:])
+        raise
     data_sha256 = sha256(data.encode('utf8')).hexdigest()
 
     timestamp_column_name = 'timestamp'
@@ -585,7 +590,7 @@ def study_info(request, secret_id, indexphp=None):
     public_id = None
     LOGGER.info("aware get study info: %s %s", request.POST, secret_id)
     if not secret_id:
-        return JsonResponse({ }, status_code=400)
+        return JsonResponse(dict(error="No secret_id"), status=400)
 
     device = models.Device.get_by_secret_id(secret_id)
     public_id = device.public_id

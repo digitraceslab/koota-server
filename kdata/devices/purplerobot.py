@@ -7,7 +7,7 @@ import hashlib
 import json
 import textwrap
 
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponseBadRequest, JsonResponse, UnreadablePostError
 from django.urls import reverse_lazy
 
 from .. import converter
@@ -106,7 +106,11 @@ class PurpleRobot(BaseDevice):
     @classmethod
     def post(cls, request):
         request.encoding = ''
-        data = json.loads(request.POST['json'])
+        try:
+            data = json.loads(request.POST['json'])
+        except UnreadablePostError:
+            return JsonResponse(dict(error="Data not received"),
+                                status=400, reason="Data not received")
         Operation = data['Operation']
         UserHash = data['UserHash']
         Payload = data['Payload']
