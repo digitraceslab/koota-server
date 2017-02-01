@@ -520,7 +520,8 @@ def insert(request, secret_id, table, indexphp=None):
     try:
         POST = request.POST
     except UnreadablePostError:
-        return JsonResponse(status_code=400, reason_phrase="Data not received")
+        return JsonResponse(dict(error="Data not received"),
+                            status_code=400, reason_phrase="Data not received")
     data = POST['data']
     data_decoded = loads(data)
     data_sha256 = sha256(data.encode('utf8')).hexdigest()
