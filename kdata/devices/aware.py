@@ -527,7 +527,7 @@ def insert(request, secret_id, table, indexphp=None):
         data_decoded = loads(data)
     except JSONDecodeError as e:
         LOGGER.error("Aware JsonDecodeError 1: (%s) (%s): %s %s",
-                     e.message, len(data), device.public_id, data[-10:])
+                     str(e), len(data), device.public_id, data[-10:])
         raise
     data_sha256 = sha256(data.encode('utf8')).hexdigest()
 
