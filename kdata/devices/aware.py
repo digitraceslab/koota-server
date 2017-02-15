@@ -45,6 +45,8 @@ PACKET_CHUNK_SIZE = 1000
 class AwareConfigForm(forms.Form):
     is_locked = forms.NullBooleanField(help_text="Is user blocked from making changes?")
     extra = util.JsonConfigFormField(help_text="Extra data?", required=False)
+    use_default_sensors = forms.BooleanField(initial=True, help_text="Sent some default config when registering?", required=False)
+    frequency_update = forms.IntegerField(help_text="Schedule periodically updating config?  (min)", required=False)
 
 
 from django.utils.html import escape
@@ -197,6 +199,9 @@ BASE_CONFIG = dict(
         status_esm=False,
         #webservice_wifi_only
 
+    ))
+DEFAULT_SENSORS = dict(
+    sensors=dict(
         # Sensor config
         status_battery=True,
         status_screen=True,
@@ -209,11 +214,12 @@ BASE_CONFIG = dict(
         frequency_accelerometer=1000000, #microseconds
         #frequency_light=10000000,  # microseconds
         #frequency_timezone=43200  # seconds
-    ))
+    )
+)
 for name in ("accelerometer", "barometer", "gravity", "gyroscope",
                  "light", "linear_accelerometer", "magnetometer",
                  "proximity", "rotation", "temperature"):
-    BASE_CONFIG['sensors']['threshold_'+name] = 0.05
+    DEFAULT_SENSORS['sensors']['threshold_'+name] = 0.05
 
 def aware_to_string(value):
     """AWARE requires setting values to be string.  Convert them."""
@@ -245,6 +251,11 @@ def get_user_config(device):
     """
     import copy
     config = copy.deepcopy(BASE_CONFIG)
+
+    # Default sensors?
+    if (device.dbrow.attrs.get('aware_config')
+        and json.loads(device.dbrow.attrs['aware_config']).get('use_default_sensors')):
+        util.recursive_copy_dict(DEFAULT_SENSORS, config)
 
     # Create some basic info
     #config['sensors']['mqtt_username'] = device.data.public_id
@@ -329,8 +340,10 @@ def get_user_config(device):
             else:
                 schedules_config.extend(val)
             config.pop(key)
-    config['frequency_update'] = 5
-    if 'frequency_update' in config:
+    #config['frequency_update'] = 5
+    if (device.dbrow.attrs.get('aware_config')
+        and json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')):
+        config['frequency_update'] = json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')
         # Periodic updates
         update_config = {
             "package": "com.aware.phone",
