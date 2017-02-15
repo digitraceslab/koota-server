@@ -303,7 +303,6 @@ class DeviceConfig(UpdateView):
                 is_staff = True
 
         if not is_locked:# or is_staff:
-
             # Main model form:
             form_class = self.get_form_class()
             if method == 'POST' and 'submit_device_config' in request.POST:
@@ -313,6 +312,7 @@ class DeviceConfig(UpdateView):
                 if form.is_valid():
                     self.object = form.save()
                     device = self.object.get_class()
+                    context.update(self.get_context_data())
                     logs.log(self.request, 'edit device', user=self.request.user,
                              obj=self.object.public_id, op='update',
                              data_of=self.object.user)
@@ -333,6 +333,11 @@ class DeviceConfig(UpdateView):
                                                     POST=request.POST,
                                                     log_func=log_func)
                 if method == 'POST':
+                    # Update objects
+                    self.object = self.get_object()
+                    device = self.object.get_class()
+                    context.update(self.get_context_data())
+                    # was update successful?
                     any_changed = functools.reduce(operator.or_,
                                        (f['form'].has_changed() for f in custom_forms))
                     all_valid = functools.reduce(operator.and_,

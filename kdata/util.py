@@ -439,6 +439,8 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
                     if value is None: del initial[name]
                 if len(initial) == 0:
                     initial = None
+                # The 'extra' is special.  It contains a JSON object itself which
+                # directly gets updated into the keys.
                 if 'extra' in form_class.base_fields and form.cleaned_data['extra']:
                     # find our new data from the extra field and update our data
                     extra_data = form.cleaned_data['extra']
