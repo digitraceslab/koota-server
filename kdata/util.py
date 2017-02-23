@@ -410,8 +410,17 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
     method: 'GET' or 'POST'
     POST: request.POST data
 
+    Data is saved as a device attribute, under a key equal to the form
+    name.  The attribute value is a json object that has keys for each
+    of the form fields.  If there is a special form field "extra", it
+    should be valid JSON data (see JsonConfigFormField), and all of
+    these keys from that field will become top-level keys/values.
+
+    To set a form of the device: config_forms = [{'form':AwareConfigForm, 'key': 'aware_config'}]
     """
     custom_forms = [ ]
+    all_valid = True
+    any_changed = False
     for form_data in forms:
         form_class = form_data['form']
         form_key   = form_data['key']
@@ -430,6 +439,7 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
         if method == 'POST'  and 'submit_'+form_key in POST:
             form = form_class(POST, initial=initial, prefix=form_key)
             if form.is_valid():
+                any_changed = True
                 # valid, save the data.
                 if initial is None or 'extra' in form_class.base_fields:
                     initial = { }
@@ -450,6 +460,8 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
                 attrs[form_key] = json.dumps(initial)
                 if log_func:
                     log_func(op="form_change", message=json.dumps(initial))
+            else:
+                all_valid = False
         else:  # GET
             form = form_class(initial=initial, prefix=form_key)
         # Create the object that will be iterated in the django template.
@@ -458,7 +470,7 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
                                  name=getattr(form_data, 'name', form_class.__name__),
                                  title=getattr(form_data, 'title', form_class.__name__),
                                  ))
-    return custom_forms
+    return custom_forms, all_valid, any_changed
 
 
 

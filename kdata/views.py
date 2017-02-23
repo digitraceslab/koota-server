@@ -303,7 +303,34 @@ class DeviceConfig(UpdateView):
                 is_staff = True
 
         if not is_locked:# or is_staff:
-            # Main model form:
+            # Custom forms to set device attributes.
+            if hasattr(device, 'config_forms'):
+                # Handle all of our custom forms.
+                log_func = functools.partial(logs.log, request=request,
+                                             data_of=self.object.user,
+                                             obj=self.object.public_id)
+                ret = util.run_config_form(forms=device.config_forms,
+                                                    attrs=self.object.attrs,
+                                                    method=method,
+                                                    POST=request.POST,
+                                               log_func=log_func)
+                custom_forms, all_valid, any_changed = ret
+                if method == 'POST':
+                    # Update objects
+                    self.object = self.get_object()
+                    device = self.object.get_class()
+                    context.update(self.get_context_data())
+
+                context['custom_forms'] = custom_forms
+
+            # Main model form (reproducing logic from UpdateView).
+            # This is second because the custom forms regenerate the
+            # context, which includes the "wrong" logic for updating
+            # the form.  We have multiple independent forms on the
+            # same page, and we have to handle the validation logic
+            # for only the one which is submitted!  This is really
+            # beyond what we should be using class-based views for,
+            # but we can change it all someday.
             form_class = self.get_form_class()
             if method == 'POST' and 'submit_device_config' in request.POST:
                 form = form_class(data=request.POST, instance=self.object, prefix='config_')
@@ -322,28 +349,6 @@ class DeviceConfig(UpdateView):
                 form = form_class(instance=self.object, prefix='config_')
             context['form'] = form
 
-            # TODO: only if user is unlocked
-            if hasattr(device, 'config_forms'):
-                log_func = functools.partial(logs.log, request=request,
-                                             data_of=self.object.user,
-                                             obj=self.object.public_id)
-                custom_forms = util.run_config_form(forms=device.config_forms,
-                                                    attrs=self.object.attrs,
-                                                    method=method,
-                                                    POST=request.POST,
-                                                    log_func=log_func)
-                if method == 'POST':
-                    # Update objects
-                    self.object = self.get_object()
-                    device = self.object.get_class()
-                    context.update(self.get_context_data())
-                    # was update successful?
-                    any_changed = functools.reduce(operator.or_,
-                                       (f['form'].has_changed() for f in custom_forms))
-                    all_valid = functools.reduce(operator.and_,
-                                       (f['form'].is_valid() for f in custom_forms))
-
-                context['custom_forms'] = custom_forms
         context['all_valid'] = all_valid
         context['any_changed'] = any_changed
         return self.render_to_response(context)
