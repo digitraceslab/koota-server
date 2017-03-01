@@ -398,7 +398,7 @@ def get_user_config(device):
                 end_ts   = end_dt.timestamp()
                 times = util.random_intervals(start=start_ts, end=end_ts, N=params['N'], min=params.get('min', 0)*60,
                                               max=params['max']*60 if 'max' in params else None,
-                                              seed='u436on'+day.strftime('%Y-%m-%d'))
+                                              seed=params.get('seed', 'u436on')+day.strftime('%Y-%m-%d'))
                 for ts in times:
                     print(ts, datetime.datetime.fromtimestamp(ts))
                     if now_ts > ts or ts > ts+3600*24*2:
