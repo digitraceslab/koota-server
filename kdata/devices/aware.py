@@ -440,6 +440,10 @@ def register(request, secret_id, indexphp=None):
     LOGGER.info("aware register: %s %s", request.POST, secret_id)
     # We have no other operation, basic study configuration.
     data = request.POST
+    if 'study_check' in request.POST:
+        # A ping when app starts to see if study is still going on.
+        # If this is false, then it force-quits the study.
+        return JsonResponse([dict(status=True)], safe=False)
     if 'device_id' in data:
         passwd = util.hash_mosquitto_password(device.secret_id)
         device.attrs['aware-device-uuid'] = data['device_id']
