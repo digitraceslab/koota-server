@@ -405,6 +405,7 @@ def get_user_config(device):
                         continue
                     sched2 = copy.deepcopy(sched)
                     sched2['schedule']['trigger']['timer'] = int(ts*1000)
+                    sched2['schedule']['trigger']['random_intervals'] = json.dumps(sched2['schedule']['trigger']['random_intervals'])
                     sched2['schedule']['schedule_id'] = sched2['schedule']['schedule_id']+'_'+str(int(ts))
                     schedules_config2.append(sched2)
         else:
