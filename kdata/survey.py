@@ -33,6 +33,16 @@ from . import views
 class TimeInput(forms.TimeInput):
     """HTML5 time input."""
     input_type = 'time'
+class SliderInput(forms.NumberInput):
+    """HTML5 slider input widget.
+
+    Sets a reasonable max width and range from 0 to 100."""
+    input_type = 'range'
+    attrs = dict(min=0, max=100, style="max-width: 400px")
+    def __init__(self, *args, **kwargs):
+        attrs = dict(self.attrs)
+        attrs.update(kwargs.get('attrs', {}))
+        super(SliderInput, self).__init__(*args, attrs=attrs, **kwargs)
 class InstructionsWidget(forms.Widget):
     """Fake widget that returns nothing.
 
@@ -51,6 +61,8 @@ class InstructionsField(forms.Field):
 class SectionField(InstructionsField):
     """Field for a section heading."""
     css_class = 'section-heading'
+class SliderField(forms.IntegerField):
+    widget = SliderInput
 
 # These define different field types for the survey.  We can add more
 # if needed, for example a Choice field with default options, or other
@@ -81,6 +93,9 @@ class Section(_SurveyField):
 class Instructions(_SurveyField):
     not_a_question = True
     field = InstructionsField
+class Slider(_SurveyField):
+    """A slider with range 0 to 100."""
+    field = SliderField
 
 # A JSON encoder that can convert date and time objects to strings.
 def field_to_json(x):
@@ -362,6 +377,7 @@ class TestSurvey1(BaseSurvey):
             ('fine4',         Bool('Are you fine?')),
             ('fine5',         Bool('Are you fine?')),
             ('drinks',        Integer('How many drinks did you have?')),
+            ('slider',        Slider('test (highest<->lowest)')),
         ]
         # Can do extra logic here
         survey_data = {'name': 'Test Survey 1',
