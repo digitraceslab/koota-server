@@ -238,7 +238,7 @@ class SurveyAnswers(converter._Converter):
                              for q in data['survey_data']['questions']
                              if 'choices' in q[1][1] }
             # Do conversion.  Loop through each question in order.
-            for slug, x in sorted(data['answers'].items(), key=lambda x: x[1]['order']):
+            for slug, x in sorted(data['answers'].items(), key=lambda x: x[1].get('order', float('inf'))):
                 # Filter: remove removed slugs
                 if self.removed_slugs and slug in self.removed_slugs:
                     continue
@@ -248,10 +248,11 @@ class SurveyAnswers(converter._Converter):
                 # If this was a Choice, then add the raw text to a column here.
                 choice_text = ''
                 if slug in raw_choices:
-                    choice_text = raw_choices[slug][int(x['a'])]
+                    print(slug, x)
+                    choice_text = raw_choices[slug][int(x['a'])] if x['a'] else ''
                 yield (slug,
-                       time(data['access_time']),
-                       time(data['submit_time']),
+                       time(data['access_time']) if 'access_time' in data else '',
+                       time(data['submit_time']) if 'submit_time' in data else '',
                        x['q'],
                        x['a'],
                        x.get('order',''),
