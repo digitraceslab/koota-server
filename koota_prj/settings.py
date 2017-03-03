@@ -78,6 +78,14 @@ INSTAGRAM_SECRET = None
 INSTAGRAM_PERMISSIONS = ['public_content', 'basic', 'follower_list']
 
 
+# Extra koota devices to register.  Done in the ready() hook of the
+# kdata app.  This is a list of dicts which is passed as kwargs to
+# _register_device.
+REGISTER_DEVICES = [
+    #{'cls': 'koota_e3000_2017.DailySurvey', 'default': True}
+]
+
+
 
 ALLOWED_HOSTS = [
     # aalto hosts
