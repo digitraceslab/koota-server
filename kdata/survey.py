@@ -248,7 +248,6 @@ class SurveyAnswers(converter._Converter):
                 # If this was a Choice, then add the raw text to a column here.
                 choice_text = ''
                 if slug in raw_choices:
-                    print(slug, x)
                     choice_text = raw_choices[slug][int(x['a'])] if x['a'] else ''
                 yield (slug,
                        time(data['access_time']) if 'access_time' in data else '',
