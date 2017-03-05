@@ -420,10 +420,10 @@ def get_user_config(device):
         schedules_config.append(update_config)
 
     # Make final configuration.  Aware requires it as a list of dicts.
-    config = [{'sensors': dict_to_settings(config['sensors'])},
-              {'plugins': plugins_config},
-              {'schedulers': schedules_config},
-             ]
+    config = [{'sensors': dict_to_settings(config['sensors']),
+              'plugins': plugins_config,
+              'schedulers': schedules_config,
+              }]
     return config
 
 
@@ -442,10 +442,17 @@ def register(request, secret_id, indexphp=None):
     LOGGER.info("aware register: %s %s", request.POST, secret_id)
     # We have no other operation, basic study configuration.
     data = request.POST
-    if 'study_check' in request.POST:
+    if 'study_check' in data:
         # A ping when app starts to see if study is still going on.
         # If this is false, then it force-quits the study.
-        return JsonResponse([dict(status=True)], safe=False)
+        data_to_save = dict(table="study_check",
+                            data=json.dumps(request.POST),
+                            timestamp=time.time(),
+                            version=1)
+        data_to_save = dumps(data_to_save)
+        kviews.save_data(data_to_save, device_id=device.device_id, request=request)
+        config = [{'status':True, 'config': config[0]}]
+        return JsonResponse(config, safe=False)
     if 'device_id' in data:
         passwd = util.hash_mosquitto_password(device.secret_id)
         device.attrs['aware-device-uuid'] = data['device_id']
