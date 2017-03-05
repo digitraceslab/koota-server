@@ -359,17 +359,17 @@ def get_user_config(device):
     # deplicate the ones that have multiple times.
     schedules_config2 = [ ]
     for sched in schedules_config:
-        print(sched['schedule']['trigger'])
+        #print(sched['schedule']['trigger'])
         if 'random_intervals' in sched['schedule']['trigger']:
-            print(sched)
             now_ts = timezone.now().timestamp()
             # Loop over several days
             today = timezone.now().date()
-            for day_n in range(3):
+            params = sched['schedule']['trigger']['random_intervals']
+            N = params['N']
+            start, end = params['start'], params['end']
+            forward_time = params.get('forward_time', 3600*24*2)
+            for day_n in range(forward_time//(3600*24) + 1):
                 day = today + timedelta(days=day_n)
-                params = sched['schedule']['trigger']['random_intervals']
-                N = params['N']
-                start, end = params['start'], params['end']
                 start_dt = datetime.datetime(*day.timetuple()[:3], hour=start[0], minute=start[1], tzinfo=timezone.get_current_timezone())
                 end_dt = datetime.datetime(*day.timetuple()[:3], hour=end[0], minute=end[1], tzinfo=timezone.get_current_timezone())
                 start_ts = start_dt.timestamp()
@@ -378,8 +378,8 @@ def get_user_config(device):
                                               max=params['max']*60 if 'max' in params else None,
                                               seed=params.get('seed', 'u436on')+day.strftime('%Y-%m-%d'))
                 for ts in times:
-                    print(ts, datetime.datetime.fromtimestamp(ts))
-                    if now_ts > ts or ts > ts+3600*24*2:
+                    #print(ts, datetime.datetime.fromtimestamp(ts))
+                    if now_ts > ts or ts > now_ts+forward_time:
                         continue
                     sched2 = copy.deepcopy(sched)
                     sched2['schedule']['trigger']['timer'] = int(ts*1000)
