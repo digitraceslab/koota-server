@@ -340,28 +340,6 @@ def get_user_config(device):
             else:
                 schedules_config.extend(val)
             config.pop(key)
-    #config['frequency_update'] = 5
-    if (device.dbrow.attrs.get('aware_config')
-        and json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')):
-        config['frequency_update'] = json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')
-        # Periodic updates
-        update_config = {
-            "package": "com.aware.phone",
-            "schedule": {
-                "action": {
-                    "class": "com.aware.phone/com.aware.utils.StudyUtils",
-                    "extras": {
-                        "study_url": device.qrcode_url(),
-                        },
-                    "type": "service",
-                    },
-                "schedule_id": "update_config",
-                "trigger": {
-                    "interval_delayed": int(float(config['frequency_update']))
-                    },
-                }
-            }
-        schedules_config.append(update_config)
 
     # Do we need to make the {'key':x, 'value':y} format ESM settings
     # for schedules?  This automatically converts dicts to this
@@ -415,7 +393,30 @@ def get_user_config(device):
     if len(schedules_config) > 0:
         config['sensors']['status_esm'] = True
 
-
+    # Configure updates to config.  This should be last, so that other
+    # schedules get triggered before all config is reset.
+    #config['frequency_update'] = 5
+    if (device.dbrow.attrs.get('aware_config')
+        and json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')):
+        config['frequency_update'] = json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')
+        # Periodic updates
+        update_config = {
+            "package": "com.aware.phone",
+            "schedule": {
+                "action": {
+                    "class": "com.aware.phone/com.aware.utils.StudyUtils",
+                    "extras": {
+                        "study_url": device.qrcode_url(),
+                        },
+                    "type": "service",
+                    },
+                "schedule_id": "update_config",
+                "trigger": {
+                    "interval_delayed": int(float(config['frequency_update']))
+                    },
+                }
+            }
+        schedules_config.append(update_config)
 
     # Make final configuration.  Aware requires it as a list of dicts.
     config = [{'sensors': dict_to_settings(config['sensors'])},
