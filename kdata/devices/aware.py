@@ -405,9 +405,10 @@ def get_user_config(device):
             "schedule": {
                 "action": {
                     "class": "com.aware.phone/com.aware.utils.StudyUtils",
-                    "extras": {
-                        "study_url": device.qrcode_url(),
-                        },
+                    "extras": [
+                        {"extra_key": "study_url",
+                         "extra_value": device.qrcode_url()},
+                        ],
                     "type": "service",
                     },
                 "schedule_id": "update_config",
