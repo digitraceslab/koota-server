@@ -228,6 +228,8 @@ class Group(models.Model):
                       help_text="URL with more study information.")
     url_privacy = models.CharField(max_length=256, blank=True,
                       help_text="URL with study privacy information.")
+    privacy_stmt = models.TextField(blank=True,
+                      help_text="Text of the study privacy information.")
     ts_start = models.DateTimeField(blank=True, null=True,
                       help_text="Timestamp start, data available after this time.")
     ts_end = models.DateTimeField(blank=True, null=True,
