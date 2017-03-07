@@ -91,7 +91,19 @@ def group_join(request):
             groups = models.Group.objects.filter(invite_code=invite_code).exclude(invite_code="")
             context['groups'] = groups
             groups_str = ','.join(sorted(g.name for g in groups))
-            if groups_str == form.cleaned_data['groups']:
+
+            if 'join' in request.POST and groups_str:
+                # First stage.  User entered invite code.  We have to
+                # present the data again, so that user can verify the
+                # group that they are joining.
+                c['round'] = 'verify'
+                form.data = form.data.copy()
+                form.data['groups'] = groups_str
+
+            elif 'reject' in request.POST:
+                return HttpResponseRedirect(reverse('main'))
+
+            elif groups_str == form.cleaned_data['groups'] and 'accept' in request.POST:
                 # Second stage.  User was presented the groups on the
                 # last round, so now do the actual addition.
                 c['round'] = 'done'
@@ -105,13 +117,13 @@ def group_join(request):
                     models.GroupSubject.objects.create(user=user, group=group)
                     #print("added %s to %s"%(user, group))
                     group_class.setup_user(user)
+                    # Record consent
+                    privacy_stmt = group.get_privacy_stmt()
+                    if privacy_stmt:
+                        models.Consent.create(user, group, data=None, text=privacy_stmt)
+
             else:
-                # First stage.  User entered invite code.  We have to
-                # present the data again, so that user can verify the
-                # group that they are joining.
-                c['round'] = 'verify'
-                form.data = form.data.copy()
-                form.data['groups'] = groups_str
+                return HttpResponseRedirect(reverse('group-join'))
     else:
         # Initial, present box for invite code.
         c['round'] = 'initial'

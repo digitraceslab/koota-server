@@ -65,3 +65,8 @@ class MosquittoUserAdmin(admin.ModelAdmin):
         MosquittoAclInline
         ]
 admin.site.register(models.MosquittoUser, MosquittoUserAdmin)
+
+
+class ConsentAdmin(admin.ModelAdmin):
+    list_display = ['user', 'group', 'sha256']
+admin.site.register(models.Consent, ConsentAdmin)

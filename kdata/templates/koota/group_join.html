@@ -3,7 +3,7 @@
 {% block body %}
 
 {% if round == 'verify' %}
-Click again to verify joining the following groups.
+Click again to verify joining the following groups, after you agree.
 {% elif round == 'done' %}
 You have successfully joined the following groups:
 {% else %}
@@ -12,16 +12,33 @@ Please enter the invite code to join the group.
 
 {% if round == 'verify' or round == 'done' %}
 <ul>{% for group in groups %}
-  <li>{{group.name}} </li>{% endfor %}
+  <li>{{group.name}} </li>
+  {% if group.get_privacy_stmt %}
+    <pre>{{ group.get_privacy_stmt }}</pre>
+  {% endif %}
+  {% endfor %}
 </ul>
 {% endif %}
 
-{% if round != 'done' %}
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <input class="btn btn-primary" type="submit" value="Join group" />
-</form>
+{% if round == 'initial' %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <input class="btn btn-success" type="submit" name="join" value="Join group" />
+  </form>
+
+{% elif round == 'verify' %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <input class="btn btn-primary" type="submit" name="reject" value="I don't accept - back to main page" />
+    <input class="btn btn-success" type="submit" name="accept" value="I accept, join group" />
+  </form>
+
+{% elif round == 'done' %}
+  <a class="btn btn-default btn-primary" href="{% url 'main' %}">Back to main page</a>
 {% endif %}
 
 {% endblock %}

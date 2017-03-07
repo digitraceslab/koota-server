@@ -275,6 +275,12 @@ class Group(models.Model):
     def get_class(self):
         cls = util.import_by_name(self.pyclass, default=group.BaseGroup)
         return cls(self)
+    def get_privacy_stmt(self):
+        """Get privacy statement.  First check the python class, then check model."""
+        cls = self.get_class()
+        if getattr(cls, 'privacy_stmt', None):
+            return cls.privacy_stmt
+        return self.privacy_stmt
     def is_subject(self, user):
         """Is given user a subject of this group?"""
         return self.subjects.filter(groupsubject__user=user).exists()
