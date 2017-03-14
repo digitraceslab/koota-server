@@ -3,6 +3,7 @@
 http://www.awareframework.com/
 """
 
+import copy
 import datetime
 from datetime import timedelta
 from hashlib import sha256
@@ -117,7 +118,7 @@ class Aware(devices.BaseDevice):
         url_ = self.qrcode_url()
         qrcode_img_path = reverse('aware-register-qr',
                                   kwargs=dict(public_id=self.dbrow.public_id))
-        config = get_user_config(self)
+        config = self.aware_config()
         # pylint: disable=redefined-variable-type
         config = json.dumps(config, sort_keys=True, indent=1, separators=(',',': '))
         config = mark_safe('<pre>'+escape(config)+'</pre>')
@@ -155,6 +156,20 @@ class Aware(devices.BaseDevice):
         url_ = url_._replace(query=urlparse.urlencode(queryparams))
         url_ = url_.geturl()
         return url_
+
+    def aware_config(self, extra_config=None):
+        """Final config to send to Aware.
+
+        The extra_config attribute can be a config dictionary which
+        takes precedence over the default config provided by this base
+        class.
+        """
+        config = get_user_config(self)
+        if extra_config:
+            config = util.merge_dicts(config, extra_config)
+        config = finalize_config(config, self)
+        return config
+
 
 @devices.register_device(default=True, alias='AwareValidCert',
                          aliases=['kdata.devices.aware.AwareValidCert'])
@@ -249,7 +264,6 @@ def get_user_config(device):
     return value: Python object which will be JSON encoded for sending
     to Aware.
     """
-    import copy
     config = copy.deepcopy(BASE_CONFIG)
 
     # Default sensors?
@@ -286,24 +300,86 @@ def get_user_config(device):
     if 'aware_config' in device.data.attrs:
         util.recursive_copy_dict(json.loads(device.data.attrs['aware_config']), config)
 
-
     # Config adjustments that should be done after config merging:
     # Should the study be locked?  Locked by default, see conditions for locking.
     if config.get('study_id', '') or config.get('unlocked', True):
         config['aware_unlocked'] = True
 
-
-    # Plugins
-    # [ {sensors: [ ] }
-    #   {plugins: [{plugin:"string", settings:[ {setting:"name", value:"config" }, ... ] } ] }
-    plugins_config = [
-        { "plugin": plugin_name,
-          "settings": dict_to_settings(plugin_settings)}
-        for plugin_name, plugin_settings in config.get('plugins', {}).values()
-        ]
-    config.pop('plugins', None)
+    # Find time to update config
+    if (device.dbrow.attrs.get('aware_config')
+        and json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')):
+        config['sensors']['frequency_update'] = json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')
 
 
+    return config
+
+
+def process_schedule(sched):
+    """Convert schedule to final form.
+
+    Takes one schedule and returns a list of schedules.  The main thing
+    that happens here is converting extras to the right format, and
+    possibly adding random times to schedules.
+    """
+    # Do we need to make the {'key':x, 'value':y} format ESM settings
+    # for schedules?  This automatically converts dicts to this
+    # format.  It will be converted to string (dumps) before sending
+    # to the client.
+    if ('schedule' in sched
+          and 'action' in sched['schedule']
+          and 'extras' in sched['schedule']['action']
+          and isinstance( sched['schedule']['action']['extras'], dict)):
+        # dict_to_settings makes the settings in the right format
+        # - with the right key/value names.
+        sched['schedule']['action']['extras'] = \
+          dict_to_settings(sched['schedule']['action']['extras'],
+                           key_name='extra_key', value_name='extra_value')
+    # Handle random interval schedules.  Go through all schedules and
+    # deplicate the ones that have multiple times.
+    schedules_config2 = [ ]
+
+    #print(sched['schedule']['trigger'])
+    if 'random_intervals' in sched['schedule']['trigger']:
+        now_ts = timezone.now().timestamp()
+        # Loop over several days
+        today = timezone.now().date()
+        params = sched['schedule']['trigger']['random_intervals']
+        N = params['N']
+        start, end = params['start'], params['end']
+        forward_time = params.get('forward_time', 3600*24*2)
+        for day_n in range(forward_time//(3600*24) + 1):
+            day = today + timedelta(days=day_n)
+            start_dt = timezone.get_current_timezone().localize(datetime.datetime(*day.timetuple()[:3], hour=start[0], minute=start[1]))
+            end_dt = timezone.get_current_timezone().localize(datetime.datetime(*day.timetuple()[:3], hour=end[0], minute=end[1]))
+            start_ts = start_dt.timestamp()
+            end_ts   = end_dt.timestamp()
+            times = util.random_intervals(start=start_ts, end=end_ts, N=params['N'], min=params.get('min', 0)*60,
+                                          max=params['max']*60 if 'max' in params else None,
+                                          seed=params.get('seed', 'u436on')+day.strftime('%Y-%m-%d'))
+            for ts in times:
+                #print(ts, datetime.datetime.fromtimestamp(ts))
+                if now_ts > ts or ts > now_ts+forward_time:
+                    continue
+                sched2 = copy.deepcopy(sched)
+                sched2['schedule']['trigger']['timer'] = int(ts*1000)
+                sched2['schedule']['trigger']['random_intervals'] = json.dumps(sched2['schedule']['trigger']['random_intervals'])
+                sched2['schedule']['schedule_id'] = sched2['schedule']['schedule_id']+'_'+str(int(ts))
+                schedules_config2.append(sched2)
+    else:
+        schedules_config2.append(sched)
+
+    return schedules_config2
+
+
+def finalize_config(config, device):
+    """Do last post-processing on the config dict.
+
+    This takes the config dictionary and turns it into a list of
+    dictionaries.  It does any other last-step processing, like
+    converting the schedules to their final form, adding random times to
+    schedules, and so on.  Any config which should be overrideable
+    should be in get_user_config.
+    """
     # Schedules
     #schedule_NAME = [ {"package": "xxx", "schedule":{} }, { } ]
     # schedule =
@@ -331,74 +407,25 @@ def get_user_config(device):
     #         "esm_notification_timeout": int,
     #         "esm_trigger": str,
     #         ""}
-    schedules_config = [ ]
+    if 'schedulers' not in config:
+        config['schedulers'] = [ ]
     for key in list(config):
         if key.startswith('schedule_'):
-            val = config[key]
-            if isinstance(val, (list,tuple)):
-                schedules_config.extend(val)
+            sched = config.pop(key)
+            if isinstance(sched, (list,tuple)):
+                for sched_inner in sched:
+                    config['schedulers'].extend(process_schedule(sched_inner))
             else:
-                schedules_config.extend(val)
-            config.pop(key)
+                config['schedulers'].append(process_schedule(sched))
 
-    # Do we need to make the {'key':x, 'value':y} format ESM settings
-    # for schedules?  This automatically converts dicts to this
-    # format.  It will be converted to string (dumps) before sending
-    # to the client.
-    for sched in schedules_config:
-        if ('schedule' in sched
-              and 'action' in sched['schedule']
-              and 'extras' in sched['schedule']['action']
-              and isinstance( sched['schedule']['action']['extras'], dict)):
-            # dict_to_settings makes the settings in the right format
-            # - with the right key/value names.
-            sched['schedule']['action']['extras'] = \
-              dict_to_settings(sched['schedule']['action']['extras'],
-                               key_name='extra_key', value_name='extra_value')
-    # Handle random interval schedules.  Go through all schedules and
-    # deplicate the ones that have multiple times.
-    schedules_config2 = [ ]
-    for sched in schedules_config:
-        #print(sched['schedule']['trigger'])
-        if 'random_intervals' in sched['schedule']['trigger']:
-            now_ts = timezone.now().timestamp()
-            # Loop over several days
-            today = timezone.now().date()
-            params = sched['schedule']['trigger']['random_intervals']
-            N = params['N']
-            start, end = params['start'], params['end']
-            forward_time = params.get('forward_time', 3600*24*2)
-            for day_n in range(forward_time//(3600*24) + 1):
-                day = today + timedelta(days=day_n)
-                start_dt = datetime.datetime(*day.timetuple()[:3], hour=start[0], minute=start[1], tzinfo=timezone.get_current_timezone())
-                end_dt = datetime.datetime(*day.timetuple()[:3], hour=end[0], minute=end[1], tzinfo=timezone.get_current_timezone())
-                start_ts = start_dt.timestamp()
-                end_ts   = end_dt.timestamp()
-                times = util.random_intervals(start=start_ts, end=end_ts, N=params['N'], min=params.get('min', 0)*60,
-                                              max=params['max']*60 if 'max' in params else None,
-                                              seed=params.get('seed', 'u436on')+day.strftime('%Y-%m-%d'))
-                for ts in times:
-                    #print(ts, datetime.datetime.fromtimestamp(ts))
-                    if now_ts > ts or ts > now_ts+forward_time:
-                        continue
-                    sched2 = copy.deepcopy(sched)
-                    sched2['schedule']['trigger']['timer'] = int(ts*1000)
-                    sched2['schedule']['trigger']['random_intervals'] = json.dumps(sched2['schedule']['trigger']['random_intervals'])
-                    sched2['schedule']['schedule_id'] = sched2['schedule']['schedule_id']+'_'+str(int(ts))
-                    schedules_config2.append(sched2)
-        else:
-            schedules_config2.append(sched)
-    schedules_config = schedules_config2
     # If we have ESMs, then turn it on.
-    if len(schedules_config) > 0:
+    if len(config['schedulers']) > 0:
         config['sensors']['status_esm'] = True
 
     # Configure updates to config.  This should be last, so that other
     # schedules get triggered before all config is reset.
     #config['frequency_update'] = 5
-    if (device.dbrow.attrs.get('aware_config')
-        and json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')):
-        config['frequency_update'] = json.loads(device.dbrow.attrs['aware_config']).get('frequency_update')
+    if 'frequency_update' in config['sensors']:
         # Periodic updates
         update_config = {
             "package": "com.aware.phone",
@@ -413,16 +440,26 @@ def get_user_config(device):
                     },
                 "schedule_id": "update_config",
                 "trigger": {
-                    "interval_delayed": int(float(config['frequency_update']))
+                    "interval_delayed": int(float(config['sensors']['frequency_update']))
                     },
                 }
             }
-        schedules_config.append(update_config)
+        config['schedulers'].append(update_config)
+
+    # Plugins
+    # [ {sensors: [ ] }
+    #   {plugins: [{plugin:"string", settings:[ {setting:"name", value:"config" }, ... ] } ] }
+    plugins_config = [
+        { "plugin": plugin_name,
+          "settings": dict_to_settings(plugin_settings)}
+        for plugin_name, plugin_settings in config.get('plugins', {}).values()
+        ]
+    config.pop('plugins', None)
 
     # Make final configuration.  Aware requires it as a list of dicts.
     config = [{'sensors': dict_to_settings(config['sensors']),
               'plugins': plugins_config,
-              'schedulers': schedules_config,
+              'schedulers': config['schedulers'],
               }]
     return config
 
@@ -437,7 +474,7 @@ def register(request, secret_id, indexphp=None):
     # pylint: disable=unused-argument
     device = models.Device.get_by_secret_id(secret_id)
     device_cls = device.get_class()
-    config = get_user_config(device_cls)
+    config = device_cls.aware_config()
 
     LOGGER.info("aware register: %s %s", request.POST, secret_id)
     # We have no other operation, basic study configuration.
