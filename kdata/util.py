@@ -38,24 +38,24 @@ def import_by_name(name, default=None, raise_if_none=False):
         return default
     if '.' not in name:
         # If desired, don't let errors pass silently
-        logger.error("Custom class import failed: %s"%name)
+        logger.error("Custom class import failed (no . in name): %s"%name)
         if raise_if_none:
-            raise ValueError("import_by_name: can not import `%s`"%name)
+            raise ValueError("import_by_name: can not import `%s` (no . in name)"%name)
         return default
     modname, objname = name.rsplit('.', 1)
     try:
         mod = importlib.import_module(modname)
     except ImportError:
-        logger.error("Custom class import failed: %s (%s)"%(name, modname))
+        logger.error("Custom class import failed: %s (no module %s)"%(name, modname))
         if raise_if_none:
-            raise ValueError("import_by_name: can not import `%s`"%name)
+            raise ValueError("import_by_name: can not import `%s` (no module)"%name)
         return default
     try:
         obj = getattr(mod, objname)
     except AttributeError:
-        logger.error("Custom class import failed: %s (%s)"%(name, objname))
+        logger.error("Custom class import failed: %s (no module attribute %s)"%(name, objname))
         if raise_if_none:
-            raise ValueError("import_by_name: can not import `%s`"%name)
+            raise ValueError("import_by_name: can not import `%s` (no module attribute)"%name)
         return default
     return obj
 
