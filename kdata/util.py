@@ -1,6 +1,8 @@
 from base64 import urlsafe_b64encode
+from calendar import timegm
 import collections
 import csv
+import datetime
 from datetime import timedelta
 from hashlib import sha256
 import importlib
@@ -342,6 +344,18 @@ class JsonConfigField(django.db.models.TextField):
             raise django.forms.ValidationError("Invalid JSON")
         return value
 
+# A JSON encoder that can convert date and time objects to strings.
+def field_to_json(x):
+    if isinstance(x, datetime.time):
+        return x.strftime('%H:%M:%S')
+    if isinstance(x, datetime.datetime):
+        return timegm(x.utctimetuple())
+    if isinstance(x, datetime.date):
+        return x.strftime('%Y-%m-%d')
+    raise ValueError("JSON enocde error: unknown type: %r"%x)
+dumps2 = json.JSONEncoder(default=field_to_json).encode
+
+
 
 
 
@@ -457,9 +471,9 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
                     if isinstance(extra_data, str):
                         extra_data = loads(extra_data)
                     initial.update(extra_data)
-                attrs[form_key] = json.dumps(initial)
+                attrs[form_key] = dumps2(initial)
                 if log_func:
-                    log_func(op="form_change", message=json.dumps(initial))
+                    log_func(op="form_change", message=dumps2(initial))
             else:
                 all_valid = False
         else:  # GET
