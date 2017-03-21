@@ -1885,6 +1885,12 @@ class AwareTelephony(BaseAwareConverter):
               'data_enabled',
               'sim_state',
               ]
+class AwareSigMotion(BaseAwareConverter):
+    desc = "Significant Motion"
+    table = 'significant'
+    fields = ['is_moving',
+              ]
+    
 class AwareLog(BaseAwareConverter):
     desc = "Status log"
     table = 'aware_log'
