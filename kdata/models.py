@@ -290,8 +290,13 @@ class Group(models.Model):
         All researchers are researchers by default, unless their
         researcher attribute is false.
         """
-        gr = GroupResearcher.objects.filter(group=self,
-                                            user=user)
+        # If we have manual code allowing researchers, always add
+        # this.
+        cls = self.get_class()
+        if hasattr(cls, 'is_researcher') and cls.is_researcher(user):
+            return True
+        #
+        gr = GroupResearcher.objects.filter(group=self, user=user)
         # Must have a GroupResearcher entry.
         if not gr.exists(): return False
         # Everyone is researcher by default, but if
