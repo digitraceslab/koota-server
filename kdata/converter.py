@@ -1890,7 +1890,7 @@ class AwareSigMotion(BaseAwareConverter):
     table = 'significant'
     fields = ['is_moving',
               ]
-    
+
 class AwareLog(BaseAwareConverter):
     desc = "Status log"
     table = 'aware_log'

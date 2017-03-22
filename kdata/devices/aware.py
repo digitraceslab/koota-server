@@ -94,6 +94,7 @@ class Aware(devices.BaseDevice):
         converter.AwareRotation,
         converter.AwareScreen,
         converter.AwareSensorWifi,
+        converter.AwareSigMotion,
         converter.AwareTelephony,
         converter.AwareWifi,
     ]
