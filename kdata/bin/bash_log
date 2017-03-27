@@ -23,5 +23,5 @@ _prompt_log () (
 # Add to the PROMPT_COMMAND.  It is possible that this fails in
 # advanced cases.
 if ! echo $PROMPT_COMMAND | grep _prompt_log_log > /dev/null ; then
-    PROMPT_COMMAND="_prompt_log ; $PROMPT_COMMAND"
+    PROMPT_COMMAND="$PROMPT_COMMAND ; _prompt_log"
 fi
