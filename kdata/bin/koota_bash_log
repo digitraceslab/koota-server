@@ -3,12 +3,14 @@ _prompt_log () (
     URL=https://koota.cs.aalto.fi/post/
 
     filename=~/.bash_prompt_log_`hostname`
+    hostname=$(hostname -f)
+    #hostname_hash=$(echo -n `hostname -f` | sha256sum | cut -d' ' -f1)
     # Record time of this prompt
     date '+%s' >> "$filename"
     # do the upload if the file is large enough (1kb or more)
     if [ -e "$filename" \
 	 -a `stat -c '%s' "$filename"` -ge 1024 ] ; then
-	response=`curl --silent --fail --header "Device-id: $DEVICE_ID" --data-binary v=1&hostname=ramanujan --data-binary @"$filename" "$URL"`
+	response=$(curl --silent --fail --header "Device-id: $DEVICE_ID" --data-binary v=1 --data-binary hostname=$hostname --data-binary @"$filename" "$URL")
 	ret=$?
 	# Remove filename if return value was success.  There are
 	# still race conditions and syncronization problems, though.
