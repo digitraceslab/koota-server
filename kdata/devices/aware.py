@@ -88,6 +88,7 @@ class Aware(devices.BaseDevice):
         converter.AwareLinearAccelerometer,
         converter.AwareLog,
         converter.AwareLocation,
+        converter.AwareLocationDay,
         converter.AwareMagnetometer,
         converter.AwareMessages,
         converter.AwareNetwork,

@@ -30,6 +30,7 @@ class PurpleRobot(BaseDevice):
                   converter.PRStepCounter,
                   converter.PRDeviceInUse,
                   converter.PRLocation,
+                  converter.PRLocationDay,
                   converter.PRAccelerometer,
                   converter.PRAccelerometerBasicStatistics,
                   converter.PRAccelerometerFrequency,

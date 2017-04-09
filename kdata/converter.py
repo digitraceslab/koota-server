@@ -89,7 +89,7 @@ try:
     from ujson import dumps, loads
 except:
     from json import loads, dumps
-from math import log, sqrt
+from math import cos, log, pi, sin, sqrt
 import time
 import time as mod_time
 from time import localtime
@@ -301,6 +301,7 @@ class BaseDataCounts(_Converter):
     header = ['']
     desc = "Data points per day, for the last 7 days (slow calculation)"
     days_ago = 7
+    midnight_offset = 3600*4  # Seconds after midnight at which to start the new day.
     @classmethod
     def query(cls, queryset):
         """Do necessary filtering on the django QuerySet.
@@ -322,13 +323,14 @@ class BaseDataCounts(_Converter):
         #import IPython ; IPython.embed()
 
         counts = self.counts
+        midnight_offset = self.midnight_offset
         # Operating like PRMissingData
         for ts in self.timestamp_converter(rows).run():
             ts = ts[0]
             if ts < 100000000: continue  # skip bad timestamps
             ts = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)
             #ts = TZ.normalize(ts.astimezone(TZ))
-            ts = TZ.normalize(ts)
+            ts = TZ.normalize(ts-midnight_offset)
             date = ts.strftime('%Y-%m-%d')
             counts[date] += 1
 
@@ -837,7 +839,7 @@ class PRApplicationLaunchesSafe(_Converter):
 #
 # Daily aggregations
 #
-class PRDayAggregator(_Converter):
+class DayAggregator(_Converter):
     """Base class for performing server-side aggregation by day.
 
     This basically provides an on-line sort (actually aggregation)
@@ -846,42 +848,60 @@ class PRDayAggregator(_Converter):
     heurestics and it *will* fail in some cases.  Continued
     development will be needed.
 
+    API:
+    - iterates through queryset
+    - self.iter_rows(packet_ts, packet_data):
+      iterate all of the (ts, ts_bin, row_data) which should be aggregated.
+    - self.ts_func(row): -> ts
+    - self.process(first_ts, bin_key, all_probe_rows):
+      Take (ts_bin, bin_rows), yield things to return.
+
+    Deprecated:
+    - self.filter_func(queryset_row)
+    - self.filter_func_row(probe_row)
+    - self.ts_bin_func(ts) -> bin_key (like (YYYY,MM,DD))
     """
-    device_class = 'PurpleRobot'
-    ts_func = staticmethod(lambda probe: probe['TIMESTAMP'])
-    ts_bin_func = staticmethod(lambda ts: localtime(ts)[:3]) #Y-M-D.  FIXME: timezone
-    filter_func = staticmethod(lambda data: True)
-    # Following must be copied in each subclass (and remove self.)
-    filter_row_func = staticmethod(lambda row: row['PROBE'] == self.probe_type)
     paging_disabled = True  # Used in HTML browsing
+    # Convert timestamp(unixtime) to a tuple used for binning
+    ts_bin_func = staticmethod(lambda ts: localtime(ts)[:3]) #Y-M-D.  FIXME: timezone
+    # Packet filtering func: should each row be used?
+    filter_func = staticmethod(lambda data: True)
+    # This is subtracted from timestamp when binning.
+    midnight_offset = 3600*4  # four hours after midnight, by default.
     def __init__(self, *args, **kwargs):
-        super(PRDayAggregator, self).__init__(*args, **kwargs)
+        super(DayAggregator, self).__init__(*args, **kwargs)
         self.day_dict = collections.defaultdict(list)
         self.current_day = None
         self.current_day_ts = None
         self.current_i = 0
 
+    def iter_row(self, packet_ts, data):
+        """"""
+        # This is set up for PR right now.
+        if not self.filter_func(data): return
+        # Load the row and iterate through all the data within it.
+        data = loads(data)
+        for probe in data:
+            if not self.filter_row_func(probe): continue
+            ts = self.ts_func(probe)
+            if ts is None: print(probe)
+            yield ts, self.ts_bin_func(ts), probe
+
     def convert(self, queryset, time=lambda x:x):
-        probe_type = self.probe_type
         day_dict = self.day_dict
         current_day = self.current_day
         current_day_ts = self.current_day_ts
         current_i = self.current_i
-        ts_func = self.ts_func
-        ts_bin_func = self.ts_bin_func
-        filter_func = self.filter_func
-        filter_row_func = self.filter_row_func
+        midnight_offset = self.midnight_offset
+        # Iterate through all the queryset
         for packet_ts, data in queryset:
-            if not self.filter_func(data): continue
-            data = loads(data)
-            for probe in data:
-                current_i += 1
-                if filter_row_func(probe):
-                    # Get timestamp, local time (TODO: don't use
-                    # system time), and a day tuple (Y, M, D) which we
-                    # use as our key.
-                    ts = ts_func(probe)
-                    day = ts_bin_func(ts)
+            ## Allow filter_func to exclude data right away.
+            #if not self.filter_func(data): continue
+            ## Load the row and iterate through all the data within it.
+            #data = loads(data)
+            #for probe in data:
+            for ts, day, probe in self.iter_row(packet_ts, data):
+                    current_i += 1
                     # Setup in the first loop round.
                     if current_day is None:
                         current_day = day
@@ -890,17 +910,16 @@ class PRDayAggregator(_Converter):
                     # then we assume that we have all data from the
                     # current day.  Yield this.
                     if ts > current_day_ts + 172800: # two days
-                        day_to_return = min(day_dict)
-                        data = day_dict.pop(day_to_return)
-                        for row in self.process(ts_func(data[0]),
-                                                day_to_return,
-                                                data):
+                        done_day_bin = min(day_dict)
+                        done_day_data = day_dict.pop(done_day_bin)
+                        for row in self.process(done_day_bin,
+                                                done_day_data):
                             yield row
                         if day_dict:
                             # we have new data
                             current_day = self.current_day = min(day_dict)
                             current_day_ts = self.current_day_ts \
-                                             = ts_func(day_dict[current_day][0])
+                                             = self.ts_func(day_dict[current_day][0])
                         else:
                             current_day = day
                             current_day_ts = ts
@@ -918,17 +937,47 @@ class PRDayAggregator(_Converter):
                     day_dict[day].append(probe)
         # finalize by yielding all remaining days.
         while day_dict:
-            current_day = min(day_dict)
-            current_ts = ts_func(day_dict[current_day][0])
-            data = day_dict.pop(current_day)
-            for row in self.process(current_ts, current_day, data):
+            done_day_bin = min(day_dict)
+            done_day_data = day_dict.pop(done_day_bin)
+            for row in self.process(done_day_bin, done_day_data):
                 yield row
+    def process(timestamp, day_tuple, data):
+        """Do the processing:
+
+        timestamp is the unixtime timestamp of the first data point.
+        day_tuple is the (Y,M,D) tuple or whatever is used for the binning function.
+        data is the list of all data rows that have been appended to this time bin.
+        """
+        raise NotImplementedError("Abstract method")
+class PRDayAggregator(DayAggregator):
+    device_class = 'PurpleRobot'
+    # Extract timestamp (unixtime) from a row
+    ts_func = staticmethod(lambda probe: probe['TIMESTAMP'])
+    # Should each row within a packet be used?
+    # Following must be copied in each subclass (and remove self.)
+    filter_row_func = staticmethod(lambda row: row['PROBE'] == self.probe_type)
 class IosDay(PRDayAggregator):
-    """Day aggregator extended to iOS"""
+    """Day aggregator extended to koota's iOS app."""
     device_class = 'Ios'
     ts_func = staticmethod(lambda probe: probe['timestamp'])
     filter_func = staticmethod(lambda data: True)
     filter_row_func = staticmethod(lambda row: 'probe' not in row)
+
+class AwareDayAggregator(PRDayAggregator):
+    """Base class for Aware aggregation"""
+    ts_func = staticmethod(lambda probe: probe['timestamp'])
+    # Should each row within a packet be used?
+    # Following must be copied in each subclass (and remove self.)
+    filter_row_func = staticmethod(lambda row: row['table'] == self.probe_type)
+    #probe_type = 'locations' # to be filled in
+    def iter_row(self, packet_ts, data):
+        data = loads(data)
+        if data['table'] != self.probe_type: return
+        data2 = loads(data['data'])
+        for row in data2:
+            ts = row['timestamp']/1000
+            yield ts, self.ts_bin_func(ts), row
+
 
 class PRBatteryDay(PRDayAggregator):
     header = ['day', 'mean_level', ]
@@ -936,7 +985,7 @@ class PRBatteryDay(PRDayAggregator):
     desc = "PR battery, daily averages (has error)."
     filter_func = staticmethod(lambda data: 'BatteryProbe' in data)
     filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.BatteryProbe')
-    def process(self, ts, day, probes):
+    def process(self, day, probes):
         levels = [ probe['level'] for probe in probes ]
         yield ('%04d-%02d-%02d'%day,
                sum(levels)/len(levels),
@@ -952,7 +1001,7 @@ class PRCommunicationEventsDay(PRDayAggregator):
     ts_func = staticmethod(lambda probe: probe['COMM_TIMESTAMP']//1000)
     filter_func = staticmethod(lambda data: 'CommunicationEventProbe' in data)
     filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.CommunicationEventProbe')
-    def process(self, ts, day, probes):
+    def process(self, day, probes):
         #for p in probes:
         #    print(p)
         phone_events = [ p for p in probes if p['COMMUNICATION_TYPE']=='PHONE' ]
@@ -984,30 +1033,23 @@ class PRCommunicationEventsDay(PRDayAggregator):
 import numpy as np
 from geopy.distance import vincenty
 #from scipy.cluster.vq import kmeans, vq
-class PRLocationDay(PRDayAggregator):
+class LocationDayAggregator(DayAggregator):
     """Daily movement information.
 
-    This was contributed by students.
+    This was contributed by students.  For details, you must see code
 
-    - Location variance = log(var_latitude + var_longitude)
-    - Transition time
-    - Total distance per day
-
+    - Day
+    - Location standard deviation (meters)
+    - Number of clusters (using kmeans)
+    - Entropy of cluster diversity (-p ln p, p=fraction of time in each cluster)
+    - Normalized entropy = entropy / log(num_clusters)
+    - transition time between clusters
+    - total distance traveled
     """
-    header = ['day', 'locvar',
+    header = ['day', 'locstd',
               'numclust', 'entropy', 'normentropy',
               'transtime', 'totdist']
-    probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
-    desc = "PRLocation, daily features"
-    filter_func = staticmethod(lambda data: 'LocationProbe' in data)
-    filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe')
-    fast_row_limit = 5
-    def get_lat_lon_times(self, probes):
-        lat = [ probe['LATITUDE'] for probe in probes ]
-        lon = [ probe['LONGITUDE'] for probe in probes ]
-        times = [ probe['TIMESTAMP'] for probe in probes ]
-        return lat, lon, times
-    def process(self, ts, day, probes):
+    def process(self, day, probes):
         time_step = 600 # seconds, size of data bins
         speed_th = 0.28 # m/s, moving threshold
         max_dist = 500 # m, maximum radius of cluster
@@ -1043,13 +1085,16 @@ class PRLocationDay(PRDayAggregator):
         is_moving = np.where([speed >= speed_th for speed in speeds])[0]
         stat_lat = [lat_binned[j] for j in is_stationary]
         stat_lon = [lon_binned[j] for j in is_stationary]
+        if len(is_stationary) > 0:
+            mean_lat = np.mean([lat_binned[j] for j in is_stationary])
+            LAT_SCALAR = np.cos(np.pi*mean_lat/180)
+        else:
+            LAT_SCALAR = 0
 
         # location variance
-        loc_var = -np.inf  # default if can't compute
+        loc_std = None  # default if can't compute
         if len(stat_lon) > 0:
-            _loc_var = np.var(stat_lat) + np.var(stat_lon)
-            if _loc_var > 0:
-                loc_var = np.log(_loc_var)
+            loc_std = EARTH_RADIUS * sqrt(np.var(stat_lat)*LAT_SCALAR**2 + np.var(stat_lon))*pi/180
 
         # total distance
         total_distance = np.nansum(dists)
@@ -1066,6 +1111,7 @@ class PRLocationDay(PRDayAggregator):
             while any([x > max_dist for x in kmeans_dists]):
                 k += 1
                 stat_data = np.transpose(np.array([stat_lat, stat_lon]))
+                stat_data *= [LAT_SCALAR, 1]
                 [kmeans_cat, kmeans_dists] = kmeans_haversine(stat_data, k,iter=10)
                 # prevent infinite loop (shouldn't happen anyway)
                 if k > 20:
@@ -1089,19 +1135,50 @@ class PRLocationDay(PRDayAggregator):
             entropy = 0
             norm_entropy = 0
 
+        #if loc_std is not None and loc_std > 30000:
+        #    print(day)
+        #    print(round(np.mean(stat_lat),4), round(np.std(stat_lat)*EARTH_RADIUS*LAT_SCALAR*pi/180,4))#, stat_lat)
+        #    print(round(np.mean(stat_lon),4), round(np.std(stat_lon)*EARTH_RADIUS*pi/180,4))#, stat_lon)
+        #    print(stat_lat)
+        #    print(stat_lon)
         yield ('%04d-%02d-%02d'%day,
-               loc_var,
+               loc_std,
                k,
                entropy,
                norm_entropy,
                transition_time,
                total_distance
-               )
+                )
+class PRLocationDay(PRDayAggregator, LocationDayAggregator):
+    probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
+    desc = "PRLocation, daily features"
+    filter_func = staticmethod(lambda data: 'LocationProbe' in data)
+    filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe')
+    fast_row_limit = 5
+    def get_lat_lon_times(self, probes):
+        lat = [ probe['LATITUDE'] for probe in probes ]
+        lon = [ probe['LONGITUDE'] for probe in probes ]
+        times = [ probe['TIMESTAMP'] for probe in probes ]
+        return lat, lon, times
 class IosLocationDay(IosDay, PRLocationDay):
     def get_lat_lon_times(self, probes):
         lat = [ probe['lat'] for probe in probes ]
         lon = [ probe['lon'] for probe in probes ]
         times = [ probe['timestamp'] for probe in probes ]
+        return lat, lon, times
+class AwareLocationDay(AwareDayAggregator, LocationDayAggregator):
+    def iter_row(self, packet_ts, data):
+        data = loads(data)
+        if data['table'] != 'locations': return
+        #print(data)
+        data2 = loads(data['data'])
+        for row in data2:
+            ts = row['timestamp']/1000
+            yield ts, self.ts_bin_func(ts), row
+    def get_lat_lon_times(self, probes):
+        lat = [ probe['double_latitude'] for probe in probes if probe.get('label')!='disabled' ]
+        lon = [ probe['double_longitude'] for probe in probes if probe.get('label')!='disabled' ]
+        times = [ probe['timestamp']/1000 for probe in probes if probe.get('label')!='disabled' ]
         return lat, lon, times
 # Second implemation of DayConverter - including k-means
 def kmeans_haversine(data, k, iter=20, thresh=1e-05):
