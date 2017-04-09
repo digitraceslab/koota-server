@@ -1119,7 +1119,7 @@ class LocationDayAggregator(DayAggregator):
             while any([x > max_dist for x in kmeans_dists]):
                 k += 1
                 stat_data = np.transpose(np.array([stat_lat, stat_lon]))
-                stat_data *= [LAT_SCALAR, 1]
+                #stat_data *= [LAT_SCALAR, 1] # NOT needed, haversine dist handles.
                 [kmeans_cat, kmeans_dists] = kmeans_haversine(stat_data, k,iter=10)
                 # prevent infinite loop (shouldn't happen anyway)
                 if k > 20:
