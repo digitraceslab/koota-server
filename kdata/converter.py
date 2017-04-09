@@ -965,6 +965,7 @@ class IosDay(PRDayAggregator):
 
 class AwareDayAggregator(PRDayAggregator):
     """Base class for Aware aggregation"""
+    device_class = ('Aware', 'AwareValidCert')
     ts_func = staticmethod(lambda probe: probe['timestamp'])
     # Should each row within a packet be used?
     # Following must be copied in each subclass (and remove self.)
@@ -1046,9 +1047,10 @@ class LocationDayAggregator(DayAggregator):
     - transition time between clusters
     - total distance traveled
     """
-    header = ['day', 'locstd',
+    header = ['day', 'totdist', 'locstd',
+              'n_bins', 'n_bins_nonnan', 'transtime',
               'numclust', 'entropy', 'normentropy',
-              'transtime', 'totdist']
+              ]
     def process(self, day, probes):
         time_step = 600 # seconds, size of data bins
         speed_th = 0.28 # m/s, moving threshold
@@ -1069,6 +1071,17 @@ class LocationDayAggregator(DayAggregator):
             else:
                 lat_binned.append(np.nan)
                 lon_binned.append(np.nan)
+        n_bins = len(lat_binned)
+        n_bins_nonnan = n_bins - np.isnan(lat_binned).sum()
+
+        # Compute the scale factor for latitudes, to convert the
+        # coordinate system into something approximately euclidian
+        # with equal distance scales on both axes.
+        if len(lat_binned) > 1 and not np.isnan(lat_binned).all():
+            mean_lat = np.nanmean(lat_binned)
+            LAT_SCALAR = np.cos(np.pi*mean_lat/180)
+        else:
+            LAT_SCALAR = 1
 
         # calculate distances between coordinates
         for i in range(0, len(lon_binned) - 1):
@@ -1085,16 +1098,11 @@ class LocationDayAggregator(DayAggregator):
         is_moving = np.where([speed >= speed_th for speed in speeds])[0]
         stat_lat = [lat_binned[j] for j in is_stationary]
         stat_lon = [lon_binned[j] for j in is_stationary]
-        if len(is_stationary) > 0:
-            mean_lat = np.mean([lat_binned[j] for j in is_stationary])
-            LAT_SCALAR = np.cos(np.pi*mean_lat/180)
-        else:
-            LAT_SCALAR = 0
 
         # location variance
         loc_std = None  # default if can't compute
         if len(stat_lon) > 0:
-            loc_std = EARTH_RADIUS * sqrt(np.var(stat_lat)*LAT_SCALAR**2 + np.var(stat_lon))*pi/180
+            loc_std = EARTH_RADIUS * sqrt(np.nanvar(lat_binned)*LAT_SCALAR**2 + np.nanvar(lon_binned))*pi/180
 
         # total distance
         total_distance = np.nansum(dists)
@@ -1142,13 +1150,15 @@ class LocationDayAggregator(DayAggregator):
         #    print(stat_lat)
         #    print(stat_lon)
         yield ('%04d-%02d-%02d'%day,
+               total_distance,
                loc_std,
+               n_bins,
+               n_bins_nonnan,
+               transition_time,
                k,
                entropy,
                norm_entropy,
-               transition_time,
-               total_distance
-                )
+               )
 class PRLocationDay(PRDayAggregator, LocationDayAggregator):
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
     desc = "PRLocation, daily features"
