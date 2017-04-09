@@ -1890,7 +1890,12 @@ class AwareSigMotion(BaseAwareConverter):
     table = 'significant'
     fields = ['is_moving',
               ]
-
+class AwarePHQ9(BaseAwareConverter):
+    desc = "PHQ9 answers"
+    table = 'questionnaire'
+    fields = ['answer',
+              ]
+    
 class AwareLog(BaseAwareConverter):
     desc = "Status log"
     table = 'aware_log'
