@@ -343,6 +343,17 @@ class JsonConfigField(django.db.models.TextField):
         except json.JSONDecodeError:
             raise django.forms.ValidationError("Invalid JSON")
         return value
+# Some Django classes for three-way select that have
+# "Default/True/False", instead of "Unknown/True/False"
+class DefaultBooleanSelect(django.forms.NullBooleanSelect):
+    """True/False/None selector, but with the name being "Default"."""
+    def __init__(self, attrs=None):
+        choices = (('1', "Default"), ('2', 'Yes'), ('3', 'No'))
+        # pylint has warning wwith super and non-direct ancestor.
+        django.forms.Select.__init__(self, attrs, choices)
+class DefaultBooleanField(django.forms.NullBooleanField):
+    """Form field for Default/True/False"""
+    widget = DefaultBooleanSelect
 
 # A JSON encoder that can convert date and time objects to strings.
 def field_to_json(x):
