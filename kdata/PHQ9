@@ -1,0 +1,35 @@
+from kdata.survey import BaseSurvey, Bool, Char, Choice, Integer, Time
+
+class PHQ9(BaseSurvey):
+    """This is the PHQ9 questionnaire for the HYKS experiment"""
+    @classmethod
+    def get_survey(cls, data):
+        questions = [
+            ('Tittle', Section('PHQ-9')),
+            ('description', Instructions('Kuinka usein seuraavat ongelmat ovat vaivanneet teitä viimeisten 2 viikon aikana?')),
+            ('PHQ1', Choice('Asioiden tekeminen kiinnostaa hyvin vähän tai ei juuri tuota mielihyvää', 
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ2', Choice('Alakuloisuus, masentuneisuus tai toivottomuus', 
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ3', Choice('Nukahtamis- tai nukkumisvaikeudet tai liiallinen nukkuminen',
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ4', Choice('Väsymys tai energian puute', 
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ5', Choice('Huono ruokahalu tai ylensyöminen',
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ6', Choice('Tyytymättömyys omaan itseen – tai tunne, että olette epäonnistuneet tai laiminlyöneet itsenne tai perheenne',
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ7', Choice('Vaikeus keskittyä asioihin, kuten lehden lukemiseen tai television katseluun',
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ8', Choice('Liikutteko tai puhutteko niin hitaasti, että muut ihmiset ovat saattaneet huomata? Tai päinvastoin - oletteko olleet niin hermostunut tai levoton, että olette liikkuneet paljon tavallista enemmän', 
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä"))),
+            ('PHQ9', Choice('Ajatukset, että voisi olla yhtä hyvin kuollut tai, että voisi vahingoittaa itseään jollakin tavalla', 
+            	("Ei lainkaan", "Useina päivinä", "Useammin kuin puolet ajasta", "Lähes joka päivä")))
+        ]
+        # Can do extra logic here
+        survey_data = {'name': 'PHQ9',
+                       'id': 1,
+                       'questions':questions,
+                   }
+
+return survey_data
