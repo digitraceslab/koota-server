@@ -1982,6 +1982,17 @@ class AwarePHQ9(BaseAwareConverter):
     table = 'questionnaire'
     fields = ['answer',
               ]
+class AwareESM(BaseAwareConverter):
+    desc = "ESM"
+    table = 'esms'
+    fields = ['esm_notification_timeout',
+              'esm_user_answer',
+              'esm_status',
+              'esm_trigger',
+              'esm_title',
+              'esm_type',
+              'esm_notification_timeout',
+              ]
     
 class AwareLog(BaseAwareConverter):
     desc = "Status log"
