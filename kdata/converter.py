@@ -1987,6 +1987,7 @@ class AwareESM(BaseAwareConverter):
     table = 'esms'
     fields = ['esm_notification_timeout',
               'esm_user_answer',
+              'esm_submit',
               'esm_status',
               'esm_trigger',
               'esm_title',
