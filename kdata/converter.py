@@ -431,11 +431,12 @@ class MurataBSN(_Converter):
                 rows.append(row)
             last_time_i = int(rows[-1][0])
             for row in rows:
+                if len(row) != 10 or not row[0]: continue
                 #count += 1 ; print count
                 unixtime = timegm(ts.timetuple()) + int(row[0])
                 # The actual data.  In safe mode, replace everything
                 # with null strings.
-                data_values = tuple(row[1:])
+                data_values = tuple(int(x) if x else '' for x in row[1:])
                 if self.safe:
                     data_values = tuple( "" for _ in data_values )
                 # These values are used for debuging.  In debug mode,
