@@ -47,10 +47,11 @@ def has_group_researcher_permission(request, group):
         return False
     # We can delegate our logic to the group class, if it defines the
     # is_researcher method.
-    if hasattr(group_class, 'is_researcher'):
-        if group_class.is_researcher(researcher):
-            return True
-        return False
+    # Update: This is fully in models.Group.is_researcher.
+    #if hasattr(group_class, 'is_researcher'):
+    #    if group_class.is_researcher(researcher):
+    #        return True
+    #    return False
     # Normal test of the relevant database fields.
     if group.is_researcher(researcher):
         return True
