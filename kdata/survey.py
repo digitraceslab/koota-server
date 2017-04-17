@@ -76,7 +76,11 @@ class Bool(_SurveyField):
     field = forms.BooleanField
 class Char(_SurveyField):
     field = forms.CharField
-class Choice(_SurveyField):
+class BaseChoice(_SurveyField):
+    # Only for overriding
+    def __init__(self, question):
+        self.question = question
+class Choice(BaseChoice):
     def __init__(self, question, choices):
         self.question = question
         self.choices = choices
