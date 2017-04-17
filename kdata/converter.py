@@ -325,12 +325,10 @@ class BaseDataCounts(_Converter):
         counts = self.counts
         midnight_offset = self.midnight_offset
         # Operating like PRMissingData
-        for ts in self.timestamp_converter(rows).run():
+        for ts in self.timestamp_converter(rows).convert(rows):
             ts = ts[0]
             if ts < 100000000: continue  # skip bad timestamps
-            ts = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)
-            #ts = TZ.normalize(ts.astimezone(TZ))
-            ts = TZ.normalize(ts-midnight_offset)
+            ts = datetime.fromtimestamp(ts-midnight_offset, TZ)
             date = ts.strftime('%Y-%m-%d')
             counts[date] += 1
 
