@@ -1740,6 +1740,7 @@ class AwareTimestamps(BaseAwareConverter):
         for ts, data in queryset:
             data = loads(data)
             if not isinstance(data, dict): continue
+            if 'study_check' in data or data['table']=='study_check': continue
             table_data = loads(data['data'])
             for row in table_data:
                 yield (time(row['timestamp']/1000.),
