@@ -121,7 +121,7 @@ def make_form(survey_data):
     form_fields = { }
     question_order = [ ]
     for i, (tag, row) in enumerate(survey_data):
-        if isinstance(row, Choice):
+        if isinstance(row, BaseChoice):
             form_fields[tag] = forms.ChoiceField(
                 [(i,x) for i,x in enumerate(row.choices)],
                 label=row.question,
