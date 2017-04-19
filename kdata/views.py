@@ -302,7 +302,7 @@ class DeviceConfig(UpdateView):
             if permissions.has_device_manager_permission(self.request, self.object):
                 is_staff = True
 
-        if not is_locked:# or is_staff:
+        if not is_locked or is_staff:
             # Custom forms to set device attributes.
             if hasattr(device, 'config_forms'):
                 # Handle all of our custom forms.
