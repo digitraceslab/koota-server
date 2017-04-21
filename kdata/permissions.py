@@ -116,7 +116,6 @@ def has_device_manager_permission(request, device, subject=None):
     # Normal check of more database fields.  At least one group must
     # grant permission.
     for g in group:
-        if g.is_manager(researcher):
+        if g.is_manager(researcher) and device.label.analyze:
             return True
     return False
-
