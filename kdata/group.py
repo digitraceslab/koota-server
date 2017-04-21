@@ -173,8 +173,7 @@ def iter_users_devices(group, group_class, group_converter_class):
     """Iterate (user, device_id) pairs in group"""
     if group_converter_class is None:
         for subject in iter_subjects(group, group_class):
-            for device in models.Device.objects.filter(user=subject,
-                                                label__analyze=True):
+            for device in subject.allowed_devices():
                 yield subject, device
         return
     # device_class can be a list, in which case we check all of them.
@@ -185,9 +184,7 @@ def iter_users_devices(group, group_class, group_converter_class):
     #
     for subject in iter_subjects(group, group_class):
         for device_class in device_classes:
-            for device in models.Device.objects.filter(user=subject,
-                                            type=device_class,
-                                            label__analyze=True):
+            for device in subject.allowed_devices(type=device_class):
                 yield subject, device
 
 def iter_group_data(group,

@@ -359,6 +359,17 @@ class GroupSubject(models.Model):
             return self.user.username
         else:
             return util.safe_hash(self.group.salt+self.user.username)
+    def allowed_devices(self, type=None):
+        """Iterate devices that researchers of this group+user can access"""
+        if type is not None:
+            for device in Device.objects.filter(user=self.user,
+                                                label__analyze=True,
+                                                type=type):
+                yield device
+        for device in Device.objects.filter(user=self.user,
+                                            label__analyze=True):
+            yield device
+
 class GroupResearcher(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
