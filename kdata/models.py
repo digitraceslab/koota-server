@@ -268,6 +268,8 @@ class Group(models.Model):
                                          swappable=True)
     def __str__(self):
         return self.name
+    def hash_do(self, text):
+        return util.safe_hash(self.salt+text)
     def n_subjects(self):
         return self.subjects.count()
     def n_researchers(self):
@@ -366,9 +368,13 @@ class GroupSubject(models.Model):
                                                 label__analyze=True,
                                                 type=type):
                 yield device
+            return
         for device in Device.objects.filter(user=self.user,
                                             label__analyze=True):
             yield device
+    def allowed_devices_with_hash(self, type=None):
+        for device in self.allowed_devices(type=type):
+            yield device, self.group.hash_do(device.public_id)
 
 class GroupResearcher(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

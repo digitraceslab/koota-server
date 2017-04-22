@@ -23,4 +23,5 @@ class Command(BaseCommand):
         group_subjects = models.GroupSubject.objects.filter(group=group)
         for subject in group_subjects:
             print('%s %4d %s'%(subject.hash(), subject.user.id, subject.user.username))
-
+            for device, device_hash in subject.allowed_devices_with_hash():
+                print('    %s %s %-30s %s'%(device_hash, device.public_id, device.type, device.label.slug))

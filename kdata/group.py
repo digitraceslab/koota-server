@@ -159,14 +159,16 @@ def group_detail(request, group_name):
 
 
 def iter_subjects(group, group_class):
-    """Iterate through all subjects in group"""
+    """Iterate through all GroupSubject objects in group"""
     if hasattr(group_class, 'subjects_iter'):
         subjects = group_class.subjects_iter()
+        subjects = (models.GroupSubject.objects.get(group=group, user=s)
+                    for s in subjects)
     else:
-        subjects = group.subjects.all()
+        subjects = models.GroupSubject.objects.filter(group=group)
     subjects = list(subjects)
     random.shuffle(subjects)
-    #subjects.sort(key=lambda user: user.id)
+    #subjects.sort(key=lambda subject: subject.user.id)
     for subject in subjects:
         yield subject
 def iter_users_devices(group, group_class, group_converter_class):
@@ -214,9 +216,6 @@ def iter_group_data(group,
     """
     #hash_subject = util.IntegerMap()
     #hash_device  = util.IntegerMap()
-    hash_subject = util.safe_hash
-    hash_device  = util.safe_hash
-    salt = group.salt
     if group.config:
         group_config = loads(group.config)
     else:
@@ -227,20 +226,18 @@ def iter_group_data(group,
         # case, ignore anyone except that subject.  Subjects are
         # speciffied by the GroupSubject.id, abbreviated gs_id.
         if gs_id is not None:
-            if not models.GroupSubject.objects.filter(group=group,
-                                                      user=subject,
-                                                      id=gs_id).exists():
+            if subject.id != int(gs_id):
                 continue
 
         # TODO: use subject_hash.  TODO: this duplicates code from
         # GroupSubject.hash(), unify (by getting the GroupSubject
         # object from above) if logic becomes complex.
         if group_config.get('data_has_raw_usernames', False):
-            subject_hash = subject.username
+            subject_hash = subject.user.username
             device_hash = device.public_id
         else:
-            subject_hash = hash_subject(salt+subject.username)
-            device_hash  = hash_device(salt+device.public_id)
+            subject_hash = subject.hash()
+            device_hash  = group.hash_do(device.public_id)
 
         # Fetch all relevant data
         queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
