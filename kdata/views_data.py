@@ -201,7 +201,8 @@ def device_data(request, public_id, converter, format):
     if catch_errors:
         converter = c['converter'] \
                 = converter_class(((x.ts, x.data) for x in data),
-                                  time=time_converter)
+                                   time=time_converter,
+                                   params=request.GET)
         table = c['table'] = \
                 converter.run()
     else:

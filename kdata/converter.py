@@ -149,11 +149,12 @@ class _Converter(object):
         if hasattr(cls, 'header') and cls.header:
             return cls.header
         return ['time'] + [x[0].lower() for x in cls.fields]
-    def __init__(self, rows=None, time=lambda x: x):
+    def __init__(self, rows=None, time=lambda x: x, params={}):
         # Warning: during template rendering this is used in a variable as "_Converter.name"
         pass
         self.rows = rows
         self.time = time
+        self.params = params
         self.errors = [ ]
         self.errors_dict = collections.defaultdict(int)
     def run(self):
