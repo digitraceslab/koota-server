@@ -408,6 +408,8 @@ class MurataBSN(_Converter):
         from defusedxml.ElementTree import fromstring as xml_fromstring
         from dateutil import parser as date_parser
         count = 0
+        # If given, only return devices with this network ID.
+        only_network_id = self.params.get('network_id', None)
         for ts_packet, data in rows:
             if not data.startswith('<'):
                 continue
@@ -415,6 +417,9 @@ class MurataBSN(_Converter):
             # Do various XML parsing
             doc = xml_fromstring(data)
             node = doc[0][0]
+            network_id = doc[0].attrib['id']
+            if only_network_id and network_id != only_network_id:
+                continue
             device_id = node.attrib['id']
             start_time = doc[0][0][0][0].attrib['time']
             ts = date_parser.parse(start_time)
