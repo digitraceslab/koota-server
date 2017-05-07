@@ -24,7 +24,8 @@ LOGGER = logging.getLogger('kdata.devices.muratabsn')
 class MurataBSNCalibrationForm(forms.Form):
     calibration = forms.CharField(help_text="Calibration to send.  signal_high,signal_low,min_amp,typ_amp,scale,  Use format: N,N,N,N,N")
 class MurataBSNCalibrationReceivedForm(forms.Form):
-    calibration = forms.CharField(help_text="Most recent calibration received.  Do not edit.")
+    calibration = forms.CharField(help_text="Most recent received calibration parameters.  Do not edit.")
+    calibration_time = forms.CharField(help_text="Time of most recent received calibration parameters.  Do not edit.")
 
 
 from defusedxml.ElementTree import fromstring as xml_fromstring
@@ -71,8 +72,8 @@ def murata_calibrate(request, mac_addr=None):
     try:
         data_request = json.loads(request.body.decode())
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'Bad POST data'}, status=400, reason="Bad POST data")
         LOGGER.info("Invalid Murata calibration data: %s %s", mac_addr, request.body)
+        return JsonResponse({'error': 'Bad POST data'}, status=400, reason="Bad POST data")
     device_id = data_request.get('name', None)
     old_pars = None
     if 'pars' in data_request:
@@ -131,7 +132,10 @@ def murata_calibrate(request, mac_addr=None):
         with transaction.atomic():
             device.attrs['pars_old'] = json.dumps(old_pars)
             device.attrs['pars_old_received_ts'] = timezone.now().timestamp()
-            device.attrs['calibration_received'] = json.dumps(dict(calibration=','.join(old_pars)))
+            device.attrs['calibration_received'] = json.dumps(dict(
+                calibration=','.join(old_pars),
+                calibration_time=timezone.get_current_timezone().normalize(timezone.now()).strftime("%Y-%m-%d %H:%M:%S %Z"),
+                calibration_ts=timezone.now().timestamp()))
             if pars_new is not None:
                 del device.attrs['pars_new']
                 device.attrs['pars_new_sent_ts'] = timezone.now().timestamp()
