@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import datetime
 import hashlib
 
 from django.contrib.auth.models import User
@@ -110,11 +111,12 @@ class Device(models.Model):
         except AttributeError:
             return self.type.rsplit('.')[-1]
     def summary_text(self):
+        """Provide a text summarizing latest data."""
         be = backend.Backend(self)
-        count = be.count()
-        if count == 0:
+        mostrecent = be[-1]
+        if mostrecent is None:
             return "-"
-        mostrecent = be[-1].ts
+        mostrecent = mostrecent.ts
         secs = (timezone.now() - mostrecent).total_seconds()
         if secs > 604800: # 1 week
             self.summary_color, self.summary_char = ('#FF0000', '&#x2297;') # x
@@ -122,6 +124,7 @@ class Device(models.Model):
             self.summary_color, self.summary_char = ('#000000', '&#x29BF;') # bullet-circle
         else:
             self.summary_color, self.summary_char = ('#000000', '&#x25CF;') # circle
+        count = be.count(slc=slice(timezone.now()-datetime.timedelta(days=7), None))
         return "%s (%s)"%(util.human_number(count), util.human_interval(mostrecent))
     @property
     def backend(self):

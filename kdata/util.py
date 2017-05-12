@@ -511,7 +511,7 @@ def human_bytes(x):
 def human_number(x):
     """Add proper binary prefix to number in bytes, returning string"""
     if x <= 0:
-        return '%6.2f %-3s'%(x, 'B')
+        return '%d%s'%(x, '')
     unit_list = [ '', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
     exponent = int(log(x, 1000))
     quotient = x / 1000**exponent
