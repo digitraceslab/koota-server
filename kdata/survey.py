@@ -70,9 +70,11 @@ class SliderField(forms.IntegerField):
 class _SurveyField(object):
     not_a_question = False   # for marking instructions/section headings
     widget = None
+    required = None
     def __init__(self, question):
         self.question = question
 class Bool(_SurveyField):
+    required = False
     field = forms.BooleanField
 class Char(_SurveyField):
     field = forms.CharField
@@ -116,19 +118,22 @@ def field_to_json(x):
 json_encode = json.JSONEncoder(default=field_to_json).encode
 
 # Helper to make a form out of the fields.
-def make_form(survey_data):
+def make_form(survey_data, default_required=False):
     """Take Python data and return a django.forms.Form."""
     form_fields = { }
     question_order = [ ]
     for i, (tag, row) in enumerate(survey_data):
+        required = row.required
+        if required is None:
+            required = default_required
         if isinstance(row, BaseChoice):
             form_fields[tag] = forms.ChoiceField(
                 [(i,x) for i,x in enumerate(row.choices)],
                 label=row.question,
                 widget=forms.RadioSelect,
-                required=False)
+                required=required)
         else:
-            form_fields[tag] = row.field(label=row.question, required=False,
+            form_fields[tag] = row.field(label=row.question, required=required,
                                          widget=row.widget)
         form_fields[tag].not_a_question = row.not_a_question
         if not row.not_a_question:
@@ -163,7 +168,8 @@ def take_survey(request, token):
 
     survey_data = survey_class.get_survey(data=token_row.data, device=device)
 
-    Form = make_form(survey_data['questions'])
+    Form = make_form(survey_data['questions'],
+                     default_required=survey_data.get('require_all', False))
     survey_name = c['survey_name'] = survey_data.get('name', survey_class.name())
 
     # Provide a way to override submission time.  This is used when
