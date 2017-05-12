@@ -24,7 +24,7 @@ def has_device_permission(request, device):
 def has_device_config_permission(request, device):
     if has_device_permission(request, device):
         return True
-    if has_device_manager_permission(request, device):
+    if has_device_manager_permission(request, device) and device.label.analyze:
         return True
     return False
 

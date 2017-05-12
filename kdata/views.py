@@ -295,12 +295,13 @@ class DeviceConfig(UpdateView):
         # Allow this configuration only if unlocked OR researcher.
         is_staff = False
         is_locked = False
-        for grp in group.user_groups(self.object.user):
-            if grp.locked:
-                is_locked = True
-        if is_locked:
-            if permissions.has_device_manager_permission(self.request, self.object):
-                is_staff = True
+        if self.object.label.analyze:
+            for grp in group.user_groups(self.object.user):
+                if grp.locked:
+                    is_locked = True
+            if is_locked:
+                if permissions.has_device_manager_permission(self.request, self.object):
+                    is_staff = True
         context['is_locked'] = is_locked and not is_staff
 
         if not is_locked or is_staff:
