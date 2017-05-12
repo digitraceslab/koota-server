@@ -301,6 +301,7 @@ class DeviceConfig(UpdateView):
         if is_locked:
             if permissions.has_device_manager_permission(self.request, self.object):
                 is_staff = True
+        context['is_locked'] = is_locked and not is_staff
 
         if not is_locked or is_staff:
             # Custom forms to set device attributes.

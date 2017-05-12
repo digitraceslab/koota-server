@@ -42,6 +42,15 @@ Scan this with the device<p>
 <img src="{% url 'device-qr' public_id=object.public_id %}">
 {% endif %}
 
+
+{% if is_locked %}
+<div class="alert alert-warning">
+  This device is locked (you are in a locked study), so you can't make
+  changes.
+</div>
+{% endif %}
+
+
 {% if form %}
 <h2>Change device properties</h2>
 
@@ -71,6 +80,7 @@ a new server device if you need to test other device types.</p>
   </div>
 </div>
 {% endif %}
+
 
 {% if custom_forms %}
 <h2>Extra device configuration</h2>
