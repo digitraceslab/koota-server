@@ -6,17 +6,30 @@
 
 <h2>Basic information</h2>
 <ul>
-<li>Name: {{ group.name }}</li>
-</ul>
-
-<h2>Statistics</h2>
-<ul>
-<li>Number of subjects: {{ group.dbrow.subjects.count }}</li>
-<li>Effective number of subjects: {{ n_subjects }}</li>
+<li>Name: {{ group.dbrow.name }}</li>
+{% if is_staff %}<li>Number of subjects: {{ group.dbrow.subjects.count }}</li>
+<li>Effective number of subjects: {{ n_subjects }}</li>{% endif %}
 <li>Start time: {{ group.dbrow.ts_start|date:"c" }}</li>
 <li>End time: {{ group.dbrow.ts_end|date:"c" }}</li>
 </ul>
 
+
+
+{% if is_subject %}
+<h2>Converters</h2>
+Since you are a subject of this group, the group has access to these
+converters from your primary and secondary devices subject to the
+limits above.
+
+<ul>{% for converter in group.converters %}
+  <li>{{converter.name}}: {{converter.desc}}</li>{% endfor %}
+</ul>
+
+{% endif %}{# is_subject #}
+
+
+
+{% if is_staff %}
 
 <h2>Available converters</h2>
 
@@ -76,6 +89,6 @@
 
 {% endif %}
 
-
+{% endif %}{# is_staff #}
 
 {% endblock %}

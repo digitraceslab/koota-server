@@ -60,6 +60,24 @@ def has_group_researcher_permission(request, group):
 
 
 
+def has_group_subject_permission(request, group):
+    """Test a user is a subject of the group and can view things.
+    """
+    subject = request.user
+    if subject.is_anonymous:
+        raise exceptions.LoginRequired()
+    group_class = group.get_class()
+    # Unconditionally allow if django superuser and 2FA verified,
+    # approve.  (is_verified tests for 2FA (django-otp)).
+    if subject.is_superuser and subject.is_verified():
+        return True
+    if group.is_subject(subject):
+        return True
+    # Default deny
+    return False
+
+
+
 def has_group_manager_permission(request, group):
     """Test a researcher's permission to access a group's data.
     """
