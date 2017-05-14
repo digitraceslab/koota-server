@@ -35,6 +35,7 @@ class KdataMiddleware(object):
         if view_func == group.group_join:
             breadcrumbs.append(('Groups', reverse('group-join')))
         if 'group_name' in kwargs:
+            breadcrumbs.append(('Groups', reverse('group-join')))
             group_ = models.Group.objects.get(slug=kwargs['group_name'])
             breadcrumbs.append((group_.name,
                                 reverse('group-detail',
