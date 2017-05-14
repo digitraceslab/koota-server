@@ -364,14 +364,27 @@ class GroupSubject(models.Model):
             return self.user.username
         else:
             return util.safe_hash(self.group.salt+self.user.username)
-    def allowed_devices(self, type=None):
+    def allowed_devices(self, device_class=None):
         """Iterate devices that researchers of this group+user can access"""
+        print("ad type=", device_class)
+        # Automatically get device classes from converters
+        if (isinstance(device_class, type)
+              and issubclass(device_class, group._GroupConverter)):
+            device_class = device_class.device_class
+        # If multiple device classes, return them all.  Recurse and
+        # yield from.
+        if isinstance(device_class, (list,tuple)):
+            for type_ in device_class:
+                yield from self.allowed_devices(type_)
+            return
+        # Get only devices of a certain class
         if type is not None:
             for device in Device.objects.filter(user=self.user,
                                                 label__analyze=True,
-                                                type=type):
+                                                type=device_class):
                 yield device
             return
+        # Return all allowed devices.
         for device in Device.objects.filter(user=self.user,
                                             label__analyze=True):
             yield device

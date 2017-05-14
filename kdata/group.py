@@ -155,7 +155,19 @@ def group_detail(request, group_name):
         c['is_subject'] = group.is_subject(request.user)
         qs = models.GroupSubject.objects.filter(group=group, user=request.user)
         if qs.count() == 1:
-            c['groupsubject'] = qs.get()
+            groupsubject = c['groupsubject'] = qs.get()
+            converters_with_devices = [ ]
+            for conv in group_class.converters:
+                conv = get_group_converter(conv)
+                # conv_devices = [ ]
+                #device_classes = conv.device_class
+                #if not isinstance(device_classes, (list, tuple)):
+                #    device_classes = (device_class, )
+                #for device_class in device_classes:
+                #    devices.extend(groupsubject.allowed_devices(type=device_class))
+                conv_devices = groupsubject.allowed_devices(conv)
+                converters_with_devices.append((conv, conv_devices))
+            c['subject_converters_with_devices'] = converters_with_devices
     # Log if there was no authority to view this.
     if 'is_subject' not in context and 'n_subjects' not in context:
         logs.log(request, 'view group denied',
