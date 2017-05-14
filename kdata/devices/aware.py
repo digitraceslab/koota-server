@@ -449,8 +449,9 @@ def finalize_config(config, device):
         config['schedulers'].append(update_config)
 
     # Plugins
+    # Plugins operate the same as settings, but have a different package name.
     # [ {sensors: [ ] }
-    #   {plugins: [{plugin:"string", settings:[ {setting:"name", value:"config" }, ... ] } ] }
+    #   {plugins: [{plugin:"package_name", settings:[ {setting:"name", value:"config" }, ... ] } ] }
     plugins_config = [
         { "plugin": plugin_name,
           "settings": dict_to_settings(plugin_settings)}
