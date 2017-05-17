@@ -378,7 +378,7 @@ class GroupSubject(models.Model):
                 yield from self.allowed_devices(type_)
             return
         # Get only devices of a certain class
-        if type is not None:
+        if device_class is not None:
             for device in Device.objects.filter(user=self.user,
                                                 label__analyze=True,
                                                 type=device_class):
