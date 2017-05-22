@@ -1,0 +1,28 @@
+from kdata.survey import BaseSurvey, Bool, Char, Choice, Integer, Time
+
+class PSQI(BaseSurvey):
+    """PSQI survey adapted for the HYKS project."""
+    @classmethod
+    def get_survey(cls, data):
+        questions = [
+            ('header1', Section('Pittsburghin unen laatu-kysely')),
+            ('header2', Instructions('Ohjeet: Seuraavat  kysymykset  liittyvät  yleisiin  nukkumistottumuksiin  viimeisen kuukauden  aikana.  Vastaukset  merkitään  tyypillisimpien  päivien  ja  öiden  mu-kaan viime kuussa.  Vastaa kaikkiin kysymyksiin.')),
+            ('header2', Instructions('Kuinka usein sinulla on ollut  uniongelmia viime  kuun aikana, koska...')),
+            ('PSQI1', Choice('Et ole saanut unta 30 minuutin sisällä', 
+            	("Ei viimeisen kuun aikana", "Vähemmän kuin kerran viikossa", "Kerran tai kaksi viikossa", "Kolme kertaa tai enemmän viikossa"))),
+            ('PSQI2', Choice('Heräät keskellä yötä tai aikaisin aamulla', 
+            	("Ei viimeisen kuun aikana", "Vähemmän kuin kerran viikossa", "Kerran tai kaksi viikossa", "Kolme kertaa tai enemmän viikossa"))),
+            ('PSQI3', Choice('Joudut nousemaan ylös käydäksesi vessassa',
+            	("Ei viimeisen kuun aikana", "Vähemmän kuin kerran viikossa", "Kerran tai kaksi viikossa", "Kolme kertaa tai enemmän viikossa"))),
+            ('PSQI4', Choice('Et voi hengittää normaalisti', 
+            	("Ei viimeisen kuun aikana", "Vähemmän kuin kerran viikossa", "Kerran tai kaksi viikossa", "Kolme kertaa tai enemmän viikossa"))),
+            ('PSQI5', Choice('Yskit tai  kuorsaatlujaa',
+            	("Ei viimeisen kuun aikana", "Vähemmän kuin kerran viikossa", "Kerran tai kaksi viikossa", "Kolme kertaa tai enemmän viikossa")))
+        ]
+        # Can do extra logic here
+        survey_data = {'name': 'PSQI',
+                       'id': 1,
+                       'questions':questions,
+                   }
+
+return survey_data
