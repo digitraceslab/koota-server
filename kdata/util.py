@@ -478,10 +478,11 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
                 # directly gets updated into the keys.
                 if 'extra' in form_class.base_fields and form.cleaned_data['extra']:
                     # find our new data from the extra field and update our data
+                    del initial['extra']
                     extra_data = form.cleaned_data['extra']
                     if isinstance(extra_data, str):
                         extra_data = loads(extra_data)
-                    initial.update(extra_data)
+                    initial.update((k,v) for (k,v) in extra_data.items() if k not in initial)
                 attrs[form_key] = dumps2(initial)
                 if log_func:
                     log_func(op="form_change", message=dumps2(initial))
