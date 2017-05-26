@@ -544,33 +544,33 @@ def luhn1(num, check=False):
     sum = 0
     base = 16
     digits = 2
-    base = base**digits
+    base2 = base**digits
 
     if check:
-        sum = int(num[-digits:], 16)
+        sum = int(num[-digits:], base)
         num = num[:-digits]
     # Starting from the right, work leftwards
     # Now, the initial "factor" will always be "1"
     # since the last character is the check character
     #for (int i = input.Length - 1; i >= 0; i--) {
     for char in reversed(num):
-        addend = factor * int(char, 16)
+        addend = factor * int(char, base)
 
         # factor alternates between 1 and 2
         factor = 2-factor+1
 
         # Sum the digits of the "addend" as expressed in base "n"
-        addend = (addend // base) + (addend % base);
+        addend = (addend // base2) + (addend % base2);
         sum += addend
 
-    remainder = sum % base
+    remainder = sum % base2
     #print remainder, type(remainder)
 
     if check:
         return remainder == 0
     else:
         # Computing check digits
-        checkCodePoint = (base - remainder) % base
+        checkCodePoint = (base2 - remainder) % base2
         return '%x'%checkCodePoint
 
 def luhn2(num, check=False):

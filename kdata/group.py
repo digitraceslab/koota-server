@@ -207,7 +207,7 @@ def iter_users_devices(group, group_class, group_converter_class):
     #
     for subject in iter_subjects(group, group_class):
         for device_class in device_classes:
-            for device in subject.allowed_devices(type=device_class):
+            for device in subject.allowed_devices(device_class=device_class):
                 yield subject, device
 
 def iter_group_data(group,
