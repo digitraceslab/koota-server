@@ -1,0 +1,59 @@
+from kdata.survey import BaseSurvey, Bool, Char, Choice, Integer, Time
+
+class PilotSurvey1(BaseSurvey):
+    """MEQ questions for HYKS."""
+    @classmethod
+    def get_survey(cls, data):
+        questions = [
+            ('MEQ1', Choice('Mikäli otettaisiin huomioon vain Teidän oma ’parhaalta tuntuu’ rytminne, mihin aikaan nousisitte aamuisin, jos voisitte täysin vapaasti suunnitella päivänne?', 
+            	("5", "6", "7", "8","9","10","11","12"))),
+            ('MEQ2', Choice('Mikäli otettaisiin huomioon vain Teidän oma ’parhaalta tuntuu’ rytminne, mihin aikaan kävisitte illalla nukkumaan, jos voisitte täysin vapaasti suunnitella iltanne?', 
+            	("20", "21", "22", "23","24","01","02","03"))),
+            ('MEQ3', Choice('Jos Teidän täytyy nousta aamulla tiettyyn aikaan, kuinka riippuvainen olette herätyskellosta?',
+            	("en lainkaan riippuvainen","hieman riippuvainen","melko riippuvainen","täysin riippuvainen"))),
+            ('MEQ4', Choice('Kun oletetaan sopivat ympäristön olosuhteet, kuinka helppoa Teille on aamuisin vuoteesta nouseminen?', 
+            	("ei lainkaan helppoa", "ei kovin helppoa", "melko helppoa", "hyvin helppoa"))),
+            ('MEQ5', Choice('Kuinka pirteäksi tunnette itsenne aamulla ensimmäisen puolen tunnin aikana herättyänne?',
+            	("en lainkaan pirteäksi", "hieman pirteäksi", "melko pirteäksi", "hyvin pirteäksi"))),
+            ('MEQ6', Choice('Kuinka on ruokahalunne laita ensimmäisen puolen tunnin aikana herättyänne aamulla?',
+            	("hyvin huono", "melko huono", "melko hyvä", "oikein hyvä"))),
+            ('MEQ7', Choice('Kuinka väsyneeksi tunnette itsenne aamuisin ensimmäisen puolen tunnin aikana?',
+            	("hyvin väsyneeksi", "melko väsyneeksi", "melko levänneeksi", "hyvin levänneeksi"))),
+            ('MEQ8', Choice('Mikäli Teillä ei ole aamulla mitään menoa, mihin aikaan menette nukkumaan illalla verrattuna tavalliseen nukkumaanmenoaikaanne?', 
+            	("harvoin tai ei koskaan myöhemmin", "vähemmän kuin tunnin myöhemmin", "1-2 tuntia myöhemmin", "enemmän kuin 2 tuntia myöhemmin"))),
+            ('MEQ9', Choice('Olette päättänyt ruveta harrastamaan jotakin urheilulajia. Ystävänne suosittelee Teille harjoitusohjelmaksi kahta kertaa viikossa tuntia kerrallaan, ja paras aika hänelle on kello 7.00-8.00 aamuisin. Pitäen mielessänne vain oman ’parhaalta tuntuu’ rytminne, kuinka luulisitte suoriutuvanne?', 
+            	("olisin hyvässä vireessä", "olisin kohtuullisessa vireessä", "tuntuisi melko vaikealta", "tuntuisi hyvin vaikealta"))),
+            ('MEQ10', Choice('Mihin aikaan iltaisin tunnette itsenne väsyneeksi ja olevanne unen tarpeessa?', 
+            	("20", "21", "22", "23","24","01","02","03"))),
+            ('MEQ11', Choice('Osallistutte henkisesti vaativaan testiin, joka kestää kaksi tuntia, ja toivotte olevanne huippusuorituskunnossa. Teillä on mahdollisuus suunnitella oma aikataulunne, ja ottaen huomioon vain oma ’parhaalta tuntuu’ rytminne, minkä seuraavista neljästä vaihtoehdosta valitsisitte?', 
+            	("klo 8.00-10.00", "klo 11.00-13.00", "klo 15.00-17.00", "klo 19.00-21.00"))),
+            ('MEQ12', Choice('Jos menisitte vuoteeseen kello 23.00, kuinka väsyneeksi tuntisitte itsenne?', 
+            	("en lainkaan väsyneeksi", "hieman väsyneeksi", "melko väsyneeksi", "hyvin väsyneeksi"))),
+            ('MEQ13', Choice('Olette jostakin syystä mennyt nukkumaan useita tunteja normaalia myöhemmin eikä Teillä ole mitään erityistä tarvetta herätä aamulla tiettyyn aikaan. Mikä seuraavista vaihtoehdoista todennäköisesti tapahtuu aamulla?', 
+            	("herään tavalliseen aikaan enkä nukahda uudelleen", "herään tavalliseen aikaan ja torkun sen jälkeen", "herään tavalliseen aikaan, mutta nukahdan uudelleen", "herään vasta tavallista myöhemmin"))),
+            ('MEQ14', Choice('Eräänä yönä Teidän täytyy pysytellä hereillä vahtivuorossa kello 4.00-6.00 aamuyöllä. Teillä ei ole mitään velvollisuuksia seuraavana päivänä. Mikä seuraavista vaihtoehdoista sopii Teille parhaiten?', 
+            	("en mene nukkumaan ennen kuin vahtivuoro on ohi", "otan torkut ennen vahtivuoroa ja nukun sen jälkeen", "nukun kunnolla ennen vahtivuoroa ja torkun sen jälkeen", "nukun koko yöuneni ennen vahtivuoroa"))),
+            ('MEQ15', Choice('Teidän täytyy osallistua kahden tunnin kovaan fyysiseen työhön. Voitte täysin vapaasti suunnitella aikataulunne, ja ottaen huomioon vain oma ’parhaalta tuntuu’ rytminne, minkä seuraavista vaihtoehdoista valitsisitte?', 
+            	("klo 8.00-10.00", "klo 11.00-13.00", "klo 15.00-17.00", "klo 19.00-21.00"))),
+            ('MEQ16', Choice('Olette päättänyt ruveta harrastamaan jotakin urheilulajia. Ystävänne suosittelee Teille harjoitusohjelmaksi kahta kertaa viikossa tunnin kerrallaan, ja paras aika hänelle on kello 22.00-23.00 iltaisin. Pitäen mielessänne vain oman ’parhaalta tuntuu’ rytminne, kuinka luulette suoriutuvanne?', 
+            	("suoriutuisin hyvin", "suoriutuisin melko hyvin", "tuntuisi vaikealta", "tuntuisi hyvin vaikealta"))),
+            ('MEQ17', Choice('Olettakaa, että voitte valita työaikanne. Otaksukaa, että työpäivä on viiden tunnin mittainen ja työ on mielenkiintoista ja palkkaa maksetaan tulosten mukaan. Mitkä viisi PERÄTTÄISTÄ tuntia valitsisitte?', 
+            	("24", "01", "02", "03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24", "01", "02", "03","04","05","06","07","08","09","10","11","12","13","14","15"))),
+            ('MEQ18', Choice('Mihin vuorokauden aikaan uskoisitte saavuttavanne oman ’parhaalta tuntuu’ huippunne?', 
+            	("24", "01", "02", "03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24", "01", "02", "03","04","05","06","07","08","09","10","11","12","13","14","15"))),
+            ('MEQ19', Choice('On olemassa niin sanottuja ”aamuihmisiä” ja ”iltaihmisiä”. Kumpaan ryhmään Te kuulutte?', 
+            	("ehdottomasti ”aamuihmisiin”", "enemmän ”aamu-” kuin ”iltaihmisiin”", "enemmän ”ilta-” kuin ”aamuihmisiin”", "ehdottomasti ”iltaihmisiin”"))),
+            ('MEQ20', Instructions('Kuinka monta tuntia nukutte vuorokaudessa')), 
+            ('MEQ20_1', Time('yöunta?')),
+            ('MEQ20_2', Time('päiväunia?')),
+            ('MEQ20_3', Choice('Tunnetteko olonne yöunen jälkeen virkistyneeksi?', 
+            	("kyllä", "ei"))),
+            ('MEQ20_4', Time('Jos vastasitte ”ei”, niin kuinka pitkän yöunen tunnette tarvitsevanne, jotta olonne olisi yöunen jälkeen virkistynyt?'))
+        ]
+        # Can do extra logic here
+        survey_data = {'name': 'Pilot Survey 1',
+                       'id': 1,
+                       'questions':questions,
+                   }
+
+        return survey_data
