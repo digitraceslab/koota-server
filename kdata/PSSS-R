@@ -1,0 +1,41 @@
+from kdata.survey import BaseSurvey, Bool, Char, Choice, Integer, Time
+
+class PSSS-R(BaseSurvey):
+    """This is the PSSS-R questionnaire for the HYKS experiment"""
+    @classmethod
+    def get_survey(cls, data):
+        questions = [
+            ('Tittle', Section('PSSS-R')),
+            ('description', Instructions('Sinua pyydetään ottamaan kantaa seuraaviin väittämiin sen mukaan, miten hyvin ne pitävät paikkansa Sinun kohdallasi. Jos väittämä pitää paikkansa, ympyröi  5.  Jos  se  pitää  paikkansa  melko  hyvin  ,  ympyröi  4.  Jos  se  sopii Sinuun vain silloin tällöin määrätyissä tilanteissa, ympyröi 3, tuskin koskaan 2 ja jos väittämä Sinuun nähden on täysin sopimaton, ympyröi 1.')),
+            ('PSSS1', Choice('Minulla on läheinen ystävä, joka tukee minua, kun tarvitsen apua.', 
+            	("1", "2", "3", "4","5"))),
+            ('PSSS2', Choice('Minulla on läheinen ystävä, jonka kanssa voin jakaa elämän ilot ja surut.', 
+            	("1", "2", "3", "4","5"))),
+            ('PSSS3', Choice('Saan todellista tukea perheeltäni.',
+            	("1", "2", "3", "4","5"))),
+            ('PSSS4', Choice('Perheeni tukee minua aina, kun tarvitsen apua.', 
+            	("1", "2", "3", "4","5"))),
+            ('PSSS5', Choice('Minulla on läheinen ystävä, joka lohduttaa minua.',
+            	("1", "2", "3", "4","5"))),
+            ('PSSS6', Choice('Ystäväni todella tukevat minua, kun tarvitsen apua.',
+            	("1", "2", "3", "4","5"))),
+            ('PSSS7', Choice('Luotan ystävieni apuun, kun asiat alkavat mennä heikosti.',
+            	("1", "2", "3", "4","5"))),
+            ('PSSS8', Choice('Voin keskustella ongelmistani perheeni kanssa.', 
+            	("1", "2", "3", "4","5"))),
+            ('PSSS9', Choice('Minulla on ystäviä, joiden kanssa voin jakaa ilot ja surut.', 
+            	("1", "2", "3", "4","5"))),
+            ('PSSS10', Choice('Minulla on läheinen ystävä, joka osaa ottaa huomioon tunteeni.', 
+            	("1", "2", "3", "4","5"))),
+            ('PSSS11', Choice('Tehdessäni tärkeitä ratkaisuja saan perheeltäni apua.', 
+            	("1", "2", "3", "4","5"))),
+            ('PSSS12', Choice('Voin keskustella ongelmistani ystävieni kanssa.', 
+            	("1", "2", "3", "4","5")))
+        ]
+        # Can do extra logic here
+        survey_data = {'name': 'PSSS',
+                       'id': 4,
+                       'questions':questions,
+                   }
+
+return survey_data
