@@ -1,0 +1,29 @@
+from kdata.survey import BaseSurvey, Bool, Char, Choice, Integer, Time
+
+class ASRS(BaseSurvey):
+    """This is the ASRS questionnaire for the HYKS experiment"""
+    @classmethod
+    def get_survey(cls, data):
+        questions = [
+            ('Tittle', Section('ASRS')),
+            ('description', Instructions('Olkaa hyvä ja vastatkaa alla oleviin kysymyksiin oikealla näkyviä vaihtoehtoja käyttäen. Kunkin kysymyksen kohdalla rastittakaa se ruutu, joka parhaiten kuvaa vointianne ja pärjäämistänne viimeisten kuuden kuukauden aikana. Antakaa täytetty lomake hoitavalle lääkärille seuraavalla käynnillänne.')),
+            ('ASRS1', Choice('Kuinka usein Teidän on vaikea tehdä tehtäviä loppuun saakka sen jälkeen, kun haastavat tai mielenkiintoiset osat on tehty?', 
+            	("Ei koskaan", "Harvoin", "Joskus", "Usein","Hyvin usein"))),
+            ('ASRS2', Choice('Kuinka usein Teillä on vaikeuksia järjestelmällisyyttä vaativissa tehtävissä?', 
+            	("Ei koskaan", "Harvoin", "Joskus", "Usein","Hyvin usein"))),
+            ('ASRS3', Choice('Kuinka usein Teidän on vaikea muistaa velvollisuuksianne tai sovittuja tapaamisianne?',
+            	("Ei koskaan", "Harvoin", "Joskus", "Usein","Hyvin usein"))),
+            ('ASRS4', Choice('Kun Teidän pitäisi tehdä tehtävä, joka vaatii paljon ajatustyötä, kuinka usein välttelette sitä tai viivyttelette sen aloittamista?', 
+            	("Ei koskaan", "Harvoin", "Joskus", "Usein","Hyvin usein"))),
+            ('ASRS5', Choice('Kuinka usein kiemurtelette tai liikuttelette levottomasti käsiänne tai jalkojanne kun joudutte istumaan paikoillanne pitkään?',
+            	("Ei koskaan", "Harvoin", "Joskus", "Usein","Hyvin usein"))),            
+            ('ASRS6', Choice('Kuinka usein Teillä on yliaktiivinen olo ja tunnette pakonomaista tarvetta tehdä asioita, ikään kuin sisällänne olisi moottori?',
+            	("Ei koskaan", "Harvoin", "Joskus", "Usein","Hyvin usein")))
+        ]
+        # Can do extra logic here
+        survey_data = {'name': 'ASRS',
+                       'id': 3,
+                       'questions':questions,
+                   }
+
+return survey_data
