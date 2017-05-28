@@ -1,0 +1,27 @@
+from kdata.survey import BaseSurvey, Bool, Char, Choice, Integer, Time
+
+class OASIS(BaseSurvey):
+    """This is the OASIS questionnaire for the HYKS experiment"""
+    @classmethod
+    def get_survey(cls, data):
+        questions = [
+            ('Tittle', Section('OASIS')),
+            ('description', Instructions('Seuraavat kysymykset käsittelevät ahdistuneisuutta ja pelkoa. Valitse jokaisen kysymyksen kohdalla se vaihtoehto, mikä parhaiten kuvaa kokemustasi viimeisen viikon aikana.')),
+            ('OASIS1', Choice('Kuinka usein olet tuntenut ahdistuneisuutta?', 
+            	("En kertaakaan", "Harvoin", "Ajoittain", "Usein","Koko ajan"))),
+            ('OASIS2', Choice('Kun olet ahdistunut, kuinka voimakasta tai vakavaa ahdistuneisuutesi on?', 
+            	("Ahdistuneisuutta ei ole", "Lievää", "Kohtalaista", "Vakavaa","Äärimmäistä"))),
+            ('OASIS3', Choice('Kuinka usein välttelet tilanteita, paikkoja, kohteita ja esineitä tai toimintoja ahdistuneisuuden tai pelon vuoksi?',
+            	("En lainkaan", "Harvoin", "Ajoittain", "Usein","Koko ajan"))),
+            ('OASIS4', Choice('Kuinka paljon ahdistuneisuutesi häiritsi kykyäsi tehdä ja toimia töissä, koulussa tai kotona?', 
+            	("Ei lainkaan", "Vähän", "Kohtalaisesti", "Vakavasti","Äärimmäisen voimakkaasti"))),
+            ('OASIS5', Choice('Kuinka paljon ahdistuneisuus on häirinnyt sosiaalista elämääsi tai ihmissuhteitasi?',
+            	("Ei lainkaan", "Lievästi", "Kohtalaisesti", "Vakavasti","Äärimmäisen voimakkaasti")))            
+        ]
+        # Can do extra logic here
+        survey_data = {'name': 'OASIS',
+                       'id': 2,
+                       'questions':questions,
+                   }
+
+return survey_data
