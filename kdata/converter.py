@@ -395,7 +395,7 @@ class MurataBSN(_Converter):
              ]
     _header_debug = ['row_i', 'delta_i', 'time_packet', 'offset_s',
                      'xml_start_time',]
-    device_class = 'MurataBSN'
+    device_class = ['MurataBSN', 'kdata.devices.muratabsn.MurataBSN']
     @classmethod
     def header2(cls):
         if cls.debug:
@@ -1686,7 +1686,7 @@ class ActiwatchMarkers(_Converter):
 
 
 class BaseAwareConverter(_Converter):
-    device_class = ('Aware', 'AwareValidCert')
+    device_class = ('Aware', 'AwareValidCert', 'koota_hyks_2016.AwareHyks')
     ts_column = 'timestamp'
     #table = 'screen'
     #desc = "Generic Aware converter"
