@@ -86,6 +86,8 @@ class Choice(BaseChoice):
     def __init__(self, question, choices):
         self.question = question
         self.choices = choices
+class Float(_SurveyField):
+    field = forms.FloatField
 class Integer(_SurveyField):
     field = forms.IntegerField
 class Time(_SurveyField):
