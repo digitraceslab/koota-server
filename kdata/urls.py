@@ -100,6 +100,9 @@ urls_ui = [
     # /group/name/stats
     url(r'^group/(?P<group_name>[\w-]+)/stats/?$',
         group.group_stats, name='group-stats'),
+    # /group/name/config
+    url(r'^group/(?P<group_name>[\w-]+)/config/?$',
+        group.GroupUpdate.as_view(), name='group-update'),
     # /group/name/converter(.ext)
     url(r'^group/(?P<group_name>[\w-]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
         group.group_data, name='group-data'),

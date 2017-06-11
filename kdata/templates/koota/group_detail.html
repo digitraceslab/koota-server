@@ -13,6 +13,11 @@
 <li>End time: {{ group.dbrow.ts_end|date:"c" }}</li>
 </ul>
 
+{% if is_admin %}
+You are an admin, so you can
+<a href="{% url 'group-update' group_name=group.dbrow.slug %}" class="btn btn-warning btn-xs">Configure this group</a>
+{% endif %}
+
 
 
 {% if is_subject %}

@@ -61,6 +61,9 @@ class KdataMiddleware(object):
                     if view_name == 'group-subject-device-config':
                         breadcrumbs.append(('config',
                                             None))
+            if view_name == 'group-update':
+                breadcrumbs.append(('config',
+                                        None))
 
 
         # Device-related

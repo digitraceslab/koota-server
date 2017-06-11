@@ -148,7 +148,7 @@ def group_detail(request, group_name):
         c['n_subjects'] = sum(1 for _ in iter_subjects(group, group_class))
         c['is_researcher'] = group.is_researcher(request.user)
         c['is_manager'] = group.is_manager(request.user)
-        #c['is_admin'] = group.dbrow.is_admin(request.user)
+        c['is_admin'] = group.is_admin(request.user)
         #import IPython ; IPython.embed()
     # If a subject, allow subject views.
     if permissions.has_group_subject_permission(request, group):
@@ -386,6 +386,18 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
 
     return TemplateResponse(request, 'koota/group_data.html',
                             context=context)
+
+
+class GroupUpdate(UpdateView):
+    """Allow admins to set basic group properties."""
+    fields = ['name', 'desc', 'invite_code', 'config']
+    template_name = 'koota/group_update.html'
+    def get_object(self, queryset=None):
+        slug = self.kwargs.get('group_name')
+        g = models.Group.objects.get(slug=slug)
+        if not permissions.has_group_admin_permission(self.request, g):
+            raise exceptions.NoGroupPermission()
+        return g
 
 
 
