@@ -162,6 +162,8 @@ def has_device_manager_permission(request, device, subject=None):
     # Normal check of more database fields.  At least one group must
     # grant permission.
     for g in group:
-        if g.is_manager(researcher) and device.label.analyze:
+        # device can be None, if the device is just being created.  In
+        # this case allow creation.
+        if g.is_manager(researcher) and (device is None or device.label.analyze):
             return True
     return False
