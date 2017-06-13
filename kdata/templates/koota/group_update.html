@@ -1,0 +1,17 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+<h2>Update group {{object.name}}</h2>
+
+Update this group as a group admin
+
+<form action="" method="post">{% csrf_token %}
+  <table class="table">
+    {{ form.as_table }}
+  </table>
+  <input class="btn btn-primary" type="submit" value="Update" />
+</form>
+
+
+{% endblock %}
