@@ -369,7 +369,6 @@ class GroupSubject(models.Model):
             return util.safe_hash(self.group.salt+self.user.username)
     def allowed_devices(self, device_class=None):
         """Iterate devices that researchers of this group+user can access"""
-        print("ad type=", device_class)
         # Automatically get device classes from converters
         if (isinstance(device_class, type)
               and issubclass(device_class, group._GroupConverter)):
