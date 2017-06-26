@@ -1,0 +1,31 @@
+{% extends "koota/base.html" %}
+
+{% block body %}
+
+{% if success %}
+<div class="alert alert-success">
+  Your file has been uploaded.  Properties: rowid=<tt>{{rowid}}</tt>,
+  bytes=<tt>{{bytes}}</tt>, sha256=<tt>{{sha256}}</tt>
+</div>
+{% endif %}
+
+
+<h2>Raw data upload</h2>
+
+<p>This form will allow you to upload a single file to the device
+  {{device.public_id}} ({{device.type}}{% if device.comment %}:
+  {{device.comment}}{% endif %}).</p>
+
+{% if processor %}
+<p>This device class has a special upload handler enabled, which will
+  process the data before saving (probably for privacy).</p>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <input type="file" name="file0" id="file0"/>
+  <input type="submit" value="Upload" />
+</form>
+
+
+{% endblock %}

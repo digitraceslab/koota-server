@@ -58,6 +58,9 @@ urls_device = [
     # /public_id/qr.png
     url(r'^(?P<public_id>[0-9a-fA-F]*)/qr.png$', kviews.device_qrcode,
         name='device-qr'),
+    # /public_id/upload
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/upload$', views_admin.upload,
+        name='device-upload'),
     # /public_id/
     url(r'^(?P<public_id>[0-9a-fA-F]*)/$', views_data.DeviceDetail.as_view(),
         name='device'),
@@ -116,6 +119,10 @@ urls_ui = [
     # /group/name/subjNN/public_id/config
     url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/config/$',
         kviews.DeviceConfig.as_view(), name='group-subject-device-config'),
+    # /public_id/upload
+    url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/(?P<public_id>[0-9a-f]+)/upload/$',
+    views_admin.upload,
+        name='group-subject-device-upload'),
     # /group/name/subjNN/converter(.ext)         Subject's data
     url(r'^group/(?P<group_name>[\w-]+)/subj(?P<gs_id>[0-9]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
         group.group_data, name='group-subject-data'),

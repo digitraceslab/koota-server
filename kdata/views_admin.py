@@ -25,7 +25,9 @@ from . import devices
 from . import exceptions
 from . import group
 from . import logs
+from . import permissions
 from . import util
+from . import views
 from .util import human_bytes
 
 import logging
@@ -379,3 +381,39 @@ def current_time(request):
         "system local time: %s"%time.ctime(),
         ])
     return HttpResponse(ret, content_type='text/plain')
+
+
+
+def upload(request, public_id, device_class=None,
+           gs_id=None, group_name=None):
+    """Implement a web form for uploading data.
+
+    This allows a person to upload data directly to a device, but is not
+    designed for serious use.
+    """
+    device = models.Device.get_by_id(public_id)
+    if not permissions.has_device_config_permission(request, device):
+        raise exceptions.NoDevicePermission("No permission for device")
+    context = c = { }
+    c['device'] = device
+
+    device_class = device.get_class()
+    if hasattr(device_class, 'process_upload'):
+        c['processor'] = True  # user is informed
+
+    if request.method == "POST":
+        file = request.FILES['file0']
+        if file.size > 2 * 2**20:
+            raise exceptions.BaseMessageKootaException(message="File too large (2 MiB limit)")
+        data = file.read()
+        # Do we do extra processing?
+        if c['processor']:
+            data = device_class.process_upload(data)
+        #
+        c['success'] = True
+        c['bytes'] = len(data)
+        c['sha256'] = hashlib.sha256(data).hexdigest()
+        # Save
+        rowid = views.save_data(data=data, device_id=device.secret_id, request=request)
+        c['rowid'] = rowid
+    return TemplateResponse(request, 'koota/upload.html', context)

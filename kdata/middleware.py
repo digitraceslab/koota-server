@@ -48,7 +48,6 @@ class KdataMiddleware(object):
             if 'gs_id' in kwargs:
                 groupsubject = models.GroupSubject.objects.get(id=kwargs['gs_id'])
                 breadcrumbs.append((groupsubject.hash_if_needed(),
-                                    None,
                                     reverse('group-subject-detail',
                                             kwargs=dict(group_name=kwargs['group_name'],
                                                         gs_id=kwargs['gs_id']))
@@ -59,8 +58,9 @@ class KdataMiddleware(object):
                     breadcrumbs.append(('%s (%s)'%(device.public_id, device.human_name()),
                                         None))
                     if view_name == 'group-subject-device-config':
-                        breadcrumbs.append(('config',
-                                            None))
+                        breadcrumbs.append(('config', None))
+                    elif view_name == 'group-subject-device-upload':
+                        breadcrumbs.append(('upload', None))
             if view_name == 'group-update':
                 breadcrumbs.append(('config',
                                         None))
@@ -78,9 +78,10 @@ class KdataMiddleware(object):
                 breadcrumbs.append((kwargs['converter'], reverse('device-data',
                                                                  kwargs=dict(public_id=public_id,
                                                                              converter=kwargs['converter']))))
-            if view_name == 'device-config':
-                breadcrumbs.append(('config',
-                                        None))
+            elif view_name == 'device-config':
+                breadcrumbs.append(('config', None))
+            elif view_name == 'device-upload':
+                breadcrumbs.append(('upload', None))
         # Device list
         if view_name == 'device-list': #getattr(view_func, 'view_class', None) == kviews.DeviceListView:
             breadcrumbs.append(('All Devices', reverse('device-list')))
