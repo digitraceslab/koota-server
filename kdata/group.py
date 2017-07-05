@@ -540,8 +540,8 @@ def group_user_create(request, group_name):
                      op='group_user_create_success',
                      data_of=user)
             group_class = group.get_class()
-            group_class.setup_user(user)
             models.GroupSubject.objects.create(user=user, group=group)
+            group_class.setup_user(user)
             c['success'] = True
     else:
         # Initial, present box for invite code.
