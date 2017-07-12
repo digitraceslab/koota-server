@@ -104,7 +104,8 @@ class Aware(devices.BaseDevice):
     <ol>
     <li><a href="{{install_url}}">Install the AWERE app from here</a>.</li>
     <li>See the <a href="https://github.com/CxAalto/koota-server/wiki/Aware">instructions on the github wiki</a>.
-    <li>URL is {{study_url}}</li>
+    <li>If you are viewing this on your device, you can click <a href="{{study_url_aware_scheme" class="btn-xs btn-success">here to link directly</a></li>.
+    <li>URL for linking is <a href={{study_url}}>{{study_url}}</a></li>
     </ol>
 
     <img src="{{qrcode_img_path}}"></img>
@@ -125,6 +126,7 @@ class Aware(devices.BaseDevice):
         config = json.dumps(config, sort_keys=True, indent=1, separators=(',',': '))
         config = mark_safe('<pre>'+escape(config)+'</pre>')
         context = dict(study_url=url_,
+                       study_url_aware_scheme=url_.replace('https:', 'aware-ssl:'),
                        qrcode_img_path=qrcode_img_path,
                        pretty_aware_config=config,
                        install_url=self.install_url)
