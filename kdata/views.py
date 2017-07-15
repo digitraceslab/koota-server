@@ -38,7 +38,7 @@ def post(request, device_id=None, device_class=None):
                             status=405)
     # Custom device code, if available.
     results = { }
-    if device_class is not None:
+    if device_class is not None and hasattr(device_class, 'post'):
         results = device_class.post(request)
 
     # Find device_id.  Try different things until found.
@@ -102,6 +102,12 @@ def post(request, device_id=None, device_class=None):
         if data_sha256 != request.META['HTTP_X_SHA256'].lower():
             return JsonResponse(dict(ok=False, error="Checksum mismatch"),
                                      status=400, reason="Checksum mismatch")
+
+    # Do device-specifc processing of data
+    if device_class is not None and hasattr(device_class, 'process_upload'):
+        # hack: this is an instance method.  Eventually define
+        # semantics: should this be a class method?
+        data = device_class.process_upload(None, data)
 
     # Store data in DB.  (Uses django models for now, but should
     # be made more efficient later).

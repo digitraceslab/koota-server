@@ -14,6 +14,7 @@ from kdata.devices import instagram
 from kdata.devices import twitter
 from kdata.devices.muratabsn import MurataBSN, murata_calibrate
 from kdata.devices.purplerobot import PurpleRobot
+from kdata.devices.actiwatch import Actiwatch
 
 # These URLs relate to receiving data, and should be usable by the
 # write-only domain (not quite there yet, but...)
@@ -22,6 +23,9 @@ urls_data = [
     # Purple Robot - different API
     url(r'^post/purple/?(?P<device_id>\w+)?/?$', kviews.post,
         dict(device_class=PurpleRobot), name='post-purple'),
+    # Actigraphs - process and remove data
+    url(r'^post/actiwatch/?(?P<device_id>\w+)?/?$', kviews.post,
+        dict(device_class=Actiwatch), name='post-actiwatch'),
     # Generic POST url.
     url(r'^post/?(?P<device_id>[A-Fa-f0-9]+)?/?$', kviews.post, name='post'),
     # Murata sleep sensor: this has a hard-coded POST URL.
