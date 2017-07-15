@@ -19,29 +19,43 @@ on disk thus making this not a single file.)
 
 """
 
+from __future__ import print_function
+
+DEFAULT_URL = 'https://data.koota.cs.aalto.fi/post/'
+
+import hashlib
 import json
 try:
     from urllib.request import Request, urlopen
+    from urllib.error import HTTPError
 except ImportError:
-    from urllib2 import Request, urlopen
+    from urllib2 import Request, urlopen, HTTPError
 
-
-def post_data(device_id, data):
-    _r = Request(url='https://data.koota.cs.aalto.fi/post/',
+def post_data(device_id, data, url):
+    data_sha256 = hashlib.sha256(data).hexdigest()
+    _r = Request(url=url,
                  data=data,
-                 headers={'Device-ID': device_id})
+                 headers={'Device-ID': device_id,
+                          'X-Sha256': data_sha256,
+                          'X-Rowid': '1'})
     try:
         r = urlopen(_r)
-        response = r.read()
-        response = json.loads(response.decode('utf-8'))
-        # py3 / py2 comptability
-        print('HTTP status:', r.getcode())
-        print('Response:', response)
-        if response.get('ok', False):
-            return 0
+        try:
+            response = r.read()
+            response = json.loads(response.decode('utf-8'))
+            # py3 / py2 comptability
+            print('  HTTP status:', r.getcode())
+            print('  Response:', response)
+            if response.get('ok', False):
+                return 0
+            if data_sha256 != response.get('data_sha256', ''):
+                return 0
+            return 1
+        finally:
+            r.close()
+    except HTTPError as e:
+        print('  HTTP error:', e.getcode(), e.reason)
         return 1
-    finally:
-        r.close()
 
 
 
@@ -51,6 +65,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload data to koota server")
     parser.add_argument('device_id', help='device id to upload to')
     parser.add_argument('data_filename', help='Data to device id to upload to')
+    parser.add_argument('--url', help='URL to post to',
+                        default=DEFAULT_URL)
     args = parser.parse_args()
 
     device_id = args.device_id
@@ -74,7 +90,7 @@ if __name__ == "__main__":
         print("Packet:", i)
 
         # The following line will post a single data packet.
-        status = post_data(args.device_id, data)
+        status = post_data(args.device_id, data, url=args.url)
         if status:
             print('Packet %s failed'%i)
             exit(1)
