@@ -96,6 +96,13 @@ def post(request, device_id=None, device_class=None):
     elif 'nonce' in request.GET:         nonce = request.GET['nonce']
     elif 'nonce' in request.POST:        nonce = request.POST['nonce']
 
+    # Check checksum if provided
+    data_sha256 = sha256(data).hexdigest()
+    if 'HTTP_X_SHA256' in request.META:
+        if data_sha256 != request.META['HTTP_X_SHA256'].lower():
+            return JsonResponse(dict(ok=False, error="Checksum mismatch"),
+                                     status=400, reason="Checksum mismatch")
+
     # Store data in DB.  (Uses django models for now, but should
     # be made more efficient later).
     rowid = save_data(data=data, device_id=device_id, request=request)
@@ -105,12 +112,14 @@ def post(request, device_id=None, device_class=None):
     if 'response' in results:
         return results['response']
     response = dict(ok=True,
-                    data_sha256=sha256(data).hexdigest(),
+                    data_sha256=data_sha256,
                     bytes=len(data),
                     #rowid=rowid,
                     )
     if nonce is not None:
         response['nonce'] = nonce
+    if 'HTTP_X_ROWID' in request.META:
+        response['rowid'] = rowid
     return JsonResponse(response)
 
 def save_data(data, device_id, request=None,
