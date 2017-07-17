@@ -968,22 +968,6 @@ class IosDay(PRDayAggregator):
     filter_func = staticmethod(lambda data: True)
     filter_row_func = staticmethod(lambda row: 'probe' not in row)
 
-class AwareDayAggregator(PRDayAggregator):
-    """Base class for Aware aggregation"""
-    device_class = ('Aware', 'AwareValidCert')
-    ts_func = staticmethod(lambda probe: probe['timestamp'])
-    # Should each row within a packet be used?
-    # Following must be copied in each subclass (and remove self.)
-    filter_row_func = staticmethod(lambda row: row['table'] == self.probe_type)
-    #probe_type = 'locations' # to be filled in
-    def iter_row(self, packet_ts, data):
-        data = loads(data)
-        if data['table'] != self.probe_type: return
-        data2 = loads(data['data'])
-        for row in data2:
-            ts = row['timestamp']/1000
-            yield ts, self.ts_bin_func(ts), row
-
 
 class PRBatteryDay(PRDayAggregator):
     header = ['day', 'mean_level', ]
@@ -1180,20 +1164,6 @@ class IosLocationDay(IosDay, PRLocationDay):
         lat = [ probe['lat'] for probe in probes ]
         lon = [ probe['lon'] for probe in probes ]
         times = [ probe['timestamp'] for probe in probes ]
-        return lat, lon, times
-class AwareLocationDay(AwareDayAggregator, LocationDayAggregator):
-    def iter_row(self, packet_ts, data):
-        data = loads(data)
-        if data['table'] != 'locations': return
-        #print(data)
-        data2 = loads(data['data'])
-        for row in data2:
-            ts = row['timestamp']/1000
-            yield ts, self.ts_bin_func(ts), row
-    def get_lat_lon_times(self, probes):
-        lat = [ probe['double_latitude'] for probe in probes if probe.get('label')!='disabled' ]
-        lon = [ probe['double_longitude'] for probe in probes if probe.get('label')!='disabled' ]
-        times = [ probe['timestamp']/1000 for probe in probes if probe.get('label')!='disabled' ]
         return lat, lon, times
 # Second implemation of DayConverter - including k-means
 def kmeans_haversine(data, k, iter=20, thresh=1e-05):
@@ -1686,7 +1656,7 @@ class ActiwatchMarkers(_Converter):
 
 
 class BaseAwareConverter(_Converter):
-    device_class = ('Aware', 'AwareValidCert', 'koota_hyks_2016.AwareHyks')
+    device_class = ('Aware', 'AwareValidCert', 'koota_hyks_2016.AwareHyks', 'kdata.devices.aware.Aware')
     ts_column = 'timestamp'
     #table = 'screen'
     #desc = "Generic Aware converter"
@@ -1712,6 +1682,34 @@ class BaseAwareConverter(_Converter):
             for row in table_data:
                 yield (time(row[ts_column]/1000.),
                        ) + tuple(row.get(colname,'') for colname in fields)
+class AwareDayAggregator(PRDayAggregator, BaseAwareConverter):
+    """Base class for Aware aggregation"""
+    ts_func = staticmethod(lambda probe: probe['timestamp'])
+    # Should each row within a packet be used?
+    # Following must be copied in each subclass (and remove self.)
+    filter_row_func = staticmethod(lambda row: row['table'] == self.probe_type)
+    #probe_type = 'locations' # to be filled in
+    def iter_row(self, packet_ts, data):
+        data = loads(data)
+        if data['table'] != self.probe_type: return
+        data2 = loads(data['data'])
+        for row in data2:
+            ts = row['timestamp']/1000
+            yield ts, self.ts_bin_func(ts), row
+class AwareLocationDay(AwareDayAggregator, LocationDayAggregator):
+    def iter_row(self, packet_ts, data):
+        data = loads(data)
+        if data['table'] != 'locations': return
+        #print(data)
+        data2 = loads(data['data'])
+        for row in data2:
+            ts = row['timestamp']/1000
+            yield ts, self.ts_bin_func(ts), row
+    def get_lat_lon_times(self, probes):
+        lat = [ probe['double_latitude'] for probe in probes if probe.get('label')!='disabled' ]
+        lon = [ probe['double_longitude'] for probe in probes if probe.get('label')!='disabled' ]
+        times = [ probe['timestamp']/1000 for probe in probes if probe.get('label')!='disabled' ]
+        return lat, lon, times
 class AwareAuto(BaseAwareConverter):
     header = ['time', 'data']
     def convert(self, queryset, time=lambda x:x):
@@ -1791,8 +1789,7 @@ class AwarePacketTimeRange(BaseAwareConverter):
                    len(data['data']),
                    len(data_decoded)/float(time_range) if time_range else '',
                    )
-class AwareDataSize(BaseDataSize):
-    device_class = ('Aware', 'AwareValidCert')
+class AwareDataSize(BaseDataSize, BaseAwareConverter):
     per_page = None
     def do_queryset_iteration(self, queryset, sizes, counts, total_days):
         for ts, data in queryset:
@@ -2042,8 +2039,7 @@ class AwareMessages(BaseAwareConverter):
                        types[row.get('message_type', '')],
                        safe_hash(row['trace']) if 'trace' in row else '',
                        )
-class AwareRecentDataCounts(BaseDataCounts):
-    device_class = ('Aware', 'AwareValidCert')
+class AwareRecentDataCounts(BaseDataCounts, BaseAwareConverter):
     timestamp_converter = AwareTimestamps
 class AwareEsms(BaseAwareConverter):
     desc = "ESMs"
