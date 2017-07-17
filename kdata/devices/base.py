@@ -93,7 +93,7 @@ def register_device(desc=None, default=False, alias=None,
 
     Similar signature as register_device()"""
     def register(cls):
-        if alias is not None and not hasattr(cls, '_class_alias'):
+        if alias is not None and (not hasattr(cls, '_class_alias') or cls._class_alias is None):
             cls._class_alias = alias
         _register_device(cls, desc=desc, default=default, alias=alias,
                         aliases=aliases)
