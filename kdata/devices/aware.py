@@ -102,13 +102,13 @@ class Aware(devices.BaseDevice):
     ]
     config_instructions_template = textwrap.dedent("""\
     <ol>
-    <li><a href="{{install_url}}">Install the AWERE app from here</a>.</li>
+    <li>Install the AWERE app from <a href="{{install_url_local}}">here (koota version)</a> or <a href="{{install_url}}">here (upstream version)</a>.</li>
+    <li>If you are viewing this on your device, you can click <a href="{{study_url_aware_scheme}}" class="btn-xs btn-info">here to link directly</a>.</li>
     <li>See the <a href="https://github.com/CxAalto/koota-server/wiki/Aware">instructions on the github wiki</a>.
-    <li>If you are viewing this on your device, you can click <a href="{{study_url_aware_scheme" class="btn-xs btn-success">here to link directly</a></li>.
-    <li>URL for linking is <a href={{study_url}}>{{study_url}}</a></li>
+    <li>URL for linking is <a href="{{study_url}}">{{study_url}}</a></li>
     </ol>
 
-    <img src="{{qrcode_img_path}}"></img>
+    <img src="{{qrcode_img_path}}">
 
     {% if pretty_aware_config %}
     <p>Your raw config is:
@@ -117,6 +117,7 @@ class Aware(devices.BaseDevice):
 
     """)
     install_url = 'http://play.google.com/store/apps/details?id=com.aware.phone'
+    install_url_local = 'https://koota.cs.aalto.fi/a/niima.apk'
     def config_context(self):
         url_ = self.qrcode_url()
         qrcode_img_path = reverse('aware-register-qr',
@@ -129,7 +130,9 @@ class Aware(devices.BaseDevice):
                        study_url_aware_scheme=url_.replace('https:', 'aware-ssl:'),
                        qrcode_img_path=qrcode_img_path,
                        pretty_aware_config=config,
-                       install_url=self.install_url)
+                       install_url=self.install_url,
+                       install_url_local=self.install_url_local,
+                           )
         return context
     def webservice_url(self):
         """URL for webservice."""
