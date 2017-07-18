@@ -1150,7 +1150,7 @@ class LocationDayAggregator(DayAggregator):
                )
 class PRLocationDay(PRDayAggregator, LocationDayAggregator):
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
-    desc = "PRLocation, daily features"
+    desc = "Location, daily features"
     filter_func = staticmethod(lambda data: 'LocationProbe' in data)
     filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe')
     fast_row_limit = 5
@@ -1160,6 +1160,7 @@ class PRLocationDay(PRDayAggregator, LocationDayAggregator):
         times = [ probe['TIMESTAMP'] for probe in probes ]
         return lat, lon, times
 class IosLocationDay(IosDay, PRLocationDay):
+    desc = "Location, daily features"
     def get_lat_lon_times(self, probes):
         lat = [ probe['lat'] for probe in probes ]
         lon = [ probe['lon'] for probe in probes ]
@@ -1697,6 +1698,7 @@ class AwareDayAggregator(PRDayAggregator, BaseAwareConverter):
             ts = row['timestamp']/1000
             yield ts, self.ts_bin_func(ts), row
 class AwareLocationDay(AwareDayAggregator, LocationDayAggregator):
+    desc = "Location, daily features"
     def iter_row(self, packet_ts, data):
         data = loads(data)
         if data['table'] != 'locations': return
@@ -1816,7 +1818,7 @@ class AwareDeviceInfo2(AwareAuto):
     desc = "Hardware meta-info."
     table = "aware_device"
 class AwareScreen(BaseAwareConverter):
-    desc = "Screen on/off"
+    desc = "Screen off=0, on=1, locked=2, unlocked=3"
     table = 'screen'
     fields = ['screen_status',
               ]
@@ -1884,8 +1886,9 @@ class AwareApplicationNotifications(BaseAwareConverter):
               'sound',
               'vibrate',
               ]
+AwareAppNotifications = AwareApplicationNotifications
 class AwareApplicationCrashes(BaseAwareConverter):
-    desc = "Notifications"
+    desc = "Application crashes"
     table = 'applications_crashes'
     fields = ['error_short',
               'error_long',
@@ -1965,15 +1968,6 @@ class AwareNetworkTraffic(BaseAwareConverter):
               'double_sent_packets',
               'double_received_packets',
               ]
-class AwareAppNotifications(BaseAwareConverter):
-    desc = "applications_notifications"
-    table = 'applications_notifications'
-    fields = ['application_name',
-              'sound',
-              'vibrate',
-              'double_sent_packets',
-              'double_received_packets',
-              ]
 class AwareTelephony(BaseAwareConverter):
     desc = "telephony"
     table = 'telephony'
@@ -2004,7 +1998,7 @@ class AwareESM(BaseAwareConverter):
               'esm_type',
               'esm_notification_timeout',
               ]
-    
+
 class AwareLog(BaseAwareConverter):
     desc = "Status log"
     table = 'aware_log'
@@ -2026,7 +2020,7 @@ class AwareCalls(BaseAwareConverter):
                        safe_hash(row['trace']) if 'trace' in row else '',
                        )
 class AwareMessages(BaseAwareConverter):
-    desc = "Messages"
+    desc = "Text messages"
     header = ['time', 'message_type', 'trace', ]
     def convert(self, queryset, time=lambda x:x):
         types = {"1": "incoming", "2":"outgoing"}
