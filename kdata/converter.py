@@ -961,7 +961,7 @@ class PRDayAggregator(DayAggregator):
     # Should each row within a packet be used?
     # Following must be copied in each subclass (and remove self.)
     filter_row_func = staticmethod(lambda row: row['PROBE'] == self.probe_type)
-class IosDay(PRDayAggregator):
+class IosDay(DayAggregator):
     """Day aggregator extended to koota's iOS app."""
     device_class = 'Ios'
     ts_func = staticmethod(lambda probe: probe['timestamp'])
@@ -1045,6 +1045,8 @@ class LocationDayAggregator(DayAggregator):
         speed_th = 0.28 # m/s, moving threshold
         max_dist = 500 # m, maximum radius of cluster
         lat, lon, times = self.get_lat_lon_times(probes)
+        if len(times) == 0:
+            return
         time_bins = range(int(min(times)), int(max(times)) + time_step, time_step)
         lat_binned = []
         lon_binned = []
@@ -1683,7 +1685,7 @@ class BaseAwareConverter(_Converter):
             for row in table_data:
                 yield (time(row[ts_column]/1000.),
                        ) + tuple(row.get(colname,'') for colname in fields)
-class AwareDayAggregator(PRDayAggregator, BaseAwareConverter):
+class AwareDayAggregator(DayAggregator, BaseAwareConverter):
     """Base class for Aware aggregation"""
     ts_func = staticmethod(lambda probe: probe['timestamp'])
     # Should each row within a packet be used?
