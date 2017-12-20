@@ -28,6 +28,7 @@ class Command(BaseCommand):
                                  "device_id becomes the group name.",
                             action='store_true')
         parser.add_argument('--full', help="Produce all group data?", action='store_true')
+        parser.add_argument('--hash-seed', help="Override hash seed?")
         parser.add_argument('--format', '-f', help="Output format")
         parser.add_argument('--no-handle-errors', action='store_false', default=True,
                             help="Use converter error handing framework.")
@@ -45,7 +46,13 @@ class Command(BaseCommand):
         # Handle groups differently.  Delegate to handle_group and
         # return whatever it has.  In the future these should be more unified.
         if options['group']:
-            return self.handle_group(time_converter=time_converter, **options)
+            return self.handle_group(time_converter=time_converter,
+                                     **options)
+
+        # Override hash_seed?  None => no effect
+        hash_seed = options['hash_seed']
+        if hash_seed is not None:
+            hash_seed = hash_seed.encode()
 
         # Get the device we want to convert data from
         device = Device.get_by_id(options['device_id'])
@@ -77,10 +84,12 @@ class Command(BaseCommand):
             # Two options for error handling: handle with warning at
             # end, or immediately raise exception.
             if options['no_handle_errors']:
-                converter = converter_class(rows=rows, time=time_converter)
+                converter = converter_class(rows=rows, time=time_converter,
+                                            hash_seed=hash_seed)
                 table = converter.run()
             else:
-                converter = converter_class(rows=rows, time=time_converter)
+                converter = converter_class(rows=rows, time=time_converter,
+                                            hash_seed=hash_seed)
                 table = converter.convert(rows,
                                           time=time_converter)
             # Set output: stdout or a file.
@@ -103,6 +112,10 @@ class Command(BaseCommand):
         group = models.Group.objects.get(slug=group_name)
         group_class = group.get_class()
 
+        hash_seed = options['hash_seed']
+        if hash_seed is not None:
+            hash_seed = hash_seed.encode()
+
         group_converter_class = util.import_by_name(options['converter'])
         if not group_converter_class:
             group_converter_class = [ x for x in group_class.converters
@@ -121,6 +134,7 @@ class Command(BaseCommand):
             time_converter=time_converter,
             row_limit=None if options['full'] else 50,
             handle_errors=options['no_handle_errors'],
+            hash_seed=hash_seed
             )
 
         header = ['user', 'device', ] + converter_class.header2()

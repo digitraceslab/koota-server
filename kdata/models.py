@@ -272,7 +272,9 @@ class Group(models.Model):
                                          swappable=True)
     def __str__(self):
         return self.name
-    def hash_do(self, text):
+    def hash_do(self, text, hash_seed=None):
+        if hash_seed is not None:
+            return util.safe_hash(self.salt+text, hash_seed=hash_seed)
         return util.safe_hash(self.salt+text)
     def n_subjects(self):
         return self.subjects.count()
@@ -358,15 +360,15 @@ class GroupSubject(models.Model):
     def __str__(self):
         return '<GroupSubject(%s, %s)>'%(repr(self.hash_if_needed()),
                                          repr(self.group.slug))
-    def hash(self):
+    def hash(self, hash_seed=None):
         # TODO: duplicated in iter_group_data.
-        return util.safe_hash(self.group.salt+self.user.username)
-    def hash_if_needed(self):
+        return util.safe_hash(self.group.salt+self.user.username, hash_seed=hash_seed)
+    def hash_if_needed(self, hash_seed=None):
         """Subject ID, hashed if necessary"""
         if self.group.nonanonymous:
             return self.user.username
         else:
-            return util.safe_hash(self.group.salt+self.user.username)
+            return util.safe_hash(self.group.salt+self.user.username, hash_seed=hash_seed)
     def allowed_devices(self, device_class=None):
         """Iterate devices that researchers of this group+user can access"""
         # Automatically get device classes from converters
@@ -390,9 +392,9 @@ class GroupSubject(models.Model):
         for device in Device.objects.filter(user=self.user,
                                             label__analyze=True):
             yield device
-    def allowed_devices_with_hash(self, type=None):
+    def allowed_devices_with_hash(self, type=None, hash_seed=None):
         for device in self.allowed_devices(type=type):
-            yield device, self.group.hash_do(device.public_id)
+            yield device, self.group.hash_do(device.public_id, hash_seed=hash_seed)
 
 class GroupResearcher(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

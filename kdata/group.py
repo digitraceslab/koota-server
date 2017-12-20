@@ -220,7 +220,8 @@ def iter_group_data(group,
                     time_converter=lambda x: x,
                     handle_errors=True,
                     gs_id=None,
-                    reverse_html_order=True):
+                    reverse_html_order=True,
+                    hash_seed=None):
     """Core data iterator: (user, data, converter_data...)
 
     This abstracts out the core iteration of group data.  Basically,
@@ -257,8 +258,8 @@ def iter_group_data(group,
             subject_hash = subject.user.username
             device_hash = device.public_id
         else:
-            subject_hash = subject.hash()
-            device_hash  = group.hash_do(device.public_id)
+            subject_hash = subject.hash(hash_seed=hash_seed)
+            device_hash  = group.hash_do(device.public_id, hash_seed=hash_seed)
 
         # Fetch all relevant data
         queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
@@ -287,7 +288,7 @@ def iter_group_data(group,
         else:
             queryset = util.optimized_queryset_iterator(queryset)
         rows = ((x.ts, x.data) for x in queryset)
-        converter = converter_class(rows=rows, time=time_converter)
+        converter = converter_class(rows=rows, time=time_converter, hash_seed=hash_seed)
         converter.errors = converter_for_errors.errors
         converter.errors_dict = converter_for_errors.errors_dict
         if handle_errors:

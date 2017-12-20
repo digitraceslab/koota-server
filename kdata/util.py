@@ -64,10 +64,12 @@ def import_by_name(name, default=None, raise_if_none=False):
 
 from django.conf import settings
 SALT_KEY = settings.SALT_KEY
-def safe_hash(data):
+def safe_hash(data, hash_seed=None):
     """Make a safe hash function for identifiers."""
     if not isinstance(data, bytes):
         data = data.encode('utf8')
+    if hash_seed:
+        return urlsafe_b64encode(sha256(hash_seed+data).digest()[:9]).decode('ascii')
     return urlsafe_b64encode(sha256(SALT_KEY+data).digest()[:9]).decode('ascii')
 
 def random_salt_b64(nbytes=18):

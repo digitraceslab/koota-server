@@ -82,6 +82,7 @@ from calendar import timegm
 import collections
 import csv
 from datetime import datetime, timedelta
+from functools import partial
 from hashlib import sha256
 import itertools
 import json  # needed for pretty json
@@ -116,10 +117,12 @@ except:
     # important.
     import random
     SALT_KEY = bytes(bytearray((random.randint(0, 255) for _ in range(32))))
-def safe_hash(data):
+def _safe_hash(data, hash_seed=None):
     """Make a safe hash function for identifiers."""
     if not isinstance(data, bytes):
         data = data.encode('utf8')
+    if hash_seed:
+        return urlsafe_b64encode(sha256(hash_seed+data).digest()[:9]).decode('ascii')
     return urlsafe_b64encode(sha256(SALT_KEY+data).digest()[:9]).decode('ascii')
 
 
@@ -149,7 +152,8 @@ class _Converter(object):
         if hasattr(cls, 'header') and cls.header:
             return cls.header
         return ['time'] + [x[0].lower() for x in cls.fields]
-    def __init__(self, rows=None, time=lambda x: x, params={}):
+    def __init__(self, rows=None, time=lambda x: x,
+                 hash_seed=None, params={}):
         # Warning: during template rendering this is used in a variable as "_Converter.name"
         pass
         self.rows = rows
@@ -157,6 +161,9 @@ class _Converter(object):
         self.params = params
         self.errors = [ ]
         self.errors_dict = collections.defaultdict(int)
+        self.safe_hash = _safe_hash
+        if hash_seed is not None:
+            self.safe_hash = partial(_safe_hash, hash_seed=hash_seed)
     def run(self):
         """Run through the conversion.
 
@@ -524,6 +531,7 @@ class PRWifi(_Converter):
     safe = False
     def convert(self, queryset, time=lambda x:x):
         safe = self.safe
+        safe_hash = self.safe_hash
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
@@ -580,6 +588,7 @@ class PRBluetooth(_Converter):
     safe = False
     def convert(self, queryset, time=lambda x:x):
         safe = self.safe
+        safe_hash = self.safe_hash
         for ts, data in queryset:
             data = loads(data)
             for probe in data:
@@ -793,6 +802,7 @@ class PRCommunicationEventProbe(_Converter):
     no_number = False
     def convert(self, queryset, time=lambda x:x):
         no_number = self.no_number
+        safe_hash = self.safe_hash
         for ts, data in queryset:
             if 'CommunicationEventProbe' not in data:
                 continue
@@ -822,6 +832,7 @@ class PRApplicationLaunchesSafe(_Converter):
         AppList = f.split('\n')
         AppList = [k.split(',')[0] for k in AppList]
         AppList = set(AppList)
+        safe_hash = self.safe_hash
 
         for ts, data in queryset:
             data = loads(data)
@@ -2009,6 +2020,7 @@ class AwareCalls(BaseAwareConverter):
     desc = "Calls (incoming=1, outgoing=2, missed=3)"
     header = ['time', 'call_type', 'call_duration', 'trace', ]
     def convert(self, queryset, time=lambda x:x):
+        safe_hash = self.safe_hash
         types = {"1": "incoming", "2":"outgoing", "3":"missed"}
         for ts, data in queryset:
             data = loads(data)
@@ -2025,6 +2037,7 @@ class AwareMessages(BaseAwareConverter):
     desc = "Text messages"
     header = ['time', 'message_type', 'trace', ]
     def convert(self, queryset, time=lambda x:x):
+        safe_hash = self.safe_hash
         types = {"1": "incoming", "2":"outgoing"}
         for ts, data in queryset:
             data = loads(data)
