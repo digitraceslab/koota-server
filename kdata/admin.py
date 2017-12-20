@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from django.conf import settings
+
 # Register your models here.
 
 from . import models
@@ -70,3 +72,31 @@ admin.site.register(models.MosquittoUser, MosquittoUserAdmin)
 class ConsentAdmin(admin.ModelAdmin):
     list_display = ['user', 'group', 'sha256']
 admin.site.register(models.Consent, ConsentAdmin)
+
+
+
+# The following overrides and changes the default django.contrib.auth
+# UserModel so that it will show our devices and groups info.  We add
+# the same information as we see from groups (what groups this user is
+# in as a subject and researcher), and what devices this user owns.
+import django.contrib.auth
+from django.contrib.auth.admin import UserAdmin
+User = django.contrib.auth.get_user_model()
+class UserGroupSubjectInline(admin.TabularInline):
+    model = User.subject_of_groups.through
+class UserGroupResearcherInline(admin.TabularInline):
+    model = User.researcher_of_groups.through
+class UserDevices(admin.TabularInline):
+    model = models.Device
+class UserAdmin(UserAdmin):
+    #filter_horizontal = ('subjects', 'researchers')
+    list_display = ['username', ]
+    inlines = [
+        UserGroupSubjectInline,
+        UserGroupResearcherInline,
+        UserDevices,
+        ]
+    search_fields = ('username', 'email')
+# https://stackoverflow.com/a/10956717
+admin.site.unregister(django.contrib.auth.get_user_model())
+admin.site.register(django.contrib.auth.get_user_model(), UserAdmin)
