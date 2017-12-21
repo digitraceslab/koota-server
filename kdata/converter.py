@@ -1852,11 +1852,21 @@ class AwareLight(BaseAwareConverter):
 class AwareWifi(BaseAwareConverter):
     desc = "Wifi scans"
     table = 'wifi'
-    fields = ['ssid',
-              'bssid',
-              'mac_address',
-              'rssi',
-              ]
+    header = ['time', 'ssid', 'bssid', 'mac_address', 'rssi']
+    def convert(self, queryset, time=lambda x:x):
+        safe_hash = self.safe_hash
+        for ts, data in queryset:
+            data = loads(data)
+            if not isinstance(data, dict): continue
+            if data['table'] != 'wifi': continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                yield (time(row['timestamp']/1000.),
+                       safe_hash(row['ssid']) if 'ssid' in row else '',
+                       safe_hash(row['bssid']) if 'bssid' in row else '',
+                       safe_hash(row['mac_address']) if 'mac_address' in row else '',
+                       row['rssi'],
+                       )
 class AwareSensorWifi(BaseAwareConverter):
     desc = "Wifi scans"
     table = 'sensor_wifi'
@@ -1867,11 +1877,20 @@ class AwareSensorWifi(BaseAwareConverter):
 class AwareBluetooth(BaseAwareConverter):
     desc = "Bluetooth"
     table = 'bluetooth'
-    fields = ['bt_address',
-              'bt_rssi',
-              'device_id',
-              'label',
-              ]
+    header = ['time', 'bt_address', 'bt_rssi', 'label']
+    def convert(self, queryset, time=lambda x:x):
+        safe_hash = self.safe_hash
+        for ts, data in queryset:
+            data = loads(data)
+            if not isinstance(data, dict): continue
+            if data['table'] != 'bluetooth': continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                yield (time(row['timestamp']/1000.),
+                       safe_hash(row['bt_address']) if 'bt_address' in row else '',
+                       safe_hash(row['bt_rssi']) if 'bt_rssi' in row else '',
+                       int(row['label'])/1000 if row['label'] not in {'disabled', ''} else '',
+                       )
 class AwareLocation(BaseAwareConverter):
     desc = "Location"
     table = 'locations'
