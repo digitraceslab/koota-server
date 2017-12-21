@@ -1714,6 +1714,7 @@ class AwareLocationDay(AwareDayAggregator, LocationDayAggregator):
     desc = "Location, daily features"
     def iter_row(self, packet_ts, data):
         data = loads(data)
+        if not isinstance(data, dict): return []
         if data['table'] != 'locations': return
         #print(data)
         data2 = loads(data['data'])
@@ -1790,6 +1791,7 @@ class AwarePacketTimeRange(BaseAwareConverter):
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
             data = loads(data)
+            if not isinstance(data, dict): continue
             data_decoded = loads(data['data'])
             try:
                 time_range = (data_decoded[-1]['timestamp']
@@ -2060,6 +2062,7 @@ class AwareMessages(BaseAwareConverter):
         types = {"1": "incoming", "2":"outgoing"}
         for ts, data in queryset:
             data = loads(data)
+            if not isinstance(data, dict): continue
             if data['table'] != 'messages': continue
             table_data = loads(data['data'])
             for row in table_data:
@@ -2076,6 +2079,7 @@ class AwareEsms(BaseAwareConverter):
         types = {"1": "incoming", "2":"outgoing"}
         for ts, data in queryset:
             data = loads(data)
+            if not isinstance(data, dict): continue
             if data['table'] != 'esms': continue
             table_data = loads(data['data'])
             for row in table_data:
