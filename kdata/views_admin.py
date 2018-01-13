@@ -47,7 +47,7 @@ class RegisterForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
     password2 = forms.CharField(widget=forms.PasswordInput, label='Confirm password')
-    email = forms.EmailField()
+    email = forms.EmailField(required=False, label="Email (optional)")
     privacy_stmt = forms.CharField(widget=forms.HiddenInput, required=False,
                              help_text="This is used to verify the privacy statement agreed to.")
     def clean(self):
