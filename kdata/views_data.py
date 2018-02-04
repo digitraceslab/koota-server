@@ -59,8 +59,7 @@ class DeviceDetail(DetailView):
             context['data_earliest'] = device_data.order_by('ts').first().ts
             context['data_latest'] = device_data.order_by('-ts').first().ts
             context['data_latest_data'] = device_data.order_by('-ts').first().data
-            if (context['data_latest'] - context['data_earliest']).total_seconds() < 90*24*3600:
-                context['data_number'] = device_data.count()
+            context['data_number'] = self.object.n_packets
 
         return context
 

@@ -60,6 +60,8 @@ class Device(models.Model):
     # null=True to allow transition.
     ts_create = models.DateTimeField(auto_now_add=True, null=True)
     ts_update = models.DateTimeField(auto_now=True, null=True)
+    n_packets_cache = models.IntegerField(null=True)
+    n_packets_cache_ts = models.DateTimeField(null=True, blank=True)
 
     def __init__(self, *args, **kwargs):
         super(Device, self).__init__(*args, **kwargs)
@@ -80,6 +82,31 @@ class Device(models.Model):
         if self._secret_id:
             return self._secret_id
         return self.device_id
+    @property
+    def n_packets(self, regen=None):
+        """Total number of data packets -- cached
+
+        regen: if None (default), use cache and update it with new
+        values.  If an integer, if cache is older than this value, do a
+        full update (quirky, because it doesn't use time since last full
+        regen).  If True, do a full regeneration.
+        """
+        if self.n_packets_cache is None:
+            self.n_packets_cache = self.backend.count()
+        elif regen is not None:
+            if regen is True:
+                self.n_packets_cache = self.backend.count()
+            if isinstance(regen, int):
+                last_regen = self.n_packets_cache_ts
+                if (timezone.now() - last_regen).total_seconds() > regen:
+                    self.n_packets_cache = self.backend.count()
+        else:
+            n_new = self.backend.count(slc=slice(self.n_packets_cache_ts, None))
+            if n_new > 0:
+                self.n_packets_cache += n_new
+        self.n_packets_cache_ts = timezone.now()
+        self.save()
+        return self.n_packets_cache
     @classmethod
     def get_by_id(cls, public_id):
         """Get a Device object given its public_id or device_id.
