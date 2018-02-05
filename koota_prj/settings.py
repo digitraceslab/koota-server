@@ -60,6 +60,7 @@ WEB_COMPONENTS = set(('ui', 'data', 'admin'))
 SITE_PRIVACY_URL = 'https://github.com/CxAalto/koota-server/wiki/PrivacyPolicy'
 GENERAL_LOG = os.path.join(BASE_DIR, 'log.txt')
 DATA_ACCESS_LOG = GENERAL_LOG
+CONN_MAX_AGE = 60    # database connenction timeout (s)
 
 #### The following settings should go into settings_local.py, NOT here.
 # Make a random salt using this and paste it here.  By default we have
