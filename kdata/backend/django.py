@@ -14,11 +14,19 @@ class Backend(object):
         else:
             self.device_id = device.device_id
     def count(self, slc=None):
+        """Count of number of rows (optionally within slice)"""
         if slc is not None:
             qs = self[slc]
             if qs is None: return 0
             return qs.count()
         return models.Data.objects.filter(device_id=self.device_id).count()
+    def exists(self, slc=None):
+        """Does any data exist?  (optionally within slice)"""
+        if slc is not None:
+            qs = self[slc]
+            if qs is None: return 0
+            return qs.exists()
+        return models.Data.objects.filter(device_id=self.device_id).exists()
     def bytes_total(self):
         return models.Data.objects.filter(device_id=self.device_id).aggregate(sum=Sum(F('data_length')))['sum']
     def __getitem__(self, slc):

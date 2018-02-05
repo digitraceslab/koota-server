@@ -259,11 +259,13 @@ class DeviceConfig(UpdateView):
         context.update(device_class.get_raw_instructions(context=context,
                                                          request=self.request))
         device_data = models.Data.objects.filter(device_id=self.object.device_id)
-        context['data_number'] = device_data.count()
-        if context['data_number'] > 0:
+        data_exists = device_data.exists()
+        if data_exists:
             context['data_earliest'] = device_data.order_by('ts').first().ts
             context['data_latest'] = device_data.order_by('-ts').first().ts
             context['data_latest_data'] = device_data.order_by('-ts').first().data
+            if (context['data_latest'] - context['data_earliest']).total_seconds() < 90*24*3600:
+                context['data_number'] = device_data.count()
         # Handle the instructions template
         #
         return context
