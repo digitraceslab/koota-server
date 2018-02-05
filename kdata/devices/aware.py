@@ -555,7 +555,28 @@ def latest(request, secret_id, table, indexphp=None):
         response[0]['nonce'] = request.POST['nonce']
     return JsonResponse(response, safe=False)
 
+
+# This was test stuff used for more efficient un-urlquoting
+import re
+FIELDS_MATCH = re.compile('[&;]')
+_hexdig = '0123456789ABCDEFabcdef'
+_hextostr = {('%'+a+b): chr(int(a + b, 16)) for a in _hexdig for b in _hexdig}
+R = re.compile(b'%[0-9A-Fa-f]{2}')
+def unquote(s, _h2s=_hextostr):
+    #return re.sub('%[0-9A-Fa-f]{2}', lambda x: _hextostr[x.group()], s)
+    #return re.sub(b'%[0-9A-Fa-f]{2}', lambda x: _h2s[x.group()], s)
+    return R.sub(lambda x: _hextostr[x.group()], s)
+
+import cProfile
 from django.db import transaction
+# Debugging for urlunquoting speed
+#@csrf_exempt
+#def insert(request, *args, **kwargs):
+#    if 'accel' in request.path:
+#        cProfile.runctx('r = insert2(request, *args, **kwargs)', globals(), locals(), sort='cumul')
+#        return r
+#    else:
+#        return insert2(request, *args, **kwargs)
 @csrf_exempt
 def insert(request, secret_id, table, indexphp=None):
     """AWARE client requesting data to be saved.
@@ -603,6 +624,20 @@ def insert(request, secret_id, table, indexphp=None):
         LOGGER.error("Aware JsonDecodeError 1: (%s) (%s): %s %s",
                      str(e), len(data), device.public_id, data[-10:])
         raise
+
+    #body = request.body.decode().encode().decode() # bytes->str
+    #pairs = FIELDS_MATCH.split(body)
+    #POST = { }
+    #for name_value in pairs:
+    #    if not name_value: continue
+    #    nv = name_value.split('=', 1)
+    #    if len(nv) < 2: continue
+    #    name = nv[0].replace('+', ' ')
+    #    name = re.sub('%[0-9A-Fa-f]{2}', lambda x: _hextostr[x.group()], name)
+    #    value = nv[1].replace('+', ' ')
+    #    value = re.sub('%[0-9A-Fa-f]{2}', lambda x: _hextostr[x.group()], value)
+    #    POST[name] = value
+
     data_sha256 = sha256(data.encode('utf8')).hexdigest()
 
     timestamp_column_name = 'timestamp'
