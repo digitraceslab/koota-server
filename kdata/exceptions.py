@@ -44,6 +44,7 @@ class NoGroupPermission(BaseMessageKootaException):
     status = 403
 class InvalidDeviceID(BaseMessageKootaException):
     message = "Invalid device ID."
+    status= 480
 class OtpRequired(BaseMessageKootaException):
     message = "You must enable two-factor authentication first."
 class NotImplemented(BaseMessageKootaException):

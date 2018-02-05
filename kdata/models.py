@@ -97,7 +97,8 @@ class Device(models.Model):
     def get_by_secret_id(cls, secret_id):
         if len(secret_id) < 10:
             raise exceptions.InvalidDeviceID(log="device ID too short")
-        return cls.objects.get(_secret_id=secret_id)
+        try:                     return cls.objects.get(_secret_id=secret_id)
+        except cls.DoesNotExist: raise exceptions.InvalidDeviceID(log="Invalid Device ID")
     def get_class(self):
         """Return the Python class corresponding to this device."""
         cls = devices.get_class(self.type)
