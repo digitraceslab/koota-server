@@ -232,10 +232,12 @@ DEFAULT_SENSORS = dict(
         #status_bluetooth=False,
         #frequency_bluetooth=300,
         #status_light=True,
-        status_accelerometer=False,
-        frequency_accelerometer=1000000, #microseconds
+        #status_accelerometer=False,
+        #frequency_accelerometer=1000000, #microseconds
         #frequency_light=10000000,  # microseconds
         #frequency_timezone=43200  # seconds
+        #location_geofence="60.166616,24.943245,300 rect,60.168959,24.947429,60.166457,24.952528",
+        #location_geofence="60.185222,24.821330,700 rect,60.171101,24.914507,60.160396,24.821774",
     )
 )
 for name in ("accelerometer", "barometer", "gravity", "gyroscope",
