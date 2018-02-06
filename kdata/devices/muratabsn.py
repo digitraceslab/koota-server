@@ -22,9 +22,9 @@ LOGGER = logging.getLogger('kdata.devices.muratabsn')
 
 # Aware config forms
 class MurataBSNCalibrationForm(forms.Form):
-    calibration = forms.CharField(help_text="Calibration to send.  signal_high,signal_low,min_amp,typ_amp,scale,  Use format: N,N,N,N,N")
+    calibration = forms.CharField(help_text="Calibration to send.  <tt>signal_high,signal_low,min_amp,typ_amp,scale</tt>  Use format: <tt>N,N,N,N,N</tt>")
 class MurataBSNCalibrationReceivedForm(forms.Form):
-    calibration = forms.CharField(help_text="Most recent received calibration parameters.  Do not edit.")
+    calibration = forms.CharField(help_text="Most recent received calibration parameters (with extra zero inserted as fourth element).  Do not edit.")
     calibration_time = forms.CharField(help_text="Time of most recent received calibration parameters.  Do not edit.")
 
 
@@ -112,7 +112,13 @@ def murata_calibrate(request, mac_addr=None):
     # Murata docs say to include six numbers, while only five are used for our
     # calibration.  The code above makes six out of five, but this hasn't been
     # verified yet.
-    # Parameters are: 0=var_level_1, 1=var_level_2, 2=stroke_vol, 3=tentative_stroke_vol, 4=signal_range, 5=to_micro_g
+    # Parameters are (from Murata reference docs):
+    #                 0=var_level_1          (1000-30000)          [signal high   in web UI]
+    #                 1=var_level_2          ( 100-10000)          [signal low    in web UI]
+    #                 2=stroke_vol           ( 500-20000)          [min amplitude in web UI]
+    #                 3=tentative_stroke_vol (   0-20000)          [          not in web UI]
+    #                 4=signal_range         ( 100-10000)          [typ amplitude in web UI]
+    #                 5=to_micro_g           (   2-15)             [scale         in web UI]
     #pars = [6000, 300, 4000, 1500, 7]      # our standard params
     #pars = [7000, 270, 5000, 0, 1400, 7]   # in Murata docs
     #
