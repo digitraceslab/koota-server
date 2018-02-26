@@ -328,7 +328,12 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
     c['group'] = group
     c['group_class'] = group_class
     group_converter_class = [ x for x in group_class.converters
-                              if x.name() == converter ][0]
+                              if x.name() == converter ]
+    if len(group_converter_class) == 0:
+        return HttpResponse("No converter '%s' found."%converter,
+                            content_type='text/plain',
+                            status=404)
+    group_converter_class = group_converter_class[0]
     group_converter_class = get_group_converter(group_converter_class)
     group_converter_class = c['group_converter_class'] = group_converter_class
 

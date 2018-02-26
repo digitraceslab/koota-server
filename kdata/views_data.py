@@ -114,7 +114,12 @@ def device_data(request, public_id, converter, format):
         raise exceptions.NoDevicePermission("No permission for device")
     device_class = c['device_class'] = device.get_class()
     converter_class = c['converter_class'] = \
-        [ x for x in device_class.converters if x.name() == converter ][0]
+        [ x for x in device_class.converters if x.name() == converter ]
+    if len(converter_class) == 0:
+        return HttpResponse("No converter '%s' found."%converter,
+                            content_type='text/plain',
+                            status=404)
+    converter_class = converter_class[0]
     c['query_params_nopage'] = replace_page(request, '')
 
     # Fetch all relevant data
