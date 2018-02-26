@@ -102,7 +102,7 @@ class Aware(devices.BaseDevice):
     ]
     config_instructions_template = textwrap.dedent("""\
     <ol>
-    <li>Install the AWERE app from <a href="{{install_url_local}}">here (koota version)</a> or <a href="{{install_url}}">here (upstream version)</a>.</li>
+    <li>Install the AWARE app from <a href="{{install_url_local}}">here (koota version)</a> or <a href="{{install_url}}">here (upstream version)</a>.</li>
     <li>If you are viewing this on your device, you can click <a href="{{study_url_aware_scheme}}" class="btn-xs btn-info">here to link directly</a>.</li>
     <li>See the <a href="https://github.com/CxAalto/koota-server/wiki/Aware">instructions on the github wiki</a>.
     <li>URL for linking is <a href="{{study_url}}">{{study_url}}</a></li>
