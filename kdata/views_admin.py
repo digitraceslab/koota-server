@@ -181,10 +181,16 @@ def login(request, *args, **kwargs):
     """Login view redirecting to the subject's expected login page."""
     ret = django_login(request, *args, **kwargs)
     if not request.user.is_anonymous:
+        # If user is in a special group with a special front page,
+        # redirect to that.
         login_view_name = group.user_main_page(request.user)
         if login_view_name is not None:
             request.session['login_view_name'] = login_view_name
             return HttpResponseRedirect(reverse(login_view_name))
+        # If user is researcher of any groups, redirect to main page
+        if request.user.researcher_of_groups.exists():
+            return HttpResponseRedirect(reverse('main'))
+    # Otherwise, default return (redirect to device list)
     return ret
 
 
