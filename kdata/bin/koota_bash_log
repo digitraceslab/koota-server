@@ -10,7 +10,7 @@ _prompt_log () (
     # do the upload if the file is large enough (1kb or more)
     if [ -e "$filename" \
 	 -a `stat -c '%s' "$filename"` -ge 1024 ] ; then
-	response=$(curl --silent --fail --max-time=3 --header "Device-id: $DEVICE_ID" --data-binary v=1 --data-binary hostname=$hostname --data-binary @"$filename" "$URL")
+	response=$(curl --silent --fail --max-time 3 --header "Device-id: $DEVICE_ID" --data-binary v=1 --data-binary hostname=$hostname --data-binary @"$filename" "$URL")
 	ret=$?
 	# Remove filename if return value was success.  There are
 	# still race conditions and syncronization problems, though.
