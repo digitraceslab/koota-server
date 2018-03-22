@@ -80,7 +80,7 @@ def device_detail_json(request, **kwargs):
     data['data_exists'] = be.exists()
     if data['data_exists']:
         data['data_earliest'] = be[0].ts.timestamp()
-        data['data_latest'] = be[-1].ts.timestamp
+        data['data_latest'] = be[-1].ts.timestamp()
     else:
         data['data_earliest'] = data['data_latest'] = None
     return JsonResponse(data)
