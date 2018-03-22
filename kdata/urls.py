@@ -113,6 +113,9 @@ urls_ui = [
     # /group/name/config
     url(r'^group/(?P<group_name>[\w-]+)/config/?$',
         group.GroupUpdate.as_view(), name='group-update'),
+    # /group/name/converter/json
+    url(r'^group/(?P<group_name>[\w-]+)/(?P<converter>\w+)/json$',
+        group.group_data_json, name='group-data-json'),
     # /group/name/converter(.ext)
     url(r'^group/(?P<group_name>[\w-]+)/(?P<converter>\w+)\.?(?P<format>[\w-]+)?$',
         group.group_data, name='group-data'),

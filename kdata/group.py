@@ -335,7 +335,7 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
                             status=404)
     group_converter_class = group_converter_class[0]
     group_converter_class = get_group_converter(group_converter_class)
-    group_converter_class = c['group_converter_class'] = group_converter_class
+    c['group_converter_class'] = group_converter_class
 
     converter_class = group_converter_class.converter
     converter_for_errors = converter_class(rows=None)
@@ -392,6 +392,53 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
 
     return TemplateResponse(request, 'koota/group_data.html',
                             context=context)
+
+def group_data_json(request, group_name, converter):
+    group = models.Group.objects.get(slug=group_name)
+    group_class = group.get_class()
+    logs.log(request, 'view group data',
+             obj='group='+group.slug, op='group_data')
+    if not permissions.has_group_researcher_permission(request, group):
+        logs.log(request, 'group data denied',
+                 obj='group='+group.slug, op='denied_group_data')
+        raise exceptions.NoGroupPermission()
+
+    earliest = None
+    latest = None
+
+    # A lot of this is copied from group_data and should be merged.
+    group_converter_class = [ x for x in group_class.converters
+                              if x.name() == converter ]
+    group_converter_class = group_converter_class[0]
+    group_converter_class = get_group_converter(group_converter_class)
+
+    converter_class = group_converter_class.converter
+
+    for subject, device in iter_users_devices(group, group_class, group_converter_class):
+        queryset = models.Data.objects.filter(device_id=device.device_id, ).order_by('ts')
+        if hasattr(converter_class, 'query'):
+            queryset = converter_class.query(queryset)
+        if group.ts_start: queryset = queryset.filter(ts__gte=group.ts_start)
+        if group.ts_end:   queryset = queryset.filter(ts__lt=group.ts_end)
+        # This does start/end time and reversing, not needed here
+        #if filter_queryset:
+        #    queryset = filter_queryset(queryset)
+
+        if queryset.exists():
+            if earliest is None:
+                earliest = queryset[0].ts
+                latest = queryset.reverse()[0].ts
+            else:
+                earliest = min(earliest, queryset[0].ts)
+                latest   = max(latest, queryset.reverse()[0].ts)
+    data = { }
+    data['data_exists'] = (earliest is not None)
+    if data['data_exists']:
+        data['data_earliest'] = earliest.timestamp()
+        data['data_latest'] = latest.timestamp()
+    else:
+        data['data_earliest'] = data['data_latest'] = None
+    return JsonResponse(data)
 
 
 class GroupUpdate(UpdateView):
