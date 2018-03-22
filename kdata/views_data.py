@@ -65,6 +65,28 @@ class DeviceDetail(DetailView):
         return context
 
 
+
+def device_detail_json(request, **kwargs):
+    """Metadata of this device, in JSON
+
+    Returns json object with data_exists, data_earliest, data_latest"""
+    device = models.Device.get_by_id(public_id=kwargs['public_id'])
+    if not permissions.has_device_permission(request, device):
+        raise exceptions.NoDevicePermission()
+    #device_data = models.Data.objects.filter(device_id=device.object.device_id)
+    be = device.backend
+
+    data = { }
+    data['data_exists'] = be.exists()
+    if data['data_exists']:
+        data['data_earliest'] = be[0].ts.timestamp()
+        data['data_latest'] = be[-1].ts.timestamp
+    else:
+        data['data_earliest'] = data['data_latest'] = None
+    return JsonResponse(data)
+
+
+
 class IntegerOrLastField(forms.IntegerField):
     """An integer field that also accepts the value 'last'.
 

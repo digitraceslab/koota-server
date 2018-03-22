@@ -65,6 +65,9 @@ urls_device = [
     # /public_id/upload
     url(r'^(?P<public_id>[0-9a-fA-F]*)/upload$', views_admin.upload,
         name='device-upload'),
+    # /public_id/json
+    url(r'^(?P<public_id>[0-9a-fA-F]*)/json$', views_data.device_detail_json,
+        name='device-detail-json'),
     # /public_id/
     url(r'^(?P<public_id>[0-9a-fA-F]*)/$', views_data.DeviceDetail.as_view(),
         name='device'),
