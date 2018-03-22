@@ -39,6 +39,8 @@ class Actiwatch(BaseDevice):
                   ]
     raw_instructions = textwrap.dedent("""\
     Write down the "device secret ID" you can see above.
+
+    Upload form <a href="../upload">is here</a>.
     """)
     @classmethod
     def configure(cls, device):
