@@ -197,7 +197,7 @@ def sqlite3dump_iter(table, converter=None, header=None, filename=None):
         yield 'INSERT INTO %s VALUES(%s);\n'%(
             table_name,
             ", ".join(''.join(("'", x.replace("'","''"), "'"))
-                          if isinstance(x, str) else repr(x) for x in row))
+                          if isinstance(x, str) else 'NULL' if x is None else repr(x) for x in row))
     yield 'CREATE VIEW IF NOT EXISTS "data" AS SELECT * from "%s";\n'%(table_name)
     if converter and converter.errors:
         yield 'CREATE TABLE IF NOT EXIST errors ("table", "name", "count");\n'
