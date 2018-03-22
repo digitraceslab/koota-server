@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 try:
     # python3
     import requests
@@ -74,40 +75,51 @@ if data['data_exists']:
             os.unlink(outfile+'.partial')
         if current_day == today:
             outfile = outfile + '.partial'
-        print(outfile, end='  ', flush=True)
+        print('  '+outfile, end='  ', flush=True)
 
         if os.path.exists(outfile):
             print()
             continue
 
         # download data
+        t1 = time.time()
         R = get(os.path.join(baseurl, args.converter)+'.'+format,
                              params=dict(start=current_day.strftime('%Y-%m-%d'),
                                          end=(current_day+datetime.timedelta(days=1)).strftime('%Y-%m-%d')
                                         ))
-        print('%-7d'%len(R))
-        open(outfile, 'w').write(R)
+        dt = time.time() - t1
+        print('%8d  %4.1fs   %4.1f'%(len(R), dt, len(R)/dt))
+        f = open(outfile+'.tmp', 'w')
+        f.write(R) ; f.close()
+        os.rename(outfile+'.tmp', outfile)
 
     if format == 'sqlite3dump':
         current_files = glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump'))
         current_files.sort()
         if args.out_db is None:
-            dbfile = os.path.join(args.output_dir, 'db.sqlite3')
+            dbfiles = [os.path.join(args.output_dir, 'db.sqlite3')]
         else:
-            dbfile = args.out_db
-        if os.path.exists(dbfile):
-            os.unlink(dbfile)
+            dbfiles = args.out_db.split(',')
+        for db_file in dbfiles:
+            dbfile, *dbfile_args = db_file.split(':')
+            if 'nodelete' not in dbfile_args:
+                if os.path.exists(dbfile):
+                    os.unlink(dbfile)
 
-        # Import the database
-        sql_proc = subprocess.Popen(['sqlite3', dbfile, '-batch'], stdin=subprocess.PIPE)
-        sql_proc.stdin.write(b'.bail ON\n')
-        #sql_proc.stdin.write(b'.echo ON\n')
-        sql_proc.stdin.write(b'PRAGMA journal_mode = OFF;\n')
-        sql_proc.stdin.write(b'PRAGMA synchronous = OFF;\n')
-        for filename in current_files:
-            cmd = '.read %s'%filename
-            print(cmd)
-            sql_proc.stdin.write(cmd.encode()+b'\n')
-        sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
-        sql_proc.stdin.close()
-        sql_proc.wait()
+            print("Importing to DB:", db_file)
+            t1 = time.time()
+            # Import the database
+            sql_proc = subprocess.Popen(['sqlite3', dbfile, '-batch'], stdin=subprocess.PIPE)
+            sql_proc.stdin.write(b'.bail ON\n')
+            #sql_proc.stdin.write(b'.echo ON\n')
+            sql_proc.stdin.write(b'PRAGMA journal_mode = OFF;\n')
+            sql_proc.stdin.write(b'PRAGMA synchronous = OFF;\n')
+            for filename in current_files:
+                cmd = '.read %s'%filename
+                print('  '+cmd)
+                sql_proc.stdin.write(cmd.encode()+b'\n')
+            sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
+            sql_proc.stdin.close()
+            sql_proc.wait()
+            dt = time.time() - t1
+            print('Import done: %12d  %4.1fs'%(os.stat(db_file).st_size, dt))
