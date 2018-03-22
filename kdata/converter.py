@@ -1644,7 +1644,7 @@ class ActiwatchMarkers(_Converter):
               'date',
               'time_of_day',
               'marker',
-              'interval Status', '']
+              'interval_status']
 
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
