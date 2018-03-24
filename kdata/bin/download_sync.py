@@ -71,13 +71,14 @@ if data['data_exists']:
 
         outfile = current_day.strftime(args.converter+'.%Y-%m-%d'+'.'+format)
         outfile = os.path.join(args.output_dir, outfile)
-        if os.path.exists(outfile+'.partial'):
+        if os.path.exists(outfile+'.partial') and current_day != today:
             os.unlink(outfile+'.partial')
         if current_day == today:
             outfile = outfile + '.partial'
         print('  '+outfile, end='  ', flush=True)
 
-        if os.path.exists(outfile):
+        redownload_today = False
+        if os.path.exists(outfile) and (current_day != today or not redownload_today):
             print()
             continue
 
@@ -95,31 +96,40 @@ if data['data_exists']:
 
     if format == 'sqlite3dump':
         current_files = glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump'))
+        current_files += glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump.partial'))
         current_files.sort()
         if args.out_db is None:
             dbfiles = [os.path.join(args.output_dir, 'db.sqlite3')]
         else:
             dbfiles = args.out_db.split(',')
-        for db_file in dbfiles:
-            dbfile, *dbfile_args = db_file.split(':')
-            if 'nodelete' not in dbfile_args:
-                if os.path.exists(dbfile):
-                    os.unlink(dbfile)
+        for dbfile in dbfiles:
+            dbfile, *dbfile_args = dbfile.split(':')
+            recreate_db = 'updateonly' not in dbfile_args
+            print("Importing to DB:", dbfile)
+            print("  recreate_db=%s"%recreate_db)
 
-            print("Importing to DB:", db_file)
+            dbfile_new = dbfile
+            if recreate_db:
+                dbfile_new = dbfile+'.new'
+            else:
+                # Delete the existing table
+                subprocess.check_call(['sqlite3', dbfile, 'DROP TABLE IF EXISTS %s;'%args.converter])
+
             t1 = time.time()
             # Import the database
-            sql_proc = subprocess.Popen(['sqlite3', dbfile, '-batch'], stdin=subprocess.PIPE)
+            sql_proc = subprocess.Popen(['sqlite3', dbfile_new, '-batch'], stdin=subprocess.PIPE)
             sql_proc.stdin.write(b'.bail ON\n')
             #sql_proc.stdin.write(b'.echo ON\n')
             sql_proc.stdin.write(b'PRAGMA journal_mode = OFF;\n')
             sql_proc.stdin.write(b'PRAGMA synchronous = OFF;\n')
             for filename in current_files:
                 cmd = '.read %s'%filename
-                print('  '+cmd)
+                #print('  '+cmd)
                 sql_proc.stdin.write(cmd.encode()+b'\n')
             sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
             sql_proc.stdin.close()
             sql_proc.wait()
             dt = time.time() - t1
-            print('Import done: %12d  %4.1fs'%(os.stat(db_file).st_size, dt))
+            if recreate_db:
+                os.rename(dbfile_new, dbfile)
+            print('Import done: %12d  %4.1fs'%(os.stat(dbfile).st_size, dt))
