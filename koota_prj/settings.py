@@ -55,6 +55,7 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 LOGIN_URL = 'login2'
 LOGIN_REDIRECT_URL = 'device-list'
+LOGOUT_REDIRECT_URL = 'main'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 2**20
 WEB_COMPONENTS = set(('ui', 'data', 'admin'))
 SITE_PRIVACY_URL = 'https://github.com/CxAalto/koota-server/wiki/PrivacyPolicy'
