@@ -75,14 +75,16 @@ if data['data_exists']:
             os.unlink(outfile+'.partial')
         if current_day == today:
             outfile = outfile + '.partial'
-        print('  '+outfile, end='  ', flush=True)
 
-        redownload_today = False
+        #print('  '+outfile, end='  ', flush=True)
+
+        redownload_today = True  # remove .partial from today, too?
         if os.path.exists(outfile) and (current_day != today or not redownload_today):
-            print()
+            #print()
             continue
 
         # download data
+        print('  '+outfile, end='  ', flush=True)
         t1 = time.time()
         R = get(os.path.join(baseurl, args.converter)+'.'+format,
                              params=dict(start=current_day.strftime('%Y-%m-%d'),
