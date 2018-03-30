@@ -57,6 +57,7 @@ LOGIN_URL = 'login2'
 LOGIN_REDIRECT_URL = 'device-list'
 LOGOUT_REDIRECT_URL = 'main'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 2**20
+FILE_UPLOAD_MAX_MEMORY_SIZE = 15 * 2**20
 WEB_COMPONENTS = set(('ui', 'data', 'admin'))
 SITE_PRIVACY_URL = 'https://github.com/CxAalto/koota-server/wiki/PrivacyPolicy'
 GENERAL_LOG = os.path.join(BASE_DIR, 'log.txt')
