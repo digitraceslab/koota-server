@@ -629,7 +629,7 @@ def group_stats(request, group_name):
 
     for subject, device in iter_users_devices(group, groupcls, group_converter_class=None):
         devices += 1
-        print(device.backend.count())
+        #print(device.backend.count())
         count += device.backend.count()
         bytes_device = device.backend.bytes_total()
         if bytes_device:
@@ -668,7 +668,7 @@ def ensure_user_has_devices(user, devs, group):
             label__slug=label_slug)
         if qs.exists():
             continue
-        print("Creating %s for %s"%(cls, user))
+        #print("Creating %s for %s"%(cls, user))
         # create device
         model = models.Device
         if cls.dbmodel is not None:
