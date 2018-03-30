@@ -77,7 +77,7 @@ limits above.
     <th>Usage</th>
     <th>#wk/last</th>
   </tr>
-{% for groupsubject in group.dbrow.groupsubject_set.all %}
+{% for groupsubject in group_subjects %}
   <tr>
     <th>{{ groupsubject.hash }}</th>
     {% if group.dbrow.nonanonymous %}<td>{{ groupsubject.hash_if_needed }}</td>{%endif %}

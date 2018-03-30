@@ -149,6 +149,10 @@ def group_detail(request, group_name):
         c['is_researcher'] = group.is_researcher(request.user)
         c['is_manager'] = group.is_manager(request.user)
         c['is_admin'] = group.is_admin(request.user)
+        if group.nonanonymous:
+            c['group_subjects'] = group.groupsubject_set.order_by('user__username')
+        else:
+            c['group_subjects'] = group.groupsubject_set.all()
         #import IPython ; IPython.embed()
     # If a subject, allow subject views.
     if permissions.has_group_subject_permission(request, group):
@@ -187,8 +191,11 @@ def iter_subjects(group, group_class):
                     for s in subjects)
     else:
         subjects = models.GroupSubject.objects.filter(group=group)
-    subjects = list(subjects)
-    random.shuffle(subjects)
+        if group.nonanonymous:
+            subjects.order_by('user__username')
+        else:
+            subjects = list(subjects)
+            random.shuffle(subjects)
     #subjects.sort(key=lambda subject: subject.user.id)
     for subject in subjects:
         yield subject
