@@ -15,21 +15,36 @@ except:
     from urllib2 import Request, urlopen
     import urllib2.parse as parse
 
+usage = """\
+Koota data download.  Download data, storing in directories organized
+by day.  When re-run, only downloads new data.
 
-parser = argparse.ArgumentParser(description="Koota data download")
-parser.add_argument("base_url")
-parser.add_argument("converter")
-parser.add_argument("output_dir")
+Required arguments are "base_url", "converter", and "output_dir".  You
+must set the environment variable "session_id" before running this.
+
+
+"""
+
+parser = argparse.ArgumentParser(description=usage)
+parser.add_argument("base_url", help="URL to the device (e.g. https://domain.tld/devices/abcdef) or group (e.g. https://domain.tld/group/GroupName)")
+parser.add_argument("converter", help="Converter name (e.g. AwareTimestamps)")
+parser.add_argument("output_dir", help="")
 #parser.add_argument("--session-id")
 #parser.add_argument("--device")
-parser.add_argument("-f", "--format", default='sqlite3dump')
-parser.add_argument("--out-db", default=None)
-parser.add_argument("--group", default=None, action='store_true')
+parser.add_argument("-f", "--format", default='sqlite3dump', help="format to download")
+parser.add_argument("--out-db", default=None, help="if download format is sqlite3dump, location of database to create.  Default: db.sqlite in output_dir.")
+parser.add_argument("--group", default=None, action='store_true', help="If true, treate base_url as a group.  Required for group downloads.")
+parser.add_argument("-v", "--verbose", default=None, action='store_true')
 
 args = parser.parse_args()
 
 baseurl = args.base_url
 baseurl_p = parse.urlparse(args.base_url)
+VERBOSE = args.verbose
+
+if 'session_id' not in os.environ:
+    print("You must set session_id first!")
+    exit(2)
 
 #class auth(requests.auth.AuthBase):
 #    def __call__(self, r):
@@ -42,6 +57,9 @@ def get(url, params={}):
     #R = Request(url, headers={'Cookie': 'sessionid='+os.environ['session_id']})
 
     r = requests.get(url, params=params, headers={'Cookie': 'sessionid='+os.environ['session_id']})
+    if 'Please login to' in r.text:
+        print("session_id invalid or can't log in")
+        exit(2)
     if r.status_code != 200:
         print(url, params)
         raise Exception("requests failure: %s %s"%(r.status_code, r.reason))
@@ -81,6 +99,7 @@ if data['data_exists']:
         redownload_today = True  # remove .partial from today, too?
         if os.path.exists(outfile) and (current_day != today or not redownload_today):
             #print()
+            if VERBOSE: print('  '+outfile)
             continue
 
         # download data
@@ -126,7 +145,7 @@ if data['data_exists']:
             sql_proc.stdin.write(b'PRAGMA synchronous = OFF;\n')
             for filename in current_files:
                 cmd = '.read %s'%filename
-                #print('  '+cmd)
+                if VERBOSE: print('  '+cmd)
                 sql_proc.stdin.write(cmd.encode()+b'\n')
             sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
             sql_proc.stdin.close()
