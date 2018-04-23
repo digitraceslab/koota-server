@@ -1558,6 +1558,11 @@ class ActiwatchFull(_Converter):
               'intervalstatus',]
 
     def convert(self, queryset, time=lambda x:x):
+        def safe_float(x):
+            """Convert to float even in comma-decimal-separator locales"""
+            if '.' in x: return float(x)
+            return float(x.replace(',', '.'))
+
         for ts, data in queryset:
             if '---- Subject Properties------' not in data:
                 continue
@@ -1581,8 +1586,8 @@ class ActiwatchFull(_Converter):
                        int(line[0]) if line[0] != 'NaN' else float('nan'),
                        int(line[3]) if line[3] != 'NaN' else float('nan'),
                        int(line[4]) if line[4] != 'NaN' else float('nan'),
-                       float(line[5]),
-                       float(line[6]),
+                       safe_float(line[5]),
+                       safe_float(line[6]),
                        line[7],
                        )
 class ActiwatchStatistics(_Converter):
