@@ -92,16 +92,16 @@ class Device(models.Model):
         regen).  If True, do a full regeneration.
         """
         if self.n_packets_cache is None:
-            self.n_packets_cache = self.backend.count()
+            self.n_packets_cache = self.backend.count(cache=False)
         elif regen is not None:
             if regen is True:
-                self.n_packets_cache = self.backend.count()
+                self.n_packets_cache = self.backend.count(cache=False)
             if isinstance(regen, int):
                 last_regen = self.n_packets_cache_ts
                 if (timezone.now() - last_regen).total_seconds() > regen:
-                    self.n_packets_cache = self.backend.count()
+                    self.n_packets_cache = self.backend.count(cache=False)
         else:
-            n_new = self.backend.count(slc=slice(self.n_packets_cache_ts, None))
+            n_new = self.backend.count(slc=slice(self.n_packets_cache_ts, None), cache=False)
             if n_new > 0:
                 self.n_packets_cache += n_new
         self.n_packets_cache_ts = timezone.now()

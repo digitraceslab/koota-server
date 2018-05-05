@@ -10,11 +10,14 @@ from .. import models
 class Backend(object):
     def __init__(self, device=None):
         if isinstance(device, str):
-            self.device_id = device
+            raise RuntimeError("backends must not be initialized with devices")
         else:
+            self.device = device
             self.device_id = device.device_id
-    def count(self, slc=None):
+    def count(self, slc=None, cache=True):
         """Count of number of rows (optionally within slice)"""
+        if slc is None and cache:
+            return self.device.n_packets
         if slc is not None:
             qs = self[slc]
             if qs is None: return 0
