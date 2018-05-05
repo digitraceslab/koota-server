@@ -258,12 +258,12 @@ class DeviceConfig(UpdateView):
         context.update(device_class.config_context())
         context.update(device_class.get_raw_instructions(context=context,
                                                          request=self.request))
-        device_data = models.Data.objects.filter(device_id=self.object.device_id)
-        data_exists = device_data.exists()
+        be = self.object.backend
+        data_exists = be.exists()
         if data_exists:
-            context['data_earliest'] = device_data.order_by('ts').first().ts
-            context['data_latest'] = device_data.order_by('-ts').first().ts
-            context['data_latest_data'] = device_data.order_by('-ts').first().data
+            context['data_earliest'] = be[0].ts
+            context['data_latest'] = be[-1].ts
+            context['data_latest_data'] = be[-1].data
             context['data_number'] = self.object.n_packets
         # Handle the instructions template
         #

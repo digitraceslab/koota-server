@@ -53,12 +53,12 @@ class DeviceDetail(DetailView):
         context = super(DeviceDetail, self).get_context_data(**kwargs)
         device_class = context['device_class'] = self.object.get_class()
         context.update(device_class.configure(device=self.object))
-        device_data = models.Data.objects.filter(device_id=self.object.device_id)
-        data_exists = device_data.exists()
+        be = self.object.backend
+        data_exists = be.exists()
         if data_exists:
-            context['data_earliest'] = device_data.order_by('ts').first().ts
-            context['data_latest'] = device_data.order_by('-ts').first().ts
-            context['data_latest_data'] = device_data.order_by('-ts').first().data
+            context['data_earliest'] = be[0].ts
+            context['data_latest'] = be[-1].ts
+            context['data_latest_data'] = be[-1].data
             context['data_number'] = self.object.n_packets
 
         return context
@@ -72,7 +72,6 @@ def device_detail_json(request, **kwargs):
     device = models.Device.get_by_id(public_id=kwargs['public_id'])
     if not permissions.has_device_permission(request, device):
         raise exceptions.NoDevicePermission()
-    #device_data = models.Data.objects.filter(device_id=device.object.device_id)
     be = device.backend
 
     data = { }
