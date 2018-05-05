@@ -90,7 +90,7 @@ try:
     from ujson import dumps, loads
 except:
     from json import loads, dumps
-from math import cos, log, pi, sin, sqrt
+from math import cos, isnan, log, pi, sin, sqrt
 import time
 import time as mod_time
 from time import localtime
@@ -1560,8 +1560,10 @@ class ActiwatchFull(_Converter):
     def convert(self, queryset, time=lambda x:x):
         def safe_float(x):
             """Convert to float even in comma-decimal-separator locales"""
-            if '.' in x: return float(x)
-            return float(x.replace(',', '.'))
+            if '.' in x:   x = float(x)
+            else:          x = float(x.replace(',', '.'))
+            if isnan(x): return None
+            return x
 
         for ts, data in queryset:
             if '---- Subject Properties------' not in data:
