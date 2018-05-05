@@ -541,6 +541,7 @@ def group_subject_detail(request, group_name, gs_id):
                    models.GroupSubject.objects.get(id=gs_id, group=group)
     c['is_researcher'] = group.is_researcher(request.user)
     c['is_manager'] = group.is_manager(request.user)
+    c['title'] = groupsubject.hash_if_needed()
 
     # Notes form
     if request.method == 'POST':
@@ -608,6 +609,7 @@ def group_user_create(request, group_name):
         form = GroupUserCreateForm(initial=request.GET)
     c['form'] = form
     c['group'] = group
+    c['title'] = 'Create user for %s'%group.name
     return TemplateResponse(request, 'koota/group_user_create.html',
                             context=context)
 
