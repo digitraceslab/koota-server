@@ -307,7 +307,12 @@ def get_user_config(device):
 
     # Config from this device in particular (device attrs)
     if 'aware_config' in device.data.attrs:
-        util.recursive_copy_dict(json.loads(device.data.attrs['aware_config']), config)
+        _data = json.loads(device.data.attrs['aware_config'])
+        util.recursive_copy_dict(_data, config)
+        # Same as above, but prevents problems in case of wrapped
+        # "aware_config" attribute like groups require.
+        if 'aware_config' in _data:
+            util.recursive_copy_dict(_data['aware_config'], config)
 
     # Config adjustments that should be done after config merging:
     # Should the study be locked?  Locked by default, see conditions for locking.
