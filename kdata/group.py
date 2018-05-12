@@ -153,6 +153,7 @@ def group_detail(request, group_name):
             c['group_subjects'] = group.groupsubject_set.order_by('user__username')
         else:
             c['group_subjects'] = group.groupsubject_set.all()
+        c['group_researchers'] = group.groupresearcher_set.order_by('user__username')
         #import IPython ; IPython.embed()
     # If a subject, allow subject views.
     if permissions.has_group_subject_permission(request, group):

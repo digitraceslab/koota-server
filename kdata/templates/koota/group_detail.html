@@ -43,6 +43,16 @@ limits above.
 
 {% if is_staff %}
 
+<h2>Researchers</h2>
+
+<table class="table table-condensed table-striped" style="width: auto">
+<tr><th>username</th><th>researcher</th><th>manager</th><th>admin</th></tr>
+{% for researcher in group_researchers %}
+<tr><td>{{ researcher.user.username }}</td> <td>{{researcher.researcher|default_if_none:"default"}}</td> <td>{{researcher.manager|default_if_none:"default"}}</td> <td>{{researcher.admin|default_if_none:"default"}}</td></tr>
+{% endfor %}
+</table>
+
+
 <h2>Available converters</h2>
 
 {% if not is_researcher %}
