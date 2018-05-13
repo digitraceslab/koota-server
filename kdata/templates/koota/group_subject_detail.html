@@ -15,7 +15,53 @@
 <h2>Subject info</h2>
 <form method="post">
   {% csrf_token %}
-  {{ form.as_p }}
+  <table>
+  {{ form.as_table }}
+  </table>
+
+  <b>Subject attributes</b>
+{# https://stackoverflow.com/questions/2233929/horizontal-per-row-forms-in-a-django-formset #}
+{% with form_attrs as formset %}
+{{ formset.management_form }}
+{% if formset.non_form_errors %}
+  <div class="alert alert-danger">{{ formset.non_form_errors.as_ul }}</div>
+{% endif %}
+<table id="groupattrs" class="form">
+{% for form in formset.forms %}
+  {% if forloop.first %}
+  <thead><tr>
+    {% for field in form.visible_fields %}
+    <th>{{ field.label|capfirst }}</th>
+    {% endfor %}
+  </tr></thead>
+  {% endif %}
+  <tr>
+  {% for field in form.visible_fields %}
+    <td>
+    {# Include the hidden fields in the form #}
+    {% if forloop.first %}
+      {% for hidden in form.hidden_fields %}
+      {{ hidden }}
+      {% endfor %}
+    {% endif %}
+      {{ field.errors.as_ul }}
+      {{ field }}
+    </td>
+  {% endfor %}
+  </tr>
+{% endfor %}
+</table>
+{% endwith %}
+
+<!--  <table>
+  {{ form_attrs }}
+  {{ form_attrs.errors }}
+  {% for field in form_attrs %}
+    {{ field }}
+  {% endfor %}
+  </table> -->
+
+
   <input class="btn btn-primary" type="submit" value="Update info" />
 </form>
 

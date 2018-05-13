@@ -385,6 +385,9 @@ class GroupSubject(models.Model):
     ts_end = models.DateTimeField(blank=True, null=True)
     notes = models.TextField(blank=True)
     #nonanonymous = NullBoolean
+    def __init__(self, *args, **kwargs):
+        super(GroupSubject, self).__init__(*args, **kwargs)
+        self.attrs = AttrInterface(self.groupsubjectattr_set)
     def __str__(self):
         return '<GroupSubject(%s, %s)>'%(repr(self.hash_if_needed()),
                                          repr(self.group.slug))
@@ -423,6 +426,19 @@ class GroupSubject(models.Model):
     def allowed_devices_with_hash(self, type=None, hash_seed=None):
         for device in self.allowed_devices(type=type):
             yield device, self.group.hash_do(device.public_id, hash_seed=hash_seed)
+
+class GroupSubjectAttr(BaseAttr):
+    # This is wrong, but called "device".  This is to save code by
+    # using the abstract base class BaseAttr and sharing with the
+    # DeviceAttr which came first.
+    device = models.ForeignKey(GroupSubject, on_delete=models.CASCADE)
+    def save(self):
+        if self.name.endswith('_datetime'):
+            val = dateparse.parse_datetime(self.value)
+            if val is None:
+                raise ValidationError("%s is not a valid time in format YYYY-MM-DD HH:MM")
+        return super().save()
+
 
 class GroupResearcher(models.Model):
     user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

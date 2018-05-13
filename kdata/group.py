@@ -4,14 +4,14 @@ from json import dumps, loads
 import random
 
 from django import forms
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse, reverse_lazy
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.http import StreamingHttpResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
-from django.utils import timezone
+from django.utils import dateparse, timezone
 from django.utils.translation import ugettext_lazy as _
 from django.template.response import TemplateResponse
 
@@ -527,6 +527,20 @@ class GroupSubjectForm(forms.ModelForm):
         model = models.GroupSubject
         fields = ['notes']
 
+class _GroupSubjectAttrFormSet(forms.BaseInlineFormSet):
+    """Base formset for GroupSubject attributes"""
+    def clean(self):
+        super().clean()
+        for form in self.forms:
+            if 'name' not in form.cleaned_data: continue
+            if not form.cleaned_data['value']: continue
+            if form.cleaned_data['name'].endswith('_datetime'):
+                val = dateparse.parse_datetime(form.cleaned_data['value'])
+                if val is None:
+                    raise ValidationError("{name}: {value} is not a valid time in format YYYY-MM-DD HH:MM".format(**form.cleaned_data))
+GroupSubjectAttrFormSet = forms.inlineformset_factory(models.GroupSubject, models.GroupSubjectAttr, fields=("name", "value"), extra=2, formset=_GroupSubjectAttrFormSet)
+
+
 @login_required
 def group_subject_detail(request, group_name, gs_id):
     context = c = { }
@@ -544,8 +558,8 @@ def group_subject_detail(request, group_name, gs_id):
     c['is_manager'] = group.is_manager(request.user)
     c['title'] = groupsubject.hash_if_needed()
 
-    # Notes form
     if request.method == 'POST':
+        # Free-form notes form
         form = c['form'] = GroupSubjectForm(request.POST, instance=groupsubject)
         if form.is_valid():
             logs.log(request, 'group subject notes updating',
@@ -553,14 +567,22 @@ def group_subject_detail(request, group_name, gs_id):
                 op='group_subject_detail_notes',
                 data_of=groupsubject.user)
             form.save()
+
+        # Key-value metadata form
+        form_attrs = c['form_attrs'] \
+          = GroupSubjectAttrFormSet(request.POST, request.FILES, instance=groupsubject)
+        if form_attrs.is_valid():
+            instances = form_attrs.save()
+
     else:
         form = c['form'] = GroupSubjectForm(instance=groupsubject)
+        form_attrs = c['form_attrs'] \
+          = GroupSubjectAttrFormSet(instance=groupsubject)
 
     logs.log(request, 'group subject detail',
              obj='group=%s+sid=%s'%(group.slug,gs_id),
              op='group_subject_detail',
              data_of=groupsubject.user)
-    #import IPython ; IPython.embed()
     return TemplateResponse(request, 'koota/group_subject_detail.html',
                             context=context)
 
@@ -686,3 +708,11 @@ def ensure_user_has_devices(user, devs, group):
         cls.create_hook(device, user=user)
         device.save()
         datalogger.info("auto-create-device u=%s cls=%s g=%s"%(user.username, cls.pyclass_name(), group.dbrow.slug))
+
+def ensure_user_has_metadata(groupsubject, metadata, group=None):
+    """Add prototype metadata to GroupSubjects"""
+    for row in metadata:
+        if len(row) == 2:   key, default = row
+        else:               key, default = row, ""
+        if key not in groupsubject.attrs:
+            groupsubject.attrs = default
