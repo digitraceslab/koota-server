@@ -229,13 +229,15 @@ def device_data(request, public_id, converter, format):
         converter = c['converter'] \
                 = converter_class(((x.ts, x.data) for x in data),
                                    time=time_converter,
-                                   params=request.GET)
+                                   params=request.GET,
+                                   device=device)
         table = c['table'] = \
                 converter.run()
     else:
         converter = c['converter'] = converter_class()
         table = c['table'] = converter.convert(((x.ts, x.data) for x in data),
-                                               time=time_converter)
+                                               time=time_converter,
+                                               device=device)
 
     # the "data" and "queryset" options are dangerous.  If they are
     # iterated throguh or maybe formatted by an error message, then we

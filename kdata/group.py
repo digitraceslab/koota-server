@@ -296,7 +296,12 @@ def iter_group_data(group,
         else:
             queryset = util.optimized_queryset_iterator(queryset)
         rows = ((x.ts, x.data) for x in queryset)
-        converter = converter_class(rows=rows, time=time_converter, hash_seed=hash_seed)
+        converter = converter_class(rows=rows,
+                                    time=time_converter,
+                                    hash_seed=hash_seed,
+                                    device=device,
+                                    group=group,
+                                    groupsubject=subject)
         converter.errors = converter_for_errors.errors
         converter.errors_dict = converter_for_errors.errors_dict
         if handle_errors:

@@ -153,9 +153,14 @@ class _Converter(object):
             return cls.header
         return ['time'] + [x[0].lower() for x in cls.fields]
     def __init__(self, rows=None, time=lambda x: x,
-                 hash_seed=None, params={}):
+                 hash_seed=None, params={},
+                 device=None,
+                 group=None,
+                 groupsubject=None):
         # Warning: during template rendering this is used in a variable as "_Converter.name"
-        pass
+        self.device = device
+        self.group = group
+        self.groupsubject = groupsubject
         self.rows = rows
         self.time = time
         self.params = params
