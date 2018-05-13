@@ -389,7 +389,7 @@ class GroupSubject(models.Model):
         super(GroupSubject, self).__init__(*args, **kwargs)
         self.attrs = AttrInterface(self.groupsubjectattr_set)
     def __str__(self):
-        return '<GroupSubject(%s, %s)>'%(repr(self.hash_if_needed()),
+        return '%s, %s'%(repr(self.hash_if_needed()),
                                          repr(self.group.slug))
     def hash(self, hash_seed=None):
         # TODO: duplicated in iter_group_data.
