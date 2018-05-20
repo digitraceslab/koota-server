@@ -237,7 +237,7 @@ def take_survey(request, token):
 
 # The two converters
 class SurveyAnswers(converter._Converter):
-    header = ['id', 'access_time', 'submit_time', 'question', 'answer', 'order',
+    header = ['id', 'access_time', 'time', 'question', 'answer', 'order',
                   'choice_text']
     desc = "Survey questions and answers"
     allowed_slugs = None
@@ -269,7 +269,7 @@ class SurveyAnswers(converter._Converter):
                        x.get('order',''),
                        choice_text)
 class SurveyMeta(converter._Converter):
-    header = ['name', 'access_time', 'submit_time', 'seconds', 'n_questions']
+    header = ['name', 'access_time', 'time', 'seconds', 'n_questions']
     desc = "Survey questions and answers"
     def convert(self, rows, time=lambda x:x):
         for ts, data in rows:
