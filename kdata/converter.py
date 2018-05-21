@@ -1583,7 +1583,9 @@ class ActiwatchFull(_Converter):
             for line in reader:
                 if not line: continue
                 if line[0] == 'Line': continue
-                dt = dateutil_parse("%s %s %s"%(line[1], line[2], tzoffset))
+
+                dayfirst = ',' in line[5]
+                dt = dateutil_parse("%s %s %s"%(line[1], line[2], tzoffset), dayfirst=dayfirst)
                 time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
                 ts = dt.timestamp()
                 #print(line)
