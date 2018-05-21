@@ -80,7 +80,7 @@ if data['data_exists']:
     latest_ts = data['data_latest']
     earliest = datetime.datetime.fromtimestamp(earliest_ts)
     latest = datetime.datetime.fromtimestamp(latest_ts)
-    current_day = earliest.date()
+    current_day = earliest.date() - datetime.timedelta(days=1)
 
 
     while current_day < latest.date():
