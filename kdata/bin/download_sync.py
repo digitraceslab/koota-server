@@ -147,6 +147,8 @@ if data['data_exists']:
                 cmd = '.read %s'%filename
                 if VERBOSE: print('  '+cmd)
                 sql_proc.stdin.write(cmd.encode()+b'\n')
+            for idxsql in [('user', ), ('user', 'time', )]:
+                sql_proc.stdin.write('CREATE INDEX {table}_{idxid} ON {table} ({columns}) ;\n'.format(table=args.converter, idxid='_'.join(idxsql), columns=', '.join(idxsql)).encode())
             sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
             sql_proc.stdin.close()
             sql_proc.wait()
