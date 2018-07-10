@@ -200,7 +200,7 @@ def sqlite3dump_iter(table, converter=None, header=None, filename=None):
                           if isinstance(x, str) else 'NULL' if x is None or isnan(x) else repr(x) for x in row))
     yield 'CREATE VIEW IF NOT EXISTS "data" AS SELECT * from "%s";\n'%(table_name)
     if converter and converter.errors:
-        yield 'CREATE TABLE IF NOT EXIST errors ("table", "name", "count");\n'
+        yield 'CREATE TABLE IF NOT EXISTS errors ("table", "name", "count");\n'
         for error, count in converter.errors_dict.items():
             yield "INSERT INTO errors VALUES('%s', '%s', %s);\n"%(
                 table_name, error.replace("'", "''"), count)
