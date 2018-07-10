@@ -203,8 +203,8 @@ class _Converter(object):
                     import traceback
                     logger.error(e)
                     logger.error(traceback.format_exc())
-                    self.errors.append(e)
-                self.errors_dict[str(e)] += 1
+                    self.errors.append('%s: %s'%(e.__class__.__name__, str(e)))
+                self.errors_dict['%s: %s'%(e.__class__.__name__, str(e))] += 1
                 #self.errors_emit_error(e)
                 # Possibly we need to prevent each next traceback from
                 # storing the previous traceback, too.
