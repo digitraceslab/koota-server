@@ -35,6 +35,8 @@ parser.add_argument("-f", "--format", default='sqlite3dump', help="format to dow
 parser.add_argument("--out-db", default=None, help="if download format is sqlite3dump, location of database to create.  Default: db.sqlite in output_dir.")
 parser.add_argument("--group", default=None, action='store_true', help="If true, treate base_url as a group.  Required for group downloads.")
 parser.add_argument("-v", "--verbose", default=None, action='store_true')
+parser.add_argument("--start", default=None, help="Earliest time to download (expanded to nearest whole day)")
+parser.add_argument("--end", default=None, help="Latest time to download (expanded to nearest whole day)")
 
 args = parser.parse_args()
 
@@ -78,6 +80,14 @@ data = json.loads(R)
 if data['data_exists']:
     earliest_ts = data['data_earliest']
     latest_ts = data['data_latest']
+    if args.start:
+        import dateutil.parser
+        start = dateutil.parser.parse(args.start).timestamp()
+        earliest_ts = max(earliest_ts, start)
+    if args.end:
+        import dateutil.parser
+        end = dateutil.parser.parse(args.end).timestamp()
+        latest_ts = min(latest_ts, end)
     earliest = datetime.datetime.fromtimestamp(earliest_ts)
     latest = datetime.datetime.fromtimestamp(latest_ts)
     current_day = earliest.date() - datetime.timedelta(days=1)
