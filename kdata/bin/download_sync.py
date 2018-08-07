@@ -22,6 +22,12 @@ by day.  When re-run, only downloads new data.
 Required arguments are "base_url", "converter", and "output_dir".  You
 must set the environment variable "session_id" before running this.
 
+Example usage to download one device's data for a certain time period:
+    python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3
+
+Download one's data from several converters (remove Sample.sqlite3 before running):
+    python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3:updateonly
+    python3 download_sync.py https://koota.tld/devices/abc123 AwareTimestamps --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3:updateonly
 
 """
 
