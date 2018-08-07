@@ -142,6 +142,7 @@ if data['data_exists']:
             dbfile_new = dbfile
             if recreate_db:
                 dbfile_new = dbfile+'.new'
+                if os.path.exists(dbfile_new): os.unlink(dbfile_new)
             else:
                 # Delete the existing table
                 subprocess.check_call(['sqlite3', dbfile, 'DROP TABLE IF EXISTS %s;'%args.converter])
