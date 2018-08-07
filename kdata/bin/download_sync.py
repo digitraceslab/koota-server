@@ -164,11 +164,27 @@ if data['data_exists']:
                 cmd = '.read %s'%filename
                 if VERBOSE: print('  '+cmd)
                 sql_proc.stdin.write(cmd.encode()+b'\n')
-            for idxsql in [('user', ), ('user', 'time', )]:
-                sql_proc.stdin.write('CREATE INDEX {table}_{idxid} ON {table} ({columns}) ;\n'.format(table=args.converter, idxid='_'.join(idxsql), columns=', '.join(idxsql)).encode())
             sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
             sql_proc.stdin.close()
             sql_proc.wait()
+            # Make indexes as needed
+            import sqlite3
+            conn = sqlite3.connect(dbfile_new)
+            try:
+                idxsql = ('user', 'time')
+                conn.execute('CREATE INDEX {table}_{idxid} ON {table} ({columns})'.format(table=args.converter, idxid='_'.join(idxsql), columns=', '.join(idxsql)))
+            except sqlite3.OperationalError:
+                # Can't make user,time: do (user) only and (time) only if possible.
+                try:
+                    idxsql = ('user', )
+                    conn.execute('CREATE INDEX {table}_{idxid} ON {table} ({columns})'.format(table=args.converter, idxid='_'.join(idxsql), columns=', '.join(idxsql)))
+                except sqlite3.OperationalError: pass
+                try:
+                    idxsql = ('time', )
+                    conn.execute('CREATE INDEX {table}_{idxid} ON {table} ({columns})'.format(table=args.converter, idxid='_'.join(idxsql), columns=', '.join(idxsql)))
+                except sqlite3.OperationalError: pass
+            #for idxsql in [('user', ), ('user', 'time', )]:
+            #    sql_proc.stdin.write('CREATE INDEX {table}_{idxid} ON {table} ({columns}) ;\n'.format(table=args.converter, idxid='_'.join(idxsql), columns=', '.join(idxsql)).encode())
             dt = time.time() - t1
             if recreate_db:
                 os.rename(dbfile_new, dbfile)
