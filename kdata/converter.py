@@ -2044,7 +2044,6 @@ class AwareESM(BaseAwareConverter):
               'esm_trigger',
               'esm_title',
               'esm_type',
-              'esm_notification_timeout',
               ]
 
 class AwareLog(BaseAwareConverter):
