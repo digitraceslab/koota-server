@@ -2034,17 +2034,6 @@ class AwarePHQ9(BaseAwareConverter):
     table = 'questionnaire'
     fields = ['answer',
               ]
-class AwareESM(BaseAwareConverter):
-    desc = "ESM"
-    table = 'esms'
-    fields = ['esm_notification_timeout',
-              'esm_user_answer',
-              'esm_submit',
-              'esm_status',
-              'esm_trigger',
-              'esm_title',
-              'esm_type',
-              ]
 
 class AwareLog(BaseAwareConverter):
     desc = "Status log"
@@ -2085,9 +2074,9 @@ class AwareMessages(BaseAwareConverter):
                        )
 class AwareRecentDataCounts(BaseDataCounts, BaseAwareConverter):
     timestamp_converter = AwareTimestamps
-class AwareEsms(BaseAwareConverter):
+class AwareESM(BaseAwareConverter):
     desc = "ESMs"
-    header = ['time_asked', 'time_answer', 'user_answer', 'title', 'type', 'instructions', 'submit', 'notification_timeout']
+    header = ['time', 'time_asked', 'user_answer', 'type', 'title', 'instructions', 'submit', 'notification_timeout']
     def convert(self, queryset, time=lambda x:x):
         types = {"1": "incoming", "2":"outgoing"}
         for ts, data in queryset:
@@ -2097,8 +2086,8 @@ class AwareEsms(BaseAwareConverter):
             table_data = loads(data['data'])
             for row in table_data:
                 esm_json = loads(row['esm_json'])
-                yield (time(row['timestamp']/1000.),
-                       time(row['double_esm_user_answer_timestamp']/1000.),
+                yield (time(row['double_esm_user_answer_timestamp']/1000.),
+                       time(row['timestamp']/1000.),
                        row['esm_user_answer'],
                        esm_json.get('esm_type',''),
                        esm_json.get('esm_title',''),
@@ -2106,7 +2095,7 @@ class AwareEsms(BaseAwareConverter):
                        esm_json.get('esm_submit',''),
                        esm_json.get('esm_notification_timeout',''),
                        )
-
+AwareEsms = AwareESM
 
 
 
