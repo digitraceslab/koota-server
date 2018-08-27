@@ -46,7 +46,7 @@ PACKET_CHUNK_SIZE = 1000
 # Aware config forms
 class AwareConfigForm(forms.Form):
     is_locked = forms.NullBooleanField(help_text="Is user blocked from making changes?")
-    extra = util.JsonConfigFormField(help_text="Extra data?", required=False)
+    extra = util.JsonConfigFormField(help_text="Extra data?", required=False, widget=forms.Textarea(attrs={'style': 'font-family: monospace; width: 1000px; height: 500px'}))
     use_default_sensors = forms.BooleanField(initial=True, help_text="Sent some default config when registering?", required=False)
     frequency_update = forms.IntegerField(help_text="Schedule periodically updating config?  (min)", required=False)
 
