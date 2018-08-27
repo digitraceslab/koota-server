@@ -137,7 +137,7 @@ class Aware(devices.BaseDevice):
         return context
     def webservice_url(self):
         """URL for webservice."""
-        secret_id = self.data.secret_id
+        secret_id = self.dbrow.secret_id
         url_ = reverse('aware-register', kwargs=dict(indexphp='index.php',
                                                     secret_id=secret_id,
                                                     ))
@@ -255,7 +255,7 @@ def dict_to_settings(config, key_name='setting', value_name='value'):
     """Dict to aware's [{setting:xxx value:xxx}, ...] format.
 
     {"aaa":xxx, "bbb":yyy} -> [{"setting":"aaa", "value":"xxx"},
-    {"setting":"bbb", "value":"yyy"}
+                               {"setting":"bbb", "value":"yyy"}]
     """
     cfg = [ {key_name:k, value_name:aware_to_string(v)}
             for k,v in config.items() ]
@@ -282,10 +282,10 @@ def get_user_config(device):
         util.recursive_copy_dict(DEFAULT_SENSORS, config)
 
     # Create some basic info
-    #config['sensors']['mqtt_username'] = device.data.public_id
-    #config['sensors']['mqtt_password'] = device.data.secret_id
-    if device.data.ts_create is not None:
-        ts_create = device.data.ts_create.timestamp()
+    #config['sensors']['mqtt_username'] = device.dbrow.public_id
+    #config['sensors']['mqtt_password'] = device.dbrow.secret_id
+    if device.dbrow.ts_create is not None:
+        ts_create = device.dbrow.ts_create.timestamp()
     else:
         ts_create = (timezone.now()-timedelta(days=1)).timestamp()
     # AWARE parses study_start as int!
@@ -301,14 +301,14 @@ def get_user_config(device):
         util.recursive_copy_dict(settings.AWARE_CONFIG, config)
 
     # Config from a user's groups:
-    user = device.data.user
+    user = device.dbrow.user
     user_group_config = group.user_merged_group_config(user)
     if 'aware_config' in user_group_config:
         util.recursive_copy_dict(user_group_config['aware_config'], config)
 
     # Config from this device in particular (device attrs)
-    if 'aware_config' in device.data.attrs:
-        _data = json.loads(device.data.attrs['aware_config'])
+    if 'aware_config' in device.dbrow.attrs:
+        _data = json.loads(device.dbrow.attrs['aware_config'])
         util.recursive_copy_dict(_data, config)
         # Same as above, but prevents problems in case of wrapped
         # "aware_config" attribute like groups require.
