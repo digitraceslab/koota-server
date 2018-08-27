@@ -30,6 +30,7 @@ from .. import models
 from .. import permissions
 from .. import util
 from .. import views as kviews
+from . import aware_esm
 
 LOGGER = logging.getLogger(__name__)
 
@@ -335,6 +336,10 @@ def process_schedule(sched):
     that happens here is converting extras to the right format, and
     possibly adding random times to schedules.
     """
+
+    if 'questions' in sched:
+        sched = aware_esm.convert(sched)
+
     # Do we need to make the {'key':x, 'value':y} format ESM settings
     # for schedules?  This automatically converts dicts to this
     # format.  It will be converted to string (dumps) before sending
