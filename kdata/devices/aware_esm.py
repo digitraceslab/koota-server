@@ -86,10 +86,14 @@ schedule:
   trigger: TEMPLATE_TRIGGER
 """
 
-def convert(data):
+def convert(data, schedule_id=None):
     """Full conversion of yaml data into Aware-sutitable schedule.
     """
     data = copy.deepcopy(data)  # 'data' modified in place
+    # we must have an 'id' in here:
+    if 'id' not in data:
+        if schedule_id is None: raise ValueError("schedule must have an 'id' value")
+        data['id'] = schedule_id
     # First get the flow questions.
     extra_esms = { }
     for id_, esm in data.get('extra', { }).items():
@@ -97,7 +101,9 @@ def convert(data):
         extra_esms[id_] = esm
     # Now assemble the main series of questions
     esms = [ ]
-    for esm in data['questions']:
+    for i, esm in enumerate(data['questions']):
+        if 'id' not in esm:
+            esm['id'] = data['id'] + '_{:03d}'.format(i)
         q = Question.new(esm, extra_esms=extra_esms)
         esms.append(q.json())
     # Make new ESMs delete all previous ESMs:
@@ -136,6 +142,7 @@ class Question(object):
     def __init__(self, data, extra_esms):
         self.extra = { }       # extra data to be added into final
         self.setup_hook(data)
+        if 'id' not in data: raise ValueError("No ID attribute in {}".format(data))
         self.id_ = data.pop('id')
         self.title = data.pop('title', None)
         self.instructions = data.pop('instructions', None)

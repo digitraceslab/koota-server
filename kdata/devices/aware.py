@@ -329,7 +329,7 @@ def get_user_config(device):
     return config
 
 
-def process_schedule(sched):
+def process_schedule(sched, schedule_id=None):
     """Convert schedule to final form.
 
     Takes one schedule and returns a list of schedules.  The main thing
@@ -338,7 +338,7 @@ def process_schedule(sched):
     """
 
     if 'questions' in sched:
-        sched = aware_esm.convert(sched)
+        sched = aware_esm.convert(sched, schedule_id=schedule_id)
 
     # Do we need to make the {'key':x, 'value':y} format ESM settings
     # for schedules?  This automatically converts dicts to this
@@ -432,12 +432,13 @@ def finalize_config(config, device):
         config['schedulers'] = [ ]
     for key in list(config):
         if key.startswith('schedule_'):
+            schedule_id = key[9:]
             sched = config.pop(key)
             if isinstance(sched, (list,tuple)):
                 for sched_inner in sched:
-                    config['schedulers'].extend(process_schedule(sched_inner))
+                    config['schedulers'].extend(process_schedule(sched_inner, schedule_id=schedule_id))
             else:
-                config['schedulers'].append(process_schedule(sched))
+                config['schedulers'].append(process_schedule(sched, schedule_id=schedule_id))
 
     # If we have ESMs, then turn it on.
     if len(config['schedulers']) > 0:
