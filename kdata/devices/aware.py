@@ -358,7 +358,9 @@ def process_schedule(sched):
     schedules_config2 = [ ]
 
     #print(sched['schedule']['trigger'])
-    if 'random_intervals' in sched['schedule']['trigger']:
+    if ('schedule' in sched
+       and 'trigger' in sched['schedule']
+       and'random_intervals' in sched['schedule']['trigger']):
         now_ts = timezone.now().timestamp()
         # Loop over several days
         today = timezone.now().date()
