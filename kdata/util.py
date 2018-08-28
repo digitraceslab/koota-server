@@ -12,10 +12,12 @@ from json import dumps, loads
 from math import isnan, log
 import os
 import random
+import re
 import time
 
 import six
 from six import StringIO as IO
+import yaml
 
 from django.utils import timezone
 import django.db.models
@@ -303,27 +305,51 @@ def hash_mosquitto_password(passwd):
 
 
 
+def dump_human(value, useyaml=False):
+    """Convert to JSON/YAML in human-readable format"""
+    if useyaml:
+        return yaml.dump(value,
+                         default_flow_style=None, width=72, indent=2)
+    else:
+        return dumps(value, sort_keys=True,
+                     indent=2, separators=(',', ': '))
+
+def load_human(value):
+    """Read from JSON/yaml"""
+    return yaml.safe_load(value)  # YAML loading also loads JSON
+
 class JsonConfigFormField(django.forms.Field):
     widget = django.forms.Textarea
-    def __init__(self, *args, **kwargs):
+    useyaml = False
+    def __init__(self, *args, yaml=False, **kwargs):
         # Somehow max_length gets added again, and we have to remove it.
         kwargs.pop('max_length', None)
+        if yaml is not None: self.useyaml = yaml
         return super(JsonConfigFormField, self).__init__(*args, **kwargs)
     def to_python(self, value):
         if not value.strip(): return ''
         try:
-            value = loads(value)
+            value = load_human(value)
         except json.JSONDecodeError as e:
-            raise django.forms.ValidationError("Invalid JSON: "+str(e))
+            charn = re.search('char (\d+)', str(e))
+            error_location = ""
+            if charn:
+                charn = int(charn.group(1))
+                error_location = " (at %s<<<%s>>>%s)"%(value[charn-10:charn], value[charn], value[charn+1:charn+11])
+            raise django.forms.ValidationError("Invalid JSON: %s%s"%(str(e), error_location))
             #raise django.forms.ValidationError("Invalid JSON")
+        except yaml.YAMLError as e:
+            if hasattr(e, 'problem_mark'):
+                mark = e.problem_mark
+                raise django.forms.ValidationError("Invalid YAML: %s:%s (line <<<%s>>>)"%(mark.line+1, mark.column+1, value.split('\n')[mark.line]))
         return value
-    def prepare_value(self, value):
+    def prepare_value(self, value, useyaml=True):
         try:
-            value = loads(value)
+            value = load_human(value)
         except (json.JSONDecodeError, TypeError):
             return value
-        return dumps(value, sort_keys=True,
-                     indent=4, separators=(',', ': '))
+        return dump_human(value, useyaml=self.useyaml)
+
 # database field
 class JsonConfigField(django.db.models.TextField):
     def formfield(self, **kwargs):
