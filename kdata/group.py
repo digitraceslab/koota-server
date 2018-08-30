@@ -322,6 +322,8 @@ def group_data(request, group_name, converter, format=None, gs_id=None):
     context = c = { }
     group = models.Group.objects.get(slug=group_name)
     group_class = group.get_class()
+    context['group_name'] = group_name
+    context['converter'] = converter
     logs.log(request, 'view group data',
              obj='group='+group.slug, op='group_data')
     if not permissions.has_group_researcher_permission(request, group):
