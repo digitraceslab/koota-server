@@ -438,7 +438,7 @@ def finalize_config(config, device):
                 for sched_inner in sched:
                     config['schedulers'].extend(process_schedule(sched_inner, schedule_id=schedule_id))
             else:
-                config['schedulers'].append(process_schedule(sched, schedule_id=schedule_id))
+                config['schedulers'].extend(process_schedule(sched, schedule_id=schedule_id))
 
     # If we have ESMs, then turn it on.
     if len(config['schedulers']) > 0:
