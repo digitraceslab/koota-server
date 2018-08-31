@@ -112,7 +112,7 @@ def convert(data, schedule_id=None):
     # Produce overall schedule object
     schedule = yaml.load(schedule_template)
     schedule['schedule']['schedule_id'] = data['id']
-    schedule['schedule']['action']['extras']['esm'] = esms
+    schedule['schedule']['action']['extras']['esm'] = [ {"esm":esm} for esm in esms ]
     schedule['schedule']['trigger'] = trigger = data['trigger']
     # Test the triggers
     unknown_trigger_keys = set(trigger) - set(('interval', 'interval_delayed',
