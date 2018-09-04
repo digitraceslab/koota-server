@@ -38,7 +38,7 @@ class Data(models.Model):
 
 
 class Device(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     name = models.CharField(max_length=64,
                             help_text='A descriptive name for your device.')
     type = models.CharField(max_length=128,
@@ -53,7 +53,7 @@ class Device(models.Model):
                                              "no effect on analysis.")
     _public_id = models.CharField(db_column='public_id', max_length=64, null=True, blank=True, db_index=True)
     _secret_id = models.CharField(db_column='secret_id', max_length=64, null=True, blank=True, db_index=True)
-    label = models.ForeignKey('DeviceLabel', null=True, blank=True, verbose_name="Usage",
+    label = models.ForeignKey('DeviceLabel', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Usage",
                               help_text='How is this device used?  Primary means that you actively use the '
                                         ' device in your life, secondary is used by you sometimes. ')
     comment = models.CharField(max_length=256, null=True, blank=True, help_text='Any other comments to researchers (optional)')
@@ -184,7 +184,7 @@ class BaseAttr(models.Model):
 
 
 class DeviceAttr(BaseAttr):
-    device = models.ForeignKey(Device)
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
 
 
 
@@ -378,8 +378,8 @@ class GroupAttr(BaseAttr):
 
 
 class GroupSubject(models.Model):
-    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    group = models.ForeignKey(Group, on_delete=models.PROTECT)
     active = models.BooleanField(default=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
@@ -441,8 +441,8 @@ class GroupSubjectAttr(BaseAttr):
 
 
 class GroupResearcher(models.Model):
-    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    group = models.ForeignKey(Group, on_delete=models.PROTECT)
     active = models.BooleanField(default=True)
     ts_start = models.DateTimeField(blank=True, null=True)
     ts_end = models.DateTimeField(blank=True, null=True)
@@ -475,8 +475,8 @@ class SurveyDevice(Device):
 
 class SurveyToken(models.Model):
     token = models.CharField(max_length=32, primary_key=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
-    #device = models.ForeignKey(SurveyDevice)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    #device = models.ForeignKey(SurveyDevice, on_delete=models.CASCADE)
     device_id = models.CharField(max_length=64, unique=True)
     persistent= models.BooleanField(blank=True, default=True)
     # We have a lot of different timestamps:
@@ -561,8 +561,8 @@ class MosquittoAcl(models.Model):
 
 # Consents
 class Consent(models.Model):
-    user         = models.ForeignKey(settings.AUTH_USER_MODEL)
-    group        = models.ForeignKey(Group, null=True, blank=True)
+    user         = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    group        = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
     ts_create    = models.DateTimeField(auto_now_add=True)
     data         = util.JsonConfigField(blank=True,
                       help_text="Context data about what this consent means.")
@@ -578,7 +578,7 @@ class Consent(models.Model):
 
 # Tokens
 class Token(models.Model):
-    user         = models.ForeignKey(settings.AUTH_USER_MODEL)
+    user         = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     token        = models.TextField(null=True, blank=True, db_index=True, unique=True)
     type         = models.TextField(null=True, blank=True)
     ts_create    = models.DateTimeField(auto_now_add=True)
