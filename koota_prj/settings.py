@@ -127,7 +127,7 @@ INSTALLED_APPS = [
 ]
 
 # TODO: django 1.10, middleware change
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
