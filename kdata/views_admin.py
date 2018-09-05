@@ -171,27 +171,24 @@ class KootaOTPAuthenticationForm(OTPAuthenticationForm):
         #    raise error
 
 
-from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.cache import never_cache
-#from django.contrib.auth.views import LoginView as DjangoLoginView
-from django.contrib.auth.views import login as django_login
-@never_cache
-@sensitive_post_parameters()
-def login(request, *args, **kwargs):
-    """Login view redirecting to the subject's expected login page."""
-    ret = django_login(request, *args, **kwargs)
-    if not request.user.is_anonymous:
+class KootaLoginView(auth.views.LoginView):
+    template_name = 'koota/login.html'
+    authentication_form = KootaOTPAuthenticationForm
+    def form_valid(self, form):
+        auth_login(self.request, form.get_user())
+
         # If user is in a special group with a special front page,
         # redirect to that.
-        login_view_name = group.user_main_page(request.user)
+        login_view_name = group.user_main_page(self.request.user)
         if login_view_name is not None:
             request.session['login_view_name'] = login_view_name
             return HttpResponseRedirect(reverse(login_view_name))
         # If user is researcher of any groups, redirect to main page
-        if request.user.researcher_of_groups.exists():
+        if self.request.user.researcher_of_groups.exists():
             return HttpResponseRedirect(reverse('main'))
-    # Otherwise, default return (redirect to device list)
-    return ret
+        # This is default fallthrough from the superclass
+        return HttpResponseRedirect(self.get_success_url())
+
 
 
 
