@@ -168,7 +168,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'koota',
-        'USER': 'koota',
+#        'USER': 'koota',
     },
     'data': {
         'ENGINE': 'django.db.backends.sqlite3',
