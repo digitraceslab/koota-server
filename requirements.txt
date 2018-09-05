@@ -1,13 +1,16 @@
 django
+django-floppyforms
 python-dateutil
-pillow (compile deps: zlib1g-dev, libjpeg-dev)
+pillow       #(compile deps: zlib1g-dev, libjpeg-dev)
 qrcode
 defusedxml
 pytz
 pycrypto
-ujson (optional)
+ujson        #(optional)
 django-otp
 psycopg2
+#psycopg2-binary
+geopy
 
 oauthlib
 numpy
@@ -15,4 +18,4 @@ requests
 requests-oauthlib
 six
 uwsgi
-yaml
+pyyaml
