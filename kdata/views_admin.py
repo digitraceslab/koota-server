@@ -170,7 +170,7 @@ class KootaOTPAuthenticationForm(OTPAuthenticationForm):
         #
         #    raise error
 
-
+from django.contrib.auth import login as auth_login
 class KootaLoginView(auth.views.LoginView):
     template_name = 'koota/login.html'
     authentication_form = KootaOTPAuthenticationForm
