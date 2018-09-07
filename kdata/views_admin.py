@@ -316,6 +316,7 @@ def stats(request):
         start = end-duration
         def to_per_day(x):
             """Convert a number of bytes in 'duration' to bytes/day"""
+            if x is None: return 0
             return x / duration.total_seconds() * 60*60*24
 
 
