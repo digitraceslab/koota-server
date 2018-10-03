@@ -316,6 +316,8 @@ def dump_human(value, useyaml=False):
 
 def load_human(value):
     """Read from JSON/yaml"""
+    if value is None: return None
+    if value == '': return ''
     return yaml.safe_load(value)  # YAML loading also loads JSON
 
 class JsonConfigFormField(django.forms.Field):
