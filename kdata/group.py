@@ -52,7 +52,7 @@ def user_merged_group_config(user):
 
     """
     groups = user_groups(user)
-    dicts = [ loads(g.config) for g in groups if g.config ]
+    dicts = [ loads(g.config) for g in groups if (g.config and loads(g.config)) ]
     config = util.merge_dicts(*dicts)
     # Go through and update config with each grou, in reverse order.
     return config
