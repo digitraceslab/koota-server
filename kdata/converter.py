@@ -2058,6 +2058,15 @@ class AwareLocation(BaseAwareConverter):
               'provider',
               'label',
               ]
+class AwareLocationSafe(BaseAwareConverter):
+    desc = "Location without values"
+    table = 'locations'
+    fields = ['accuracy',
+              'double_speed',
+              'double_bearing',
+              'provider',
+              'label',
+              ]
 class AwareNetwork(BaseAwareConverter):
     desc = "Networks"
     table = 'network'
