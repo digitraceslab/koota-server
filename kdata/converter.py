@@ -1037,9 +1037,9 @@ class PRCommunicationEventsDay(PRDayAggregator):
         )
 
 import numpy as np
-from geopy.distance import vincenty
+from geopy.distance import geodesic
 #from scipy.cluster.vq import kmeans, vq
-class LocationDayAggregator(DayAggregator):
+class LocationDayAggregatorOld(DayAggregator):
     """Daily movement information.
 
     This was contributed by students.  For details, you must see code
@@ -1051,6 +1051,18 @@ class LocationDayAggregator(DayAggregator):
     - Normalized entropy = entropy / log(num_clusters)
     - transition time between clusters
     - total distance traveled
+
+
+    TODO:
+    - numclust: find some algorothm that works.  Something that allows points to not be in anything
+    - n_points_next_to_another: 
+    - locstd
+    - diameter
+    - movement_fraction: how many of the points they were moving?
+    - distance_between_clusters
+    - fraction_of_points_in_largest_cluster:    + standard deviation of these timestamps
+    - consider only data days with over half of nonnan bins.
+    - consider only 
     """
     header = ['day', 'totdist', 'locstd',
               'n_bins', 'n_bins_nonnan', 'transtime',
@@ -1060,7 +1072,7 @@ class LocationDayAggregator(DayAggregator):
         time_step = 600 # seconds, size of data bins
         speed_th = 0.28 # m/s, moving threshold
         max_dist = 500 # m, maximum radius of cluster
-        lat, lon, times = self.get_lat_lon_times(probes)
+        lat, lon, times, speeds = self.get_lat_lon_times(probes)
         if len(times) == 0:
             return
         time_bins = range(int(min(times)), int(max(times)) + time_step, time_step)
@@ -1093,7 +1105,7 @@ class LocationDayAggregator(DayAggregator):
         # calculate distances between coordinates
         for i in range(0, len(lon_binned) - 1):
             if not any(np.isnan([lon_binned[i], lat_binned[i], lon_binned[i + 1], lat_binned[i + 1]])):
-                dists.append(vincenty((lat_binned[i], lon_binned[i]), (lat_binned[i + 1], lon_binned[i + 1])).meters)
+                dists.append(geodesic((lat_binned[i], lon_binned[i]), (lat_binned[i + 1], lon_binned[i + 1])).meters)
             else:
                 dists.append(np.nan)
 
@@ -1166,7 +1178,129 @@ class LocationDayAggregator(DayAggregator):
                entropy,
                norm_entropy,
                )
-class PRLocationDay(PRDayAggregator, LocationDayAggregator):
+class LocationDayAggregator(DayAggregator):
+    """Daily movement information.
+
+    n_points: Total number of raw points
+    """
+    header = ['day', 'n_points', 'n_bins_nonnan', 'n_bins_paired',
+              'ts_min', 'ts_max', 'ts_std',
+              'totdist', 'totdist_raw', 'locstd',
+              'radius_mean', 'diameter',
+              'n_bins_moving', 'n_bins_moving_speed', 'n_points_moving_speed'
+              ]
+    def process(self, day, probes):
+        bin_width = 600 # seconds, size of data bins
+        speed_th = 0.28 # m/s, moving threshold
+        lats, lons, times, speeds = self.get_lat_lon_times(probes)
+        if len(times) == 0:
+            return
+        bin_start = int(min(times)) // bin_width
+        bin_end   = int(max(times)) // bin_width
+        n_bins = bin_end - bin_start + 1
+        lats_binned = [ [] for _ in range(n_bins) ]
+        lons_binned = [ [] for _ in range(n_bins) ]
+        dists_binned = [ [] for _ in range(n_bins) ]
+        speeds_binned = [ [] for _ in range(n_bins) ]
+        n_points = len(lats)
+
+        # bin data
+        for lat, lon, ts, speed in zip(lats, lons, times, speeds):
+            bin = int((ts // bin_width) - bin_start)
+            lats_binned[bin].append(lat)
+            lons_binned[bin].append(lat)
+            speeds_binned[bin].append(speed)
+        n_bins_nonnan = sum(1 for item in lats_binned if item)
+        for i in range(len(lats_binned)):
+            if not lats_binned[i]:
+                lats_binned[i] = lons_binned[i] = speeds_binned[i] = np.nan
+                continue
+            lats_binned[i] = np.mean(lats_binned[i])
+            lons_binned[i] = np.mean(lons_binned[i])
+            speeds_binned[i] = np.mean(speeds_binned[i])
+
+        # Compute the scale factor for latitudes, to convert the
+        # coordinate system into something approximately euclidian
+        # with equal distance scales on both axes.
+        if len(lats_binned) > 1 and not np.isnan(lats_binned).all():
+            mean_lat = np.nanmean(lats_binned)
+            LAT_SCALAR = np.cos(np.pi*mean_lat/180)
+        else:
+            LAT_SCALAR = 1
+
+        # calculate distances between coordinates, using the averages
+        total_distance = 0
+        lat0 = lon0 = None
+        for lat, lon in zip(np.array(lats_binned)[~np.isnan(lats_binned)], np.array(lons_binned)[~np.isnan(lons_binned)]):
+            if lat0 is None:
+                lat0 = lat
+                lon0 = lon
+                continue
+            dist = geodesic((lat0, lon0), (lat, lon)).meters
+            lat0 = lat ; lon0 = lon
+            total_distance += dist
+        # Calculate distance again, using raw points
+        raw_total_distance = 0
+        for i in range(len(lats)-1):   # exclude last, compare i to i+1
+            if np.isnan([lats[i], lons[i], lats[i+1], lons[i+1]]).any():
+                continue
+            dist = geodesic((lats[i], lons[i]), (lats[i+1], lons[i+1])).meters
+            raw_total_distance += dist
+
+        # Mean locations
+        if not np.isnan(lats_binned).all():
+            lat_mean = np.nanmean(lats_binned)
+            lon_mean = np.nanmean(lons_binned)
+            # location variance
+            loc_std = EARTH_RADIUS * sqrt(np.nanvar(lats_binned)*LAT_SCALAR**2 + np.nanvar(lons_binned))*pi/180
+        else:
+            lat_mean = lon_mean = loc_std = np.nan
+
+        # Radius - furthest point
+        radius_mean = max((geodesic((lat_mean, lon_mean), (lat, lon)).meters
+                           for lat,lon in zip(lats_binned, lons_binned) if not np.isnan(lat) and not np.isnan(lon)),
+                          default=np.nan)
+
+        # Diameter
+        diameter = np.nan
+
+        # Skewness and Kurtosis
+
+        # Number of bins that have both pairs available
+        n_bins_paired = 0
+        n_bins_moving = 0
+        for i in range(len(lats_binned)-1):   # exclude last, compare i to i+1
+            if np.isnan([lats_binned[i], lons_binned[i], lats_binned[i+1], lons_binned[i+1]]).any():
+                continue
+            n_bins_paired += 1
+            dists_binned[i] = geodesic((lats_binned[i], lons_binned[i]), (lats_binned[i+1], lons_binned[i+1])).meters
+            speeds_binned[i] = dists_binned[i] / bin_width
+            if speeds_binned[i] > speed_th:
+                n_bins_moving += 1
+
+        # Moving using reported speed
+        n_bins_moving_speed = sum(1 for speed in speeds_binned if speed>speed_th)
+        n_points_moving_speed = sum(1 for speed in speeds_binned if speed>speed_th)
+
+        yield ('%04d-%02d-%02d'%day,
+               n_points,
+               n_bins_nonnan,
+               n_bins_paired,
+               min(times),
+               max(times),
+               np.nanstd(times),
+               total_distance,
+               raw_total_distance,
+               loc_std,
+               radius_mean,
+               diameter,
+               n_bins_moving,
+               n_bins_moving_speed,
+               n_points_moving_speed,
+               )
+
+
+class PRLocationDay(PRDayAggregator, LocationDayAggregatorOld):
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
     desc = "Location, daily features"
     filter_func = staticmethod(lambda data: 'LocationProbe' in data)
@@ -1176,14 +1310,16 @@ class PRLocationDay(PRDayAggregator, LocationDayAggregator):
         lat = [ probe['LATITUDE'] for probe in probes ]
         lon = [ probe['LONGITUDE'] for probe in probes ]
         times = [ probe['TIMESTAMP'] for probe in probes ]
-        return lat, lon, times
+        speeds = [ None ] * len(times)
+        return lat, lon, times, speeds
 class IosLocationDay(IosDay, PRLocationDay):
     desc = "Location, daily features"
     def get_lat_lon_times(self, probes):
         lat = [ probe['lat'] for probe in probes ]
         lon = [ probe['lon'] for probe in probes ]
         times = [ probe['timestamp'] for probe in probes ]
-        return lat, lon, times
+        speeds = [ None ] * len(times)
+        return lat, lon, times, speeds
 # Second implemation of DayConverter - including k-means
 def kmeans_haversine(data, k, iter=20, thresh=1e-05):
     """Run k-means on a geographic coordinate system.
@@ -1724,7 +1860,7 @@ class AwareDayAggregator(DayAggregator, BaseAwareConverter):
         for row in data2:
             ts = row['timestamp']/1000
             yield ts, self.ts_bin_func(ts), row
-class AwareLocationDay(AwareDayAggregator, LocationDayAggregator):
+class AwareLocationDay(LocationDayAggregator, AwareDayAggregator):
     desc = "Location, daily features"
     def iter_row(self, packet_ts, data):
         data = loads(data)
@@ -1739,7 +1875,10 @@ class AwareLocationDay(AwareDayAggregator, LocationDayAggregator):
         lat = [ probe['double_latitude'] for probe in probes if probe.get('label')!='disabled' ]
         lon = [ probe['double_longitude'] for probe in probes if probe.get('label')!='disabled' ]
         times = [ probe['timestamp']/1000 for probe in probes if probe.get('label')!='disabled' ]
-        return lat, lon, times
+        speeds = [ probe['double_speed'] for probe in probes if probe.get('label')!='disabled' ]
+        return lat, lon, times, speeds
+class AwareLocationDayOld(LocationDayAggregatorOld, AwareLocationDay):
+    pass
 class AwareAuto(BaseAwareConverter):
     header = ['time', 'data']
     def convert(self, queryset, time=lambda x:x):

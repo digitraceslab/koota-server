@@ -90,6 +90,7 @@ class Aware(devices.BaseDevice):
         converter.AwareLog,
         converter.AwareLocation,
         converter.AwareLocationDay,
+        converter.AwareLocationDayOld,
         converter.AwareMagnetometer,
         converter.AwareMessages,
         converter.AwareNetwork,
