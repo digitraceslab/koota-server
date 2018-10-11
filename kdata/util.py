@@ -384,6 +384,10 @@ class DefaultBooleanSelect(django.forms.NullBooleanSelect):
 class DefaultBooleanField(django.forms.NullBooleanField):
     """Form field for Default/True/False"""
     widget = DefaultBooleanSelect
+#class MonospaceTextAreaWidget(django.forms.Textarea):
+#    class Media:
+
+
 
 # A JSON encoder that can convert date and time objects to strings.
 def field_to_json(x):
