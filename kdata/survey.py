@@ -49,7 +49,7 @@ class InstructionsWidget(forms.Widget):
     This widget is not for an actual input, but is just used for text
     which has no value associated with it.
     """
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, **kwargs):
         return ''
 class InstructionsField(forms.Field):
     """Field for a text paragraph"""
@@ -130,7 +130,7 @@ def make_form(survey_data, default_required=False):
             required = default_required
         if isinstance(row, BaseChoice):
             form_fields[tag] = forms.ChoiceField(
-                [(i,x) for i,x in enumerate(row.choices)],
+                choices=[(i,x) for i,x in enumerate(row.choices)],
                 label=row.question,
                 widget=forms.RadioSelect,
                 required=required)
