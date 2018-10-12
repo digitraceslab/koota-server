@@ -1302,7 +1302,7 @@ class LocationDayAggregator(DayAggregator):
 
 class PRLocationDay(PRDayAggregator, LocationDayAggregatorOld):
     probe_type = 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe'
-    desc = "Location, daily features"
+    desc = "Location, daily features (old algorithm)"
     filter_func = staticmethod(lambda data: 'LocationProbe' in data)
     filter_row_func = staticmethod(lambda row: row['PROBE'] == 'edu.northwestern.cbits.purple_robot_manager.probes.builtin.LocationProbe')
     fast_row_limit = 5
@@ -1313,7 +1313,7 @@ class PRLocationDay(PRDayAggregator, LocationDayAggregatorOld):
         speeds = [ None ] * len(times)
         return lat, lon, times, speeds
 class IosLocationDay(IosDay, PRLocationDay):
-    desc = "Location, daily features"
+    desc = "Location, daily features (old algorithm)"
     def get_lat_lon_times(self, probes):
         lat = [ probe['lat'] for probe in probes ]
         lon = [ probe['lon'] for probe in probes ]
@@ -1878,7 +1878,7 @@ class AwareLocationDay(LocationDayAggregator, AwareDayAggregator):
         speeds = [ probe['double_speed'] for probe in probes if probe.get('label')!='disabled' ]
         return lat, lon, times, speeds
 class AwareLocationDayOld(LocationDayAggregatorOld, AwareLocationDay):
-    pass
+    desc = "Location, daily features (old algorithm)"
 class AwareAuto(BaseAwareConverter):
     header = ['time', 'data']
     def convert(self, queryset, time=lambda x:x):
