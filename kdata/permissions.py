@@ -105,6 +105,21 @@ def has_group_manager_permission(request, group):
     # Default deny
     return False
 
+def group_needs_2fa(request, group):
+    """Should user be notified to to log in with 2FA?
+
+    True = notify user
+    False = user already using 2FA, or 2FA not needed
+    NOT for authorization purposes"""
+    researcher = request.user
+    if researcher.is_anonymous:
+        raise exceptions.LoginRequired()
+    group_class = group.get_class()
+    if group.otp_required and not researcher.is_verified():
+        return True
+    return False
+
+
 
 def has_group_admin_permission(request, group):
     """Test a user's permission to set group metadata.

@@ -141,6 +141,9 @@ def group_detail(request, group_name):
     group = models.Group.objects.get(slug=group_name)
     group_class = c['group'] = group.get_class()
     # If a researcher, allow researcher views.
+    if (models.GroupResearcher.objects.filter(group=group, user=request.user).exists()
+        and permissions.group_needs_2fa(request, group)):
+        c['needs_2fa_login'] = True
     if (permissions.has_group_researcher_permission(request, group)
           or permissions.has_group_manager_permission(request, group)):
         # effective number of subjects: can be overridden

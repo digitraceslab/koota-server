@@ -36,8 +36,8 @@ if 'ui' in settings.WEB_COMPONENTS:
   urlpatterns += [
     url(r'^login/$', views_admin.KootaLoginView.as_view(),  name='login2'),
     url(r'^register/$', views_admin.RegisterView.as_view(), name='register-user'),
-    url(r'^otp/$',          views_admin.otp_config, name='otp-config'),
-    url(r'^otp/otp-qr.png', views_admin.otp_qr,     name='otp-qr'),
+    url(r'^2fa/$',          views_admin.otp_config, name='otp-config'),
+    url(r'^2fa/2fa-qr.png', views_admin.otp_qr,     name='otp-qr'),
 
     url(r'^oxford/', oxford2016.views.main,     name='oxford2016'),
 

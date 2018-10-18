@@ -136,7 +136,7 @@ class KootaOTPAuthenticationForm(OTPAuthenticationForm):
     taken from the django-otp, with the last part commented out.
 
     """
-    otp_token = forms.CharField(required=False, label="2FA Token (optional)")
+    otp_token = forms.CharField(required=False, label="Two-factor authentication token (optional)")
     def clean_otp(self, user):
         """Process the otp_* fields
 
@@ -196,7 +196,7 @@ class KootaLoginView(auth.views.LoginView):
 
 from django import forms
 class OTPVerifyForm(forms.Form):
-    otp_token = forms.CharField()
+    otp_token = forms.CharField(label="2FA token")
 def otp_config(request):
     """View to manage two-factor (OTP) auth.
 
@@ -253,7 +253,7 @@ def otp_config(request):
     else:
         form = c['otp_form'] = OTPVerifyForm()
 
-    return TemplateResponse(request, 'koota/otp.html', context)
+    return TemplateResponse(request, 'koota/2fa.html', context)
 
 
 import base64

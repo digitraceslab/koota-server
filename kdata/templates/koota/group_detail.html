@@ -13,6 +13,15 @@
 <li>End time: {{ group.dbrow.ts_end|date:"c" }}</li>
 </ul>
 
+{% if needs_2fa_login %}
+<div class="alert alert-danger">
+  This study requires two-factor authentication for researchers.
+  Please <a href="{% url '">log out</a>, and log in with your 2FA
+  token (Google authenticator).  If you don't have one yet, go
+  to <a href="{% url 'otp-config' %}">the 2FA page</a> to set it up.
+</div>
+{% endif %}
+
 {% if is_admin %}
 You are an admin, so you can
 <a href="{% url 'group-update' group_name=group.dbrow.slug %}" class="btn btn-warning btn-xs">Configure this group</a>
@@ -22,9 +31,9 @@ You are an admin, so you can
 
 {% if is_subject %}
 <h2>Converters</h2>
-Since you are a subject of this group, the group has access to these
+<p>Since you are a subject of this group, the group has access to these
 converters from your primary and secondary devices subject to the
-limits above.
+limits above.</p>
 
 <ul>{% for converter, devices in subject_converters_with_devices %}
   <li>{{converter.name}}: {{converter.desc}}</li>
@@ -38,6 +47,7 @@ limits above.
 </ul>
 
 {% endif %}{# is_subject #}
+
 
 
 

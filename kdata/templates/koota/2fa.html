@@ -2,11 +2,26 @@
 
 {% block body %}
 
+<p><a href="https://en.wikipedia.org/wiki/Multi-factor_authentication">Two-factor
+    auntentication</a> is a security method where you need more than
+    just a password to log in.  Koota does this with the "time-based
+    one time password algorithm".  You have an app on your phone
+    which will generate one-time codes which you have to use to log
+    in.  In Koota, this is optional to log in, but is required for
+    some studies that require higher security.</p>
+
+<p>Instructions:</p>
+
+<ol>
+  <li>Download the Google Authenticator app.</li>
+  <li>Link it to the following QR code.</li>
+  <li>Give the six-digit code when logging in.</li>
+</ol>
 
 
 {# Confirmed codes #}
 {% if confirmed %}
-<p>Your OTP device is confirmed.  If have logged in using two-factor
+<p>Your 2FA device is confirmed.  If have logged in using two-factor
 authentication, and successfully re-verify your code, you can view the
 QR code again so that you can re-use it.</p>
 
