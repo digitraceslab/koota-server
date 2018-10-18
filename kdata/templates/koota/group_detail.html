@@ -30,7 +30,7 @@ You are an admin, so you can
 
 
 {% if is_subject %}
-<h2>Converters</h2>
+<h2>Your data</h2>
 <p>Since you are a subject of this group, the group has access to these
 converters from your primary and secondary devices subject to the
 limits above.</p>
@@ -42,7 +42,7 @@ limits above.</p>
     <li>On <code>{{ device.name }}</code>: <a href="{% url "device-data" public_id=device.public_id converter=converter.converter.name %}">data</a></li>
     {% endfor %}</ul>
   {#{% endif %}#}{% empty %}
-  <li>This group has no converters</li>
+  <li>This group has no converters currently defined.</li>
   {% endfor %}
 </ul>
 
@@ -70,11 +70,15 @@ limits above.</p>
   converters or individual subject data.</p>
 {% else %}
 <ul>
+  {% if group.converters %}
   {% for converter in group.converters %}
   <li><a href="{% url 'group-data' group_name=group.dbrow.slug converter=converter.name %}">{{converter.name}}</a>
       {{converter.desc}}
   </li>
   {% endfor %}
+  {% else %}
+    <li>There are no converters currently defined</li>
+  {% endif %}
 </ul>
 {% endif %}
 
