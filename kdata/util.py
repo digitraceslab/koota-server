@@ -323,7 +323,7 @@ def load_human(value):
 class JsonConfigFormField(django.forms.Field):
     widget = django.forms.Textarea
     useyaml = False
-    def __init__(self, *args, yaml=False, **kwargs):
+    def __init__(self, *args, yaml=None, **kwargs):
         # Somehow max_length gets added again, and we have to remove it.
         kwargs.pop('max_length', None)
         if yaml is not None: self.useyaml = yaml
@@ -351,7 +351,8 @@ class JsonConfigFormField(django.forms.Field):
         except (json.JSONDecodeError, TypeError):
             return value
         return dump_human(value, useyaml=self.useyaml)
-
+class YamlConfigFormField(JsonConfigFormField):
+    useyaml = True
 # database field
 class JsonConfigField(django.db.models.TextField):
     def formfield(self, **kwargs):
