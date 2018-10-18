@@ -1202,6 +1202,7 @@ class LocationDayAggregator(DayAggregator):
         lons_binned = [ [] for _ in range(n_bins) ]
         dists_binned = [ [] for _ in range(n_bins) ]
         speeds_binned = [ [] for _ in range(n_bins) ]
+        ts_binned = [ [] for _ in range(n_bins) ]
         n_points = len(lats)
 
         # bin data
@@ -1210,6 +1211,7 @@ class LocationDayAggregator(DayAggregator):
             lats_binned[bin].append(lat)
             lons_binned[bin].append(lat)
             speeds_binned[bin].append(speed)
+            ts_binned[bin].append(ts)
         n_bins_nonnan = sum(1 for item in lats_binned if item)
         for i in range(len(lats_binned)):
             if not lats_binned[i]:
@@ -1217,7 +1219,8 @@ class LocationDayAggregator(DayAggregator):
                 continue
             lats_binned[i] = np.mean(lats_binned[i])
             lons_binned[i] = np.mean(lons_binned[i])
-            speeds_binned[i] = np.mean(speeds_binned[i])
+            speeds_binned[i] = np.nanmean(speeds_binned[i])
+            ts_binned[i] = np.mean(speeds_binned[i])
 
         # Compute the scale factor for latitudes, to convert the
         # coordinate system into something approximately euclidian
