@@ -30,7 +30,7 @@
       </button>-->
       <a class="navbar-brand" href="{% url 'main' %}">Koota</a>
   {% if user.is_authenticated %}
-  <p class="navbar-text">Logged in as {{ user.username }}{% if user.is_verified %}(+OTP){% endif %}. <a class="btn navbar-btn btn-primary" href="{% url 'logout'%}?next={% url 'main' %}">Logout</a></p>
+  <p class="navbar-text">Logged in as {{ user.username }}{% if user.is_verified %}(+2FA){% endif %}. <a class="btn navbar-btn btn-primary" href="{% url 'logout'%}?next={% url 'main' %}">Logout</a></p>
   {% else %}
   <a class="btn navbar-btn btn-primary" href="{% url 'login2' %}">Login</a>
   <a class="btn navbar-btn btn-info" href="{% url 'register-user' %}">Register</a>
