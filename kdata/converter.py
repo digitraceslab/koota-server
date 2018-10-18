@@ -2074,10 +2074,18 @@ class AwareNetwork(BaseAwareConverter):
               'network_type',
               'network_subtype',
               ]
+class AwareApplicationForeground(BaseAwareConverter):
+    desc = "Applications in foreground"
+    table = 'applications_foreground'
+    fields = ['package_name',
+              'application_name',
+              'is_system_app',
+              ]
 class AwareApplicationNotifications(BaseAwareConverter):
     desc = "Notifications"
     table = 'applications_notifications'
     fields = ['application_name',
+              'package_name',
               'defaults',
               'sound',
               'vibrate',
