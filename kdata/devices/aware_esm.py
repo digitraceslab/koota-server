@@ -4,6 +4,7 @@ Aware reference: http://www.awareframework.com/esm/
 """
 import copy
 import json
+import sys
 import yaml
 
 import logging
@@ -344,4 +345,12 @@ schedule_template_json = """\
 
 
 if __name__ == "__main__":
-    print(yaml.dump(convert(yaml.load(data))))
+    if len(sys.argv) == 1:
+        # Print sample data
+        print(yaml.dump(convert(yaml.load(data))))
+    else:
+        # Load all data
+        for arg in sys.argv[1:]:
+            for doc in yaml.load_all(open(arg)):
+                print(yaml.dump(convert(doc)))
+
