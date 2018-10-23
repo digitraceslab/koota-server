@@ -13,6 +13,7 @@ import logging
 import textwrap
 import time
 from six.moves.urllib import parse as urlparse
+import yaml
 
 from django.conf import settings
 from django import forms
@@ -126,7 +127,8 @@ class Aware(devices.BaseDevice):
                                   kwargs=dict(public_id=self.dbrow.public_id))
         config = self.aware_config()
         # pylint: disable=redefined-variable-type
-        config = json.dumps(config, sort_keys=True, indent=1, separators=(',',': '))
+        #config = json.dumps(config, sort_keys=True, indent=1, separators=(',',': '))
+        config = yaml.dump(config)
         config = mark_safe('<pre>'+escape(config)+'</pre>')
         context = dict(study_url=url_,
                        study_url_aware_scheme=url_.replace('https:', 'aware-ssl:'),
