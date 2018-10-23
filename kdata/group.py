@@ -52,9 +52,16 @@ def user_merged_group_config(user):
 
     """
     groups = user_groups(user)
-    dicts = [ loads(g.config) for g in groups if (g.config and loads(g.config)) ]
+    dicts = [ ]
+    for g in groups:
+        # Load from the database attribute "config"
+        if g.config and loads(g.config):
+            dicts.append(loads(g.config))
+        # Load from the ".config" property on each class.
+        g_class = g.get_class()
+        if hasattr(g_class, 'config') and g_class.config:
+            dicts.append(g_class.config)
     config = util.merge_dicts(*dicts)
-    # Go through and update config with each grou, in reverse order.
     return config
 
 
@@ -525,6 +532,11 @@ class BaseGroup(object):
         apply new settings.
         """
         pass
+
+    @property
+    def config(self):
+        """A dictionary to merge in with the configs"""
+        return { }
 
 class TestersGroup(BaseGroup):
     converters = [
