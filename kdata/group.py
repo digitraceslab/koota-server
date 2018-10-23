@@ -480,6 +480,10 @@ class GroupUpdate(UpdateView):
         if not permissions.has_group_admin_permission(self.request, g):
             raise exceptions.NoGroupPermission()
         return g
+    def get_form_class(self):
+        return forms.models.modelform_factory(
+                                          models.Group, fields=self.fields,
+                                          field_classes={'config': util.YamlConfigFormField})
 
 
 
