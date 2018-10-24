@@ -145,8 +145,8 @@ class Question(object):
         self.setup_hook(data)
         if 'id' not in data: raise ValueError("No ID attribute in {}".format(data))
         self.id_ = data.pop('id')
-        self.title = data.pop('title', None)
-        self.instructions = data.pop('instructions', None)
+        self.title = data.pop('title', "")
+        self.instructions = data.pop('instructions', "")
         self.submit = data.pop('submit', "OK")
         if 'flow' in data:
             # data['flows'] in a dictionary which has "answer": "next_id" pairs.
