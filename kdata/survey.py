@@ -325,7 +325,7 @@ class BaseSurvey(devices.BaseDevice):
 
     instructions = (
         """You should program the URL """
-        """<b><tt><a href="https://{main_domain}{post}">https://{main_domain}{post}</a></tt></b> """
+        """<b><tt><a target="_blank" rel="noopener noreferrer" href="https://{main_domain}{post}">https://{main_domain}{post}</a></tt></b> """
         """take this survey.""")
     @classmethod
     def configure(cls, device):
