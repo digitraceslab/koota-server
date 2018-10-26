@@ -16,9 +16,9 @@
 {% if needs_2fa_login %}
 <div class="alert alert-danger">
   This study requires two-factor authentication for researchers.
-  Please <a href="{% url 'logout' %}">log out</a>, and log in with your 2FA
-  token (Google authenticator).  If you don't have one yet, go
-  to <a href="{% url 'otp-config' %}">the 2FA page</a> to set it up.
+  Please <a href="{% url 'logout' %}?next={% url 'login'%}">log out and log in with your 2FA
+  token</a> (Google authenticator).  If you don't have one yet, go
+  to <a href="{% url 'otp-config' %}">the 2FA page</a> to set it up *first*.
 </div>
 {% endif %}
 
