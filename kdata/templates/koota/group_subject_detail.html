@@ -65,7 +65,23 @@
   <input class="btn btn-primary" type="submit" value="Update info" />
 </form>
 
-<h2>Available analyzes</h2>
+
+<h2>Subject devices</h2>
+<table class="table table-condensed table-striped table-bordered" style="width: auto !important">
+    {% for device in groupsubject.allowed_devices %}
+      <tr {% if device.label.analyze %}class="success"{% endif %}>
+        <td>{{ device.public_id }}</td>
+        <td><a class="btn btn-info btn-xs" href="{% url 'group-subject-device-config' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Config</a></td>
+        {# <td><a href="{% url 'group-subject-device-detail' group_name=group.dbrow.slug gs_id=groupsubject.id public_id=device.public_id %}">Data</a></td> #}
+        <td>{% if device.label.slug == "primary" %}<b>{% endif %}{{device.human_name}}{% if device.label.slug == "primary" %}</b>{% endif %}</td>
+        <td>{{ device.label.shortname }}</td>
+        <td>{{ device.summary_text}} <span style="color: {{device.summary_color|safe}}; float:right; border-radius: 50%">{{device.summary_char|safe}}</span></td>
+      </tr>
+    {% endfor %}
+</table>
+
+
+<h2>Subject converters</h2>
 
 {% if not is_researcher %}
 <p>You do not have "researcher" permission for this group, so you can

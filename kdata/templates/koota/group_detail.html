@@ -103,6 +103,7 @@ limits above.</p>
        <a class="btn btn-warning btn-xs" href="{% url 'group-subject-device-create' group_name=group.dbrow.slug gs_id=groupsubject.id %}">Create device for subject</a></td>
   </tr>
   {% if groupsubject.notes%}<tr> <td></td> <td></td> <td colspan="5"><i>Notes: </i>{{ groupsubject.notes|slice:":120" }}</td></tr>{% endif %}
+    {% if show_subject_devices|default_if_none:True %}
     {% for device in groupsubject.allowed_devices %}
       <tr {% if device.label.analyze %}class="success"{% endif %}><td></td><td></td>
         <td>{{ device.public_id }}</td>
@@ -113,6 +114,7 @@ limits above.</p>
         <td>{{ device.summary_text}} <span style="color: {{device.summary_color|safe}}; float:right; border-radius: 50%">{{device.summary_char|safe}}</span></td>
       </tr>
     {% endfor %}
+    {% endif %}
 {% endfor %}
 </table>
 
