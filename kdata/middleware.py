@@ -83,8 +83,10 @@ class KdataMiddleware(object):
             elif view_name == 'device-upload':
                 breadcrumbs.append(('upload', None))
         # Device list
-        if view_name == 'device-list': #getattr(view_func, 'view_class', None) == kviews.DeviceListView:
+        if view_name == 'device-list':
             breadcrumbs.append(('All Devices', reverse('device-list')))
+        if view_name == 'otp-config':
+            breadcrumbs.append(('2FA Config', reverse('otp-config')))
 
 
 
