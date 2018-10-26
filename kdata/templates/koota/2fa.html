@@ -7,15 +7,16 @@
     just a password to log in.  Koota does this with the "time-based
     one time password algorithm".  You have an app on your phone
     which will generate one-time codes which you have to use to log
-    in.  In Koota, this is optional to log in, but is required for
-    some studies that require higher security.</p>
+    in.  In Koota, some groups require this for higher security and
+    you can't access any data without it.</p>
 
 <p>Instructions:</p>
 
 <ol>
   <li>Download the Google Authenticator app.</li>
   <li>Link it to the following QR code.</li>
-  <li>Give the six-digit code when logging in.</li>
+  <li>Test the code once on this page (required).</li>
+  <li>Use the app to give the six-digit code when logging in.</li>
 </ol>
 
 
@@ -36,10 +37,10 @@ QR code again so that you can re-use it.</p>
 {% if not confirmed %}
 <h2>Unconfirmed code</h2>
 
-<p>Before you can use two-factor authentication, you need to confirm
-this device.</p>
-
-<p>This code is unverified, please enable and verify.</p>
+<div class="alert alert-warning">
+<p>Before you can use two-factor authentication to log in, you need to verify the
+code once on this page to confirm that it works.</p>
+</div>
 
 <img src="{% url 'otp-qr' %}">
 {% endif %}
