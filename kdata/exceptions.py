@@ -3,6 +3,9 @@ import base64
 import os
 import traceback
 
+from django.urls import reverse_lazy
+from django.utils.safestring import mark_safe
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -46,6 +49,16 @@ class InvalidDeviceID(BaseMessageKootaException):
     message = "Invalid device ID."
     status= 480
 class OtpRequired(BaseMessageKootaException):
-    message = "You must enable two-factor authentication first."
+    message = "You must sign in with two-factor authentication first before you can view this page."
+    @property
+    def body(self):
+        return mark_safe("""Please <a href="{logout_url}?next={login_url}">log out and log
+        in with your 2FA token</a> (Google authenticator).  If you don't have
+        one yet, go to <a href="{otp_config_url}">the 2FA page</a> to set it up
+        <b>first</b>.""".format(logout_url=reverse_lazy('logout'),
+                               login_url=reverse_lazy('login'),
+                               otp_config_url=reverse_lazy('otp-config')))
+
+    status = 307
 class NotImplemented(BaseMessageKootaException):
     message = "This has not been implemented yet."

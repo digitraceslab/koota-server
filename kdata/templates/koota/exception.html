@@ -6,10 +6,14 @@
 <div class="panel-heading">Error: {{exception.message}}</div>
 
 <div class="panel-body">
-Status: {{exception.status}}<br>
-{% if exception.id_ %}
-trace: {{ exception.id_ }}
-{% endif %}
+  {% if exception.body %}
+  <p>{{ exception.body }}</p>
+  {% endif %}
+
+  Status: {{exception.status}}<br>
+  {% if exception.id_ %}
+  trace: {{ exception.id_ }}
+  {% endif %}
 </div>
 
 </div>

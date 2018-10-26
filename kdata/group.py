@@ -151,6 +151,7 @@ def group_detail(request, group_name):
     if (models.GroupResearcher.objects.filter(group=group, user=request.user).exists()
         and permissions.group_needs_2fa(request, group)):
         c['needs_2fa_login'] = True
+        raise exceptions.OtpRequired()
     if (permissions.has_group_researcher_permission(request, group)
           or permissions.has_group_manager_permission(request, group)):
         # effective number of subjects: can be overridden
@@ -184,7 +185,9 @@ def group_detail(request, group_name):
                 converters_with_devices.append((conv, conv_devices))
             c['subject_converters_with_devices'] = converters_with_devices
     # Log if there was no authority to view this.
-    if 'is_subject' not in context and 'n_subjects' not in context:
+    # ERROR: except even when researcher...
+    if (    'is_subject' not in context
+        and 'is_staff' not in context):
         logs.log(request, 'view group denied',
                  obj='group='+group.slug, op='denied_group_detail')
         raise exceptions.NoGroupPermission()
