@@ -13,11 +13,11 @@
 
 
 
-<h2>Your devices</h2>
+<h2 id="devices">Your devices</h2>
 <p><a class="btn btn-default btn-success" href="{% url 'device-list' %}">Your device list</a></p>
 
 
-<h2>Your groups</h2>
+<h2 id="groups">Your groups</h2>
 <p><a class="btn btn-default btn-success" href="{% url 'group-join' %}">Join a group</a></p>
 
 {% if user.subject_of_groups.exists %}
@@ -43,7 +43,7 @@ You are not logged in.
 {% endif %}
 
 
-<h2>Documentation</h2>
+<h2 id="docs">Documentation</h2>
 
 <p><a href="https://github.com/CxAalto/koota-server/wiki/UserGuide">User Guide</a> (and general wiki)</p>
 
