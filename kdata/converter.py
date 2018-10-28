@@ -2251,7 +2251,7 @@ class AwareRecentDataCounts(BaseDataCounts, BaseAwareConverter):
     timestamp_converter = AwareTimestamps
 class AwareESM(BaseAwareConverter):
     desc = "ESMs"
-    header = ['time', 'time_asked', 'user_answer', 'type', 'title', 'instructions', 'submit', 'notification_timeout']
+    header = ['time', 'time_asked', 'id', 'answer', 'type', 'title', 'instructions', 'submit', 'notification_timeout', ]
     def convert(self, queryset, time=lambda x:x):
         types = {"1": "incoming", "2":"outgoing"}
         for ts, data in queryset:
@@ -2263,6 +2263,7 @@ class AwareESM(BaseAwareConverter):
                 esm_json = loads(row['esm_json'])
                 yield (time(row['double_esm_user_answer_timestamp']/1000.),
                        time(row['timestamp']/1000.),
+                       esm_json.get('esm_trigger',''),  # ID if defined
                        row['esm_user_answer'],
                        esm_json.get('esm_type',''),
                        esm_json.get('esm_title',''),
