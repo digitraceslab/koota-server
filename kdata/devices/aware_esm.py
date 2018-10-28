@@ -118,7 +118,8 @@ def convert(data, schedule_id=None):
     # Test the triggers
     unknown_trigger_keys = set(trigger) - set(('interval', 'interval_delayed',
                                                'minute', 'hour', 'timer',
-                                               'weekday', 'month'))
+                                               'weekday', 'month',
+                                               'random_intervals'))
     if unknown_trigger_keys:
         raise ValueError("Unknown trigger keys: {}".format(unknown_trigger_keys))
     return schedule

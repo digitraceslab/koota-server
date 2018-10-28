@@ -369,12 +369,20 @@ def process_schedule(sched, schedule_id=None):
         today = timezone.now().date()
         params = sched['schedule']['trigger']['random_intervals']
         N = params['N']
-        start, end = params['start'], params['end']
+        start = params['start']
+        end = params.get('end', None)
+        duration = params.get('duration', None)
+        isoweekdays = params.get('isoweekdays', None)
         forward_time = params.get('forward_time', 3600*24*2)
         for day_n in range(forward_time//(3600*24) + 1):
             day = today + timedelta(days=day_n)
+            if isoweekdays is not None and day.isoweekday() not in isoweekdays:
+                continue
             start_dt = timezone.get_current_timezone().localize(datetime.datetime(*day.timetuple()[:3], hour=start[0], minute=start[1]))
-            end_dt = timezone.get_current_timezone().localize(datetime.datetime(*day.timetuple()[:3], hour=end[0], minute=end[1]))
+            if end is not None:
+                end_dt = timezone.get_current_timezone().localize(datetime.datetime(*day.timetuple()[:3], hour=end[0], minute=end[1]))
+            else:
+                end_dt = timezone.get_current_timezone().normalize(start_dt + datetime.timedelta(seconds=duration))
             start_ts = start_dt.timestamp()
             end_ts   = end_dt.timestamp()
             times = util.random_intervals(start=start_ts, end=end_ts, N=params['N'], min=params.get('min', 0)*60,
