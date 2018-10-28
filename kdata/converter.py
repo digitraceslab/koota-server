@@ -2084,6 +2084,22 @@ class AwareApplicationForeground(BaseAwareConverter):
               'application_name',
               'is_system_app',
               ]
+    def filter_package_name(self, package_name):
+        return package_name
+    def convert(self, queryset, time=lambda x: x):
+        filter_package_name = self.filter_package_name
+        for ts, data in queryset():
+            data = loads(data)
+            if not isinstance(data, dict): continue
+            if data['table'] != 'applications_foreground': continue
+            table_data = loads(data['data'])
+            for row in table_data:
+                package_name = filter_package_name(row['package_name'])
+                if package_name is None: continue
+                yield (time(row['timestamp']/1000.),
+                       package_name,
+                       row['application_name'],
+                       row['is_system_app'],)
 class AwareApplicationNotifications(BaseAwareConverter):
     desc = "Notifications"
     table = 'applications_notifications'
