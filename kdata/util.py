@@ -696,7 +696,7 @@ def replace1(num):
 
 
 
-def random_intervals(start, end, N, seed=None, min=None, max=None):
+def random_intervals(start, end, N, seed=None, min_spacing=None, max=None):
     """Generate random points, enforcing minimum spacing.
 
     Generate N randomly spaced points in the interval [start, end].  The

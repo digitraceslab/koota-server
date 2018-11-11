@@ -385,8 +385,8 @@ def process_schedule(sched, schedule_id=None):
                 end_dt = timezone.get_current_timezone().normalize(start_dt + datetime.timedelta(seconds=duration))
             start_ts = start_dt.timestamp()
             end_ts   = end_dt.timestamp()
-            times = util.random_intervals(start=start_ts, end=end_ts, N=params['N'], min=params.get('min', 0)*60,
-                                          max=params['max']*60 if 'max' in params else None,
+            times = util.random_intervals(start=start_ts, end=end_ts, N=params['N'], min_spacing=params.get('min', 0),
+                                          max_spacing=params['max'] if 'max' in params else None,
                                           seed=params.get('seed', 'u436on')+day.strftime('%Y-%m-%d'))
             for ts in times:
                 #print(ts, datetime.datetime.fromtimestamp(ts))
