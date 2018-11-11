@@ -4,74 +4,14 @@ Aware reference: http://www.awareframework.com/esm/
 """
 import copy
 import json
+import os
 import sys
 import yaml
 
 import logging
 LOG = logging.getLogger(__name__)
 
-data = """\
-id: the_schedule_id
-questions:
-  - title: title1
-    id: Q01
-    type: quickanswer
-    answers:
-      - A
-      - B
-      - C
-    instructions: 5
-    flow:
-      A: olo_a_1
-  - title: blah
-    id: Q02
-    type: radio
-    answers:
-      - [a1, answer 1]
-      - [a2, answer 2]
-    flow:
-      a1: olo_a_2
-  - title: text test
-    id: Q03
-    type: text
-  - title: quick answer test
-    id: Q04
-    type: Likert
-    max: 6
-    max_label: max
-    min_label: min
-    step: .5
-  - title: quick answer test
-    id: Q05
-    type: quickanswer
-    answers:
-      - [a1, answer1]
-      - [a2, answer2]
-  - title: scale test
-    id: Q06
-    type: scale
-    min: 0
-    max: 10
-    start: 5
-    step: .5
-    min_label: min
-    max_label: max
-  - title: web test
-    id: Q07
-    type: web
-    url: https://google.com
-extra:
-  olo_a_1:
-    type: text
-    title: title2
-    instructions: inst
-  olo_a_2:
-    type: numeric
-    title: Numeric ESM
-    instructions: inst
-trigger:
-  hour: [10, 11, 12, 13 ]
-"""
+sample_data = open(os.path.join(os.path.dirname(__file__), '../examples/aware_questions.yaml')).read()
 
 
 schedule_template = """\
@@ -348,7 +288,7 @@ schedule_template_json = """\
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         # Print sample data
-        print(yaml.dump(convert(yaml.load(data))))
+        print(yaml.dump(convert(yaml.load(sample_data))))
     else:
         # Load all data
         for arg in sys.argv[1:]:
