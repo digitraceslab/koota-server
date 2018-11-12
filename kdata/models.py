@@ -60,7 +60,7 @@ class Device(models.Model):
     # null=True to allow transition.
     ts_create = models.DateTimeField(auto_now_add=True, null=True)
     ts_update = models.DateTimeField(auto_now=True, null=True)
-    n_packets_cache = models.IntegerField(null=True)
+    n_packets_cache = models.IntegerField(null=True, blank=True)
     n_packets_cache_ts = models.DateTimeField(null=True, blank=True)
 
     def __init__(self, *args, **kwargs):
