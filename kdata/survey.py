@@ -314,7 +314,7 @@ class BaseSurvey(devices.BaseDevice):
         device_id = instance.device_id
 
         # Set any tokens we need
-        token = base64.b16encode(os.urandom(5))
+        token = base64.b16encode(os.urandom(5)).decode()
         surveytoken_row = models.SurveyToken(token=token, device_id=device_id, user=instance.user)
         instance.token = token
         surveytoken_row.device = instance
