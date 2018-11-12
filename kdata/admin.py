@@ -51,10 +51,10 @@ admin.site.register(models.Group, GroupAdmin)
 
 
 class SurveyDeviceAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ('_public_id', 'device_id', '_secret_id', 'user__username', )
 admin.site.register(models.SurveyDevice, SurveyDeviceAdmin)
 class SurveyTokenAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ('token', 'device_id', )
 admin.site.register(models.SurveyToken, SurveyTokenAdmin)
 
 
