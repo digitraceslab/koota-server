@@ -8,8 +8,8 @@ pytz
 pycrypto
 ujson        #(optional)
 django-otp
-psycopg2
-#psycopg2-binary
+#psycopg2
+psycopg2-binary
 geopy
 
 oauthlib
