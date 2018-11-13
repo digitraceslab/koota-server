@@ -232,7 +232,7 @@ from . import converter
 class BaseSurvey(devices.BaseDevice):
     desc = 'Survey Name'
     dbmodel = models.SurveyDevice
-    _register_device = True
+    _register_device = False
 
     converters = devices.BaseDevice.converters + [
                   converter.JsonPrettyHtml,
