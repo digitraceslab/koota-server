@@ -1,0 +1,27 @@
+title: Title of Survey
+#id: xxx    # is this needed?
+#require_all: True    # if true, require all questions to be answered
+questions:
+  - choice: Some Title
+    id: test_01
+    answers: [A, B, C]
+  - choice: Some Title
+    id: test_02
+    answers:
+      - A
+      - B
+      - C
+  - scale: A Slider
+    id: test_03
+    min: 0             # optional, default 0
+    max: 100           # optional, default 100
+  - time: A single time of day
+    id: test_04
+  - section: Section B
+    id: test_05
+  - instructions: blah
+    id: test_06
+  - integer: An integer
+    id: test_07
+  - numeric: A floating point number    # Alias: float
+    id: test_08

@@ -2,10 +2,12 @@ import base64
 from calendar import timegm
 import datetime
 from functools import partial
+import inspect
 import json
 from json import loads, dumps
 import os
 import six
+import yaml
 
 from django import forms
 from django.conf import settings
@@ -24,86 +26,28 @@ from . import converter
 from . import devices
 from . import exceptions
 from . import models
+from . import survey_questions
 from . import util
 from . import views
 
-# django.forms field/widget types.  These are used to override the
-# HTML in the form and add in section headings, or special input
-# types like a time picker
-class TimeInput(forms.TimeInput):
-    """HTML5 time input."""
-    input_type = 'time'
-class SliderInput(forms.NumberInput):
-    """HTML5 slider input widget.
 
-    Sets a reasonable max width and range from 0 to 100."""
-    input_type = 'range'
-    attrs = dict(min=0, max=100, style="max-width: 400px")
-    def __init__(self, *args, **kwargs):
-        attrs = dict(self.attrs)
-        attrs.update(kwargs.get('attrs', {}))
-        super(SliderInput, self).__init__(*args, attrs=attrs, **kwargs)
-class InstructionsWidget(forms.Widget):
-    """Fake widget that returns nothing.
 
-    This widget is not for an actual input, but is just used for text
-    which has no value associated with it.
-    """
-    def render(self, name, value, attrs=None, **kwargs):
-        return ''
-class InstructionsField(forms.Field):
-    """Field for a text paragraph"""
-    widget = InstructionsWidget
-    css_class = 'instructions'
-    def __init__(self, label, **kwargs):
-        super(InstructionsField, self).__init__(label_suffix='', **kwargs)
-        self.label = mark_safe('<span class="{css_class}">{0}</span>'.format(label, css_class=self.css_class))
-class SectionField(InstructionsField):
-    """Field for a section heading."""
-    css_class = 'section-heading'
-class SliderField(forms.IntegerField):
-    widget = SliderInput
+from .survey_questions import (_SurveyField,
+                               Bool,
+                               Char,
+                               BaseChoice,
+                               Choice,
+                               Float,
+                               Integer,
+                               Time,
+                               Section,
+                               Instructions,
+                               Slider,
+                               convert,
+                               convert_questions,
+                               )
 
-# These define different field types for the survey.  We can add more
-# if needed, for example a Choice field with default options, or other
-# fancy types of inputs.
-class _SurveyField(object):
-    not_a_question = False   # for marking instructions/section headings
-    widget = None
-    required = None
-    def __init__(self, question):
-        self.question = question
-class Bool(_SurveyField):
-    required = False
-    field = forms.BooleanField
-class Char(_SurveyField):
-    field = forms.CharField
-class BaseChoice(_SurveyField):
-    # Only for overriding
-    def __init__(self, question):
-        self.question = question
-class Choice(BaseChoice):
-    def __init__(self, question, choices):
-        self.question = question
-        self.choices = choices
-class Float(_SurveyField):
-    field = forms.FloatField
-class Integer(_SurveyField):
-    field = forms.IntegerField
-class Time(_SurveyField):
-    field = partial(forms.TimeField, input_formats=[
-        '%H:%M:%S', '%H:%M', '%H.%M', '%H,%M','%H %M', '%H%M', ])
-    widget = TimeInput
-#    widget = admin_widgets.AdminTimeWidget
-class Section(_SurveyField):
-    not_a_question = True
-    field = SectionField
-class Instructions(_SurveyField):
-    not_a_question = True
-    field = InstructionsField
-class Slider(_SurveyField):
-    """A slider with range 0 to 100."""
-    field = SliderField
+
 
 # A JSON encoder that can convert date and time objects to strings.
 def field_to_json(x):
@@ -299,6 +243,12 @@ class BaseSurvey(devices.BaseDevice):
     @classmethod
     def get_survey(cls, data, device):
         """This method should be overwritten to return the survey data."""
+        yaml_questions = getattr(cls, 'yaml', None)
+        if yaml_questions is not None:
+            codedir = os.path.dirname(os.path.realpath(inspect.getfile(cls)))
+            codedir = os.path.normpath(codedir)
+            fullpath = os.path.join(codedir, yaml_questions)
+            return survey_questions.convert(yaml.load(open(fullpath).read()))
         raise exceptions.NotImplemented("This survey is not yet configured, "
                                         "define get_survey().")
 
