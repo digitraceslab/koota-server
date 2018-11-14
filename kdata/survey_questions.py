@@ -4,6 +4,7 @@ import sys
 import yaml
 
 from django import forms
+from django.utils.safestring import mark_safe
 
 
 
@@ -13,16 +14,20 @@ from django import forms
 class TimeInput(forms.TimeInput):
     """HTML5 time input."""
     input_type = 'time'
-class SliderInput(forms.NumberInput):
-    """HTML5 slider input widget.
+def SliderInputFactory(**userattrs):
+    class SliderInput(forms.NumberInput):
+        """HTML5 slider input widget.
 
-    Sets a reasonable max width and range from 0 to 100."""
-    input_type = 'range'
-    attrs = dict(min=0, max=100, style="max-width: 400px")
-    def __init__(self, *args, **kwargs):
-        attrs = dict(self.attrs)
-        attrs.update(kwargs.get('attrs', {}))
-        super(SliderInput, self).__init__(*args, attrs=attrs, **kwargs)
+        Sets a reasonable max width and range from 0 to 100."""
+        input_type = 'range'
+        attrs = dict(min=0, max=100, style="max-width: 400px")
+        attrs.update(userattrs)
+        def __init__(self, *args, **kwargs):
+            attrs = dict(self.attrs)
+            attrs.update(kwargs.pop('attrs', {}))
+            super(SliderInput, self).__init__(*args, attrs=attrs, **kwargs)
+    return SliderInput
+SliderInput = SliderInputFactory()
 class InstructionsWidget(forms.Widget):
     """Fake widget that returns nothing.
 
@@ -41,9 +46,11 @@ class InstructionsField(forms.Field):
 class SectionField(InstructionsField):
     """Field for a section heading."""
     css_class = 'section-heading'
-class SliderField(forms.IntegerField):
-    widget = SliderInput
-
+def SliderFieldFactory(**userattrs):
+    class SliderField(forms.IntegerField):
+        widget = SliderInputFactory(**userattrs)
+    return SliderField
+SliderField = SliderFieldFactory()
 
 
 
@@ -54,6 +61,7 @@ class _SurveyField(object):
     not_a_question = False   # for marking instructions/section headings
     widget = None
     required = None
+    #field = xxxField  # implemented in subclasses
     def __init__(self, question):
         self.question = question
 class Bool(_SurveyField):
@@ -87,10 +95,31 @@ class Section(_SurveyField):
 class Instructions(_SurveyField):
     not_a_question = True
     field = InstructionsField
+# These are immediately initialized in this file
 class Slider(_SurveyField):
-    """A slider with range 0 to 100."""
-    field = SliderField
+    """A slider with range 0 to 100.
+
+    Valid attrs are 'min', 'max', and 'step'."""
+    def __init__(self, question, **attrs):
+        super().__init__(question)
+        self.field = SliderFieldFactory(**attrs)
 Scale = Slider
+class LikertSlider(Slider):
+    def __init__(self, question, max=5, step=1, max_label='', min_label=''):
+        if max_label or min_label:
+            question = question + " (%s←→%s)"%(min_label, max_label)
+        super().__init__(question)
+        self.field = SliderFieldFactory(min=1, max=max, step=step)
+class LikertChoice(Choice):
+    def __init__(self, question, max=5, step=1, max_label='', min_label=''):
+        choices = ["★" * i for i in range(1, max+1)]
+        if min_label:
+            # The space is two unicode EM SPACEs
+            choices[0] = choices[0] + '  ' + min_label
+        if max_label:
+            choices[-1] = choices[-1] + '  ' + max_label
+        super().__init__(question, choices)
+Likert = LikertChoice
 
 type_map = {
     'text': Char, 'char': Char,
@@ -102,6 +131,7 @@ type_map = {
     'bool': Bool,
     'instructions': Instructions,
     'section': Section,
+    'likert':Likert, 'likertslider':LikertSlider, 'likertchoice':LikertChoice,
     }
 
 def convert_questions(data, survey_id=None):
@@ -113,12 +143,12 @@ def convert_questions(data, survey_id=None):
     Koota surveys
     """
     qlist = [ ]
-    for row in data:
+    for i, row in enumerate(data):
         # Auto-generate ID or take the row ID
         if 'id' not in row:
-            if schedule_id is None:
-                raise ValueError('Survey yaml question or survey needs an "id" value: {}'.format(row))
-            row['id'] = survey_id['id'] + '_{:03d}'.format(i)
+            if survey_id is None:
+                raise ValueError('An ID value must be defined in either the survey or the question: {}'.format(row))
+            id_ = survey_id + '_{:03d}'.format(i)
         else:
             id_ = row['id']
         # Determine the type.  Either explicit 'type: xxx' or implicit
@@ -129,13 +159,18 @@ def convert_questions(data, survey_id=None):
         else:
             possible_types = set(row) & set(type_map)
             if len(possible_types) != 1:
-                raise ValueError("Survey yaml question %s has no type specified: If you don't specify title, you must have exactly one key that matches one of the field types."%id_)
+                raise ValueError("Survey yaml question %s has no type specified: If you don't specify title, you must have exactly one key that matches one of the field types (%s)."%(id_, row))
             type_ = possible_types.pop()
             title = row.get('title', row.get(type_))
         # Process all of our posibilities.
         if type_.lower() in {'radio', 'choice', 'quickanswer'}:
             choices = row['answers']
             qlist.append((id_, Choice(title, choices)))
+        elif type_.lower() in {'slider', 'likert', 'likertslider'}:
+            attrs = { }
+            for attrname in ['min', 'max', 'step', 'max_label', 'min_label']:
+                if attrname in row: attrs[attrname] = row[attrname]
+            qlist.append((id_, type_map[type_.lower()](title, **attrs)))
         # All the rest should be auto-generated:
         elif type_.lower() in type_map:
             qlist.append((id_, type_map[type_.lower()](title)))
@@ -156,7 +191,8 @@ def convert(data):
     survey_data = { }
     if 'title' in survey_data:
         survey_data['name'] = data['title']
-    survey_data['questions'] = convert_questions(data['questions'])
+    survey_data['questions'] = convert_questions(data['questions'],
+                                                 survey_id=data.get('id'))
     survey_data['require_all'] = data.get('require_all', False)
     return survey_data
 
