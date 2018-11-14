@@ -13,7 +13,7 @@ from ... import models
 from ...models import Device, Data
 from ... import util
 
-TZ = timezone.LocalTimezone()
+TZ = timezone.get_current_timezone()
 
 class Command(BaseCommand):
     help = 'Run Group.setup_user for users/groups.  Idempotent group setup.'

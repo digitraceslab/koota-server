@@ -3,7 +3,7 @@ from django.utils import timezone
 
 from ... import models
 
-TZ = timezone.LocalTimezone()
+TZ = timezone.get_current_timezone()
 
 class Command(BaseCommand):
     help = 'Run a preprocessor on a device'
