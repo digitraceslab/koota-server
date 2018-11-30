@@ -73,10 +73,13 @@ def make_form(survey_data, default_required=False):
         if required is None:
             required = default_required
         if isinstance(row, BaseChoice):
-            form_fields[tag] = forms.ChoiceField(
+            choice_field = getattr(row, 'field', forms.ChoiceField)
+            widget = row.widget
+            if widget is None: widget = forms.RadioSelect
+            form_fields[tag] = choice_field(
                 choices=[(i,x) for i,x in enumerate(row.choices)],
                 label=row.question,
-                widget=forms.RadioSelect,
+                widget=widget,
                 required=required)
         else:
             form_fields[tag] = row.field(label=row.question, required=required,

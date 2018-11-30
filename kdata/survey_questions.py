@@ -4,6 +4,7 @@ import sys
 import yaml
 
 from django import forms
+from django.forms import widgets
 from django.utils.safestring import mark_safe
 
 
@@ -14,6 +15,9 @@ from django.utils.safestring import mark_safe
 class TimeInput(forms.TimeInput):
     """HTML5 time input."""
     input_type = 'time'
+class DateInput(forms.DateInput):
+    """HTML5 date input."""
+    input_type = 'date'  #datetime-local -> has no timezone picker
 def SliderInputFactory(**userattrs):
     class SliderInput(forms.NumberInput):
         """HTML5 slider input widget.
@@ -51,7 +55,8 @@ def SliderFieldFactory(**userattrs):
         widget = SliderInputFactory(**userattrs)
     return SliderField
 SliderField = SliderFieldFactory()
-
+#class CheckboxChoiceField(forms.Field):
+#    widget = widgets.CheckboxSelectMultiple
 
 
 # These define different field types for the survey.  We can add more
@@ -78,7 +83,9 @@ class Choice(BaseChoice):   # alias: Radio
     def __init__(self, question, choices):
         self.question = question
         self.choices = choices
-Radio = Choice
+class Checkboxes(Choice):
+    #field = CheckboxChoiceField
+    widget = widgets.CheckboxSelectMultiple
 class Float(_SurveyField):  # alias: numeric
     field = forms.FloatField
 Numeric = Float
@@ -89,6 +96,10 @@ class Time(_SurveyField):
         '%H:%M:%S', '%H:%M', '%H.%M', '%H,%M','%H %M', '%H%M', ])
     widget = TimeInput
 #    widget = admin_widgets.AdminTimeWidget
+class Date(_SurveyField):
+    field = partial(forms.DateField, input_formats=[
+        '%Y-%m-%d', '%d.$m.$Y'])
+    widget = DateInput
 class Section(_SurveyField):
     not_a_question = True
     field = SectionField
@@ -121,17 +132,21 @@ class LikertChoice(Choice):
         super().__init__(question, choices)
 Likert = LikertChoice
 
+
+
 type_map = {
     'text': Char, 'char': Char,
-    'radio': Choice, 'choice': Choice,
+    'radio': Choice, 'choice': Choice, 'quickanswer': Choice,
     'numeric': Float, 'float': Float,
     'integer': Integer,
     'time': Time,
+    'date': Date,
     'scale': Slider, 'slider': Slider,
-    'bool': Bool,
+    'bool': Bool, 'check': Bool,
     'instructions': Instructions,
     'section': Section,
     'likert':Likert, 'likertslider':LikertSlider, 'likertchoice':LikertChoice,
+    'checkboxes': Checkboxes,
     }
 
 def convert_questions(data, survey_id=None):
@@ -163,9 +178,9 @@ def convert_questions(data, survey_id=None):
             type_ = possible_types.pop()
             title = row.get('title', row.get(type_))
         # Process all of our posibilities.
-        if type_.lower() in {'radio', 'choice', 'quickanswer'}:
+        if type_.lower() in {'radio', 'choice', 'quickanswer', 'checkboxes'}:
             choices = row['answers']
-            qlist.append((id_, Choice(title, choices)))
+            qlist.append((id_, type_map[type_.lower()](title, choices)))
         elif type_.lower() in {'slider', 'likert', 'likertslider'}:
             attrs = { }
             for attrname in ['min', 'max', 'step', 'max_label', 'min_label']:
