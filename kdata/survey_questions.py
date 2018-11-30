@@ -26,7 +26,7 @@ def SliderInputFactory(**userattrs):
         input_type = 'range'
         attrs = dict(min=0, max=100, style="max-width: 400px")
         attrs.update(userattrs)
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, required=None, **kwargs):
             attrs = dict(self.attrs)
             attrs.update(kwargs.pop('attrs', {}))
             super(SliderInput, self).__init__(*args, attrs=attrs, **kwargs)
@@ -67,8 +67,9 @@ class _SurveyField(object):
     widget = None
     required = None
     #field = xxxField  # implemented in subclasses
-    def __init__(self, question):
+    def __init__(self, question, required=None):
         self.question = question
+        self.required = required
 class Bool(_SurveyField):
     required = False
     field = forms.BooleanField
@@ -77,12 +78,14 @@ class Char(_SurveyField):   # alias: Text
 Text = Char
 class BaseChoice(_SurveyField):
     # Only for overriding
-    def __init__(self, question):
+    def __init__(self, question, required=None):
         self.question = question
+        self.required = required
 class Choice(BaseChoice):   # alias: Radio
-    def __init__(self, question, choices):
+    def __init__(self, question, choices, required=None):
         self.question = question
         self.choices = choices
+        self.required = required
 class Checkboxes(Choice):
     #field = CheckboxChoiceField
     widget = widgets.CheckboxSelectMultiple
@@ -116,20 +119,20 @@ class Slider(_SurveyField):
         self.field = SliderFieldFactory(**attrs)
 Scale = Slider
 class LikertSlider(Slider):
-    def __init__(self, question, max=5, step=1, max_label='', min_label=''):
+    def __init__(self, question, max=5, step=1, max_label='', min_label='', required=None):
         if max_label or min_label:
             question = question + " (%s←→%s)"%(min_label, max_label)
-        super().__init__(question)
+        super().__init__(question, required=required)
         self.field = SliderFieldFactory(min=1, max=max, step=step)
 class LikertChoice(Choice):
-    def __init__(self, question, max=5, step=1, max_label='', min_label=''):
+    def __init__(self, question, max=5, step=1, max_label='', min_label='', required=None):
         choices = ["★" * i for i in range(1, max+1)]
         if min_label:
             # The space is two unicode EM SPACEs
             choices[0] = choices[0] + '  ' + min_label
         if max_label:
             choices[-1] = choices[-1] + '  ' + max_label
-        super().__init__(question, choices)
+        super().__init__(question, choices, required=required)
 Likert = LikertChoice
 
 
@@ -177,18 +180,19 @@ def convert_questions(data, survey_id=None):
                 raise ValueError("Survey yaml question %s has no type specified: If you don't specify title, you must have exactly one key that matches one of the field types (%s)."%(id_, row))
             type_ = possible_types.pop()
             title = row.get('title', row.get(type_))
+        required = row.get('required')
         # Process all of our posibilities.
         if type_.lower() in {'radio', 'choice', 'quickanswer', 'checkboxes'}:
             choices = row['answers']
-            qlist.append((id_, type_map[type_.lower()](title, choices)))
+            qlist.append((id_, type_map[type_.lower()](title, choices, required=required)))
         elif type_.lower() in {'slider', 'likert', 'likertslider'}:
             attrs = { }
             for attrname in ['min', 'max', 'step', 'max_label', 'min_label']:
                 if attrname in row: attrs[attrname] = row[attrname]
-            qlist.append((id_, type_map[type_.lower()](title, **attrs)))
+            qlist.append((id_, type_map[type_.lower()](title, required=required, **attrs)))
         # All the rest should be auto-generated:
         elif type_.lower() in type_map:
-            qlist.append((id_, type_map[type_.lower()](title)))
+            qlist.append((id_, type_map[type_.lower()](title, required=required)))
         # TODO: add likert?
         else:
             raise ValueError("Unknown question type: ...")
