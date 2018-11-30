@@ -1823,7 +1823,7 @@ class ActiwatchMarkers(_Converter):
 
 
 class BaseAwareConverter(_Converter):
-    device_class = ('Aware', 'AwareValidCert', 'koota_hyks_2016.AwareHyks', 'kdata.devices.aware.Aware')
+    device_class = {'Aware', 'AwareValidCert', 'koota_hyks_2016.AwareHyks', 'kdata.devices.aware.Aware', 'koota_hyks_2018.AwareMMM1'}
     ts_column = 'timestamp'
     #table = 'screen'
     #desc = "Generic Aware converter"
