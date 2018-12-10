@@ -42,6 +42,7 @@ class InstructionsWidget(forms.Widget):
         return ''
 class InstructionsField(forms.Field):
     """Field for a text paragraph"""
+    required = False
     widget = InstructionsWidget
     css_class = 'instructions'
     def __init__(self, label, **kwargs):
