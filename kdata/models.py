@@ -590,7 +590,7 @@ class Token(models.Model):
                    ts_expire=None, t_remaining=None):
         import base64
         import os
-        token = base64.b64encode(os.urandom(length))
+        token = base64.b64encode(os.urandom(length)).decode()
         if t_remaining is not None:
             ts_expire = timezone.now() + t_remaining
         if ts_expire is None:
