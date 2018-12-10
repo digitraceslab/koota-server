@@ -42,7 +42,6 @@ class InstructionsWidget(forms.Widget):
         return ''
 class InstructionsField(forms.Field):
     """Field for a text paragraph"""
-    allow_required = False
     widget = InstructionsWidget
     css_class = 'instructions'
     def __init__(self, label, **kwargs):
@@ -73,7 +72,7 @@ class _SurveyField(object):
         self.question = question
         self.required = required
 class Bool(_SurveyField):
-    required = False
+    allow_required = False
     field = forms.BooleanField
 class Char(_SurveyField):   # alias: Text
     field = forms.CharField
@@ -106,9 +105,11 @@ class Date(_SurveyField):
         '%Y-%m-%d', '%d.$m.$Y'])
     widget = DateInput
 class Section(_SurveyField):
+    allow_required = False
     not_a_question = True
     field = SectionField
 class Instructions(_SurveyField):
+    allow_required = False
     not_a_question = True
     field = InstructionsField
 # These are immediately initialized in this file
