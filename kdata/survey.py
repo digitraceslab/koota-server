@@ -72,7 +72,9 @@ def make_form(survey_data, default_required=False):
     question_order = [ ]
     for i, (tag, row) in enumerate(survey_data):
         required = row.required
-        if required is None:
+        if row.allow_required is False:
+            required = False
+        elif required is None:
             required = default_required
         if isinstance(row, BaseChoice):
             choice_field = getattr(row, 'field', forms.ChoiceField)

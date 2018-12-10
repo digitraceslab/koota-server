@@ -42,7 +42,7 @@ class InstructionsWidget(forms.Widget):
         return ''
 class InstructionsField(forms.Field):
     """Field for a text paragraph"""
-    required = False
+    allow_required = False
     widget = InstructionsWidget
     css_class = 'instructions'
     def __init__(self, label, **kwargs):
@@ -67,6 +67,7 @@ class _SurveyField(object):
     not_a_question = False   # for marking instructions/section headings
     widget = None
     required = None
+    allow_required = True
     #field = xxxField  # implemented in subclasses
     def __init__(self, question, required=None):
         self.question = question
