@@ -87,7 +87,7 @@ class Choice(BaseChoice):   # alias: Radio
         self.choices = choices
         self.required = required
 class Checkboxes(Choice):
-    #field = CheckboxChoiceField
+    field = forms.MultipleChoiceField
     widget = widgets.CheckboxSelectMultiple
 class Float(_SurveyField):  # alias: numeric
     field = forms.FloatField

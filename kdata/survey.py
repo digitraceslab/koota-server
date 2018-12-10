@@ -34,6 +34,7 @@ from . import views
 
 from .survey_questions import (_SurveyField,
                                Bool,
+                               Checkboxes,
                                Char,
                                BaseChoice,
                                Choice,
@@ -52,8 +53,9 @@ from .survey_questions import (_SurveyField,
 # A JSON encoder that can convert date and time objects to strings.
 def field_to_json(x):
     if isinstance(x, _SurveyField):
-        return (x.__class__.__name__,
-                x.__dict__)
+        d = x.__dict__.copy()
+        d.pop('field', None)
+        return (x.__class__.__name__, d)
     if isinstance(x, datetime.time):
         return x.strftime('%H:%M:%S')
     if isinstance(x, datetime.datetime):
@@ -207,7 +209,12 @@ class SurveyAnswers(converter._Converter):
                 # If this was a Choice, then add the raw text to a column here.
                 choice_text = ''
                 if slug in raw_choices:
-                    choice_text = raw_choices[slug][int(x['a'])] if x['a'] else ''
+                    # MultiSelect fields: join with ||
+                    if isinstance(x['a'], list):
+                        choice_text = '||'.join(raw_choices[slug][int(ans_id)] for ans_id in x['a'])
+                    # Normal choice fields
+                    else:
+                        choice_text = raw_choices[slug][int(x['a'])] if x['a'] else ''
                 yield (slug,
                        time(data['access_time']) if 'access_time' in data else '',
                        time(data['submit_time']) if 'submit_time' in data else '',
@@ -343,6 +350,7 @@ class TestSurvey1(BaseSurvey):
             ('fine5',         Bool('Are you fine?')),
             ('drinks',        Integer('How many drinks did you have?')),
             ('slider',        Slider('test (highest<->lowest)')),
+            ('checkboxes',    Checkboxes('test', ['A','B','C'], required=True)),
         ]
         # Can do extra logic here
         survey_data = {'name': 'Test Survey 1',
