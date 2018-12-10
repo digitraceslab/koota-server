@@ -120,7 +120,7 @@ class Aware(devices.BaseDevice):
 
     """)
     install_url = 'http://play.google.com/store/apps/details?id=com.aware.phone'
-    install_url_local = 'https://koota.cs.aalto.fi/a/niima.apk'
+    install_url_local = 'https://koota.cs.aalto.fi/a/aware.apk'
     def config_context(self):
         url_ = self.qrcode_url()
         qrcode_img_path = reverse('aware-register-qr',
