@@ -211,6 +211,8 @@ class MainView(TemplateView):
         context = super(MainView, self).get_context_data()
         if not self.request.user.is_anonymous:
             context['anon_id_token'] = tokens.get_user_anon_id_token(self.request.user)
+            context['subject_of_groups'] = self.request.user.subject_of_groups.order_by('name')
+            context['researcher_of_groups'] = self.request.user.researcher_of_groups.order_by('name')
         return context
 
 #

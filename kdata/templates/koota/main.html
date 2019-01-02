@@ -20,17 +20,17 @@
 <h2 id="groups">Your groups</h2>
 <p><a class="btn btn-default btn-success" href="{% url 'group-join' %}">Join a group</a></p>
 
-{% if user.subject_of_groups.exists %}
+{% if subject_of_groups.exists %}
 <p>You are a subject of the following groups:
-<ul>{% for group in user.subject_of_groups.all %}
+<ul>{% for group in subject_of_groups.all %}
   <li><a href="{% url 'group-detail' group_name=group.slug %}">{{group.name}}</a></li>{% endfor %}
 </ul>
 </p>
 {% endif %}
 
-{% if user.researcher_of_groups.exists %}
+{% if researcher_of_groups.exists %}
 <p>You are a researcher of the following groups:
-<ul>{% for group in user.researcher_of_groups.all %}
+<ul>{% for group in researcher_of_groups.all %}
   <li><a href="{% url 'group-detail' group_name=group.slug %}">{{group.name}}</a></li>{% endfor %}
 </ul>
 </p>
