@@ -263,6 +263,8 @@ def iter_group_data(group,
     #hash_device  = util.IntegerMap()
     if group.config:
         group_config = loads(group.config)
+        if group_config is None:
+            group_config = { }
     else:
         group_config = { }
 
