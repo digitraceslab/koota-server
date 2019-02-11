@@ -131,7 +131,7 @@ class Question(object):
 
 types = {"text": 1,
          "radio": 2,
-         "checkbox": 3,
+         "checkbox": 3, 'checkboxes': 3,
          "likert": 4,
          "quickanswer": 5,
          "scale": 6,
@@ -155,6 +155,10 @@ class Radio(Question):
                 answer_id[val] = i
     def is_valid_answer(self, answer):
         return answer in self.extra['answer_id'].values() or answer in self.extra['esm_radios']
+class Checkbox(Radio):
+    pass
+class Checkboxes(Checkbox):
+    pass
 class Likert(Question):
     def setup_hook(self, data):
         self.extra['esm_likert_max'] = data.pop('max', 5)

@@ -152,7 +152,7 @@ type_map = {
     'instructions': Instructions,
     'section': Section,
     'likert':Likert, 'likertslider':LikertSlider, 'likertchoice':LikertChoice,
-    'checkboxes': Checkboxes,
+    'checkbox': Checkboxes, 'checkboxes': Checkboxes,
     }
 
 def convert_questions(data, survey_id=None):
