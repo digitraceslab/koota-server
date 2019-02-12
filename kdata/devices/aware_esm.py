@@ -141,8 +141,9 @@ types = {"text": 1,
 class Text(Question):
     pass
 class Radio(Question):
+    _answer_key = 'esm_radios'
     def setup_hook(self, data):
-        self.extra['esm_radios'] = answers = [ ]
+        self.extra[self._answer_key] = answers = [ ]
         self.extra['answer_id']  = answer_id = { }
         for i, val in enumerate(data.pop('answers')):
             if isinstance(val, list):
@@ -156,6 +157,7 @@ class Radio(Question):
     def is_valid_answer(self, answer):
         return answer in self.extra['answer_id'].values() or answer in self.extra['esm_radios']
 class Checkbox(Radio):
+    _answer_key = 'esm_checkboxes'
     pass
 class Checkboxes(Checkbox):
     pass
