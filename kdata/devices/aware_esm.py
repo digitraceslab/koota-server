@@ -75,8 +75,16 @@ class Question(object):
     @staticmethod
     def new(data, extra_esms={}):
         if 'type' not in data:
-            raise ValueError("ESM {} does not have  type".format(data))
-        type_ = data.pop('type')
+            possible_types = set(data) & set(type_map)
+            if len(possible_types) != 1:
+                raise ValueError("ESM yaml question %s has no type specified: If you don't specify title, you must have exactly one key that matches one of the field types (%s)."%(id_, data))
+            type_ = possible_types.pop()
+            if 'title' in data:
+                raise ValueError("ESM {} has type= and <typename>=, giving multiple titles.")
+            data['title'] = data[type_]
+            del data[type_]
+        else:
+            type_ = data.pop('type')
         # Find global named data['type'] in title case, initialize that.
         inst = globals()[type_.title()](data, extra_esms=extra_esms)
         return inst
@@ -116,7 +124,7 @@ class Question(object):
         """
         return False
     def json(self):
-        data = dict(esm_type=types[self.__class__.__name__.lower()],
+        data = dict(esm_type=type_map[self.__class__.__name__.lower()],
                     esm_instructions=self.instructions,
                     esm_title=self.title,
                     esm_submit=self.submit,
@@ -129,14 +137,14 @@ class Question(object):
     def setup_hook(self, data):
         pass
 
-types = {"text": 1,
-         "radio": 2,
-         "checkbox": 3, 'checkboxes': 3,
-         "likert": 4,
-         "quickanswer": 5,
-         "scale": 6,
-         "numeric": 9,
-         "web": 10,
+type_map = {"text": 1,
+            "radio": 2,
+            "checkbox": 3, 'checkboxes': 3,
+            "likert": 4,
+            "quickanswer": 5,
+            "scale": 6,
+            "numeric": 9,
+            "web": 10,
     }
 class Text(Question):
     pass
