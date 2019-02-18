@@ -48,7 +48,7 @@ def convert(data, schedule_id=None):
         q = Question.new(esm, extra_esms=extra_esms)
         esms.append(q.json())
     # Make new ESMs delete all previous ESMs:
-    if 'esm_replace_queue' not in esms[0]:
+    if len(esms) > 0 and 'esm_replace_queue' not in esms[0]:
         esms[0]['esm_replace_queue'] = True
     # Produce overall schedule object
     schedule = yaml.load(schedule_template)
