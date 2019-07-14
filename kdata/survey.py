@@ -260,7 +260,7 @@ class BaseSurvey(devices.BaseDevice):
             codedir = os.path.dirname(os.path.realpath(inspect.getfile(cls)))
             codedir = os.path.normpath(codedir)
             fullpath = os.path.join(codedir, yaml_questions)
-            return survey_questions.convert(yaml.load(open(fullpath).read()))
+            return survey_questions.convert(yaml.safe_load(open(fullpath).read()))
         raise exceptions.NotImplemented("This survey is not yet configured, "
                                         "define get_survey().")
 

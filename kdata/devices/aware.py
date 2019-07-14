@@ -44,7 +44,7 @@ AWARE_CRT_PATH = getattr(settings, 'AWARE_CRT_PATH', "/srv/koota/static/server.c
 PACKET_CHUNK_SIZE = 1000
 
 # This is a null schedule, that should have no effect in Aware.
-NULL_SCHEDULE = yaml.load("""\
+NULL_SCHEDULE = yaml.safe_load("""\
 package: com.aware.phone
 schedule:
   action:

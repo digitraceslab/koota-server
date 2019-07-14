@@ -226,10 +226,10 @@ sample_data = open(os.path.join(os.path.dirname(__file__), 'examples/survey_ques
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         # Print sample data
-        print(yaml.dump(convert(yaml.load(sample_data))))
+        print(yaml.dump(convert(yaml.safe_load(sample_data))))
     else:
         # Load all data
         for arg in sys.argv[1:]:
-            for doc in yaml.load_all(open(arg)):
+            for doc in yaml.safe_load_all(open(arg)):
                 print(yaml.dump(convert(doc)))
 

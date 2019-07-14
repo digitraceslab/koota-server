@@ -51,7 +51,7 @@ def convert(data, schedule_id=None):
     if len(esms) > 0 and 'esm_replace_queue' not in esms[0]:
         esms[0]['esm_replace_queue'] = True
     # Produce overall schedule object
-    schedule = yaml.load(schedule_template)
+    schedule = yaml.safe_load(schedule_template)
     schedule['schedule']['schedule_id'] = data['id']
     schedule['schedule']['action']['extras']['esm'] = [ {"esm":esm} for esm in esms ]
     schedule['schedule']['trigger'] = trigger = data['trigger']
@@ -302,10 +302,10 @@ schedule_template_json = """\
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         # Print sample data
-        print(yaml.dump(convert(yaml.load(sample_data))))
+        print(yaml.dump(convert(yaml.safe_load(sample_data))))
     else:
         # Load all data
         for arg in sys.argv[1:]:
-            for doc in yaml.load_all(open(arg)):
+            for doc in yaml.safe_load_all(open(arg)):
                 print(yaml.dump(convert(doc)))
 
