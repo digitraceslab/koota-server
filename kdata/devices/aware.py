@@ -43,6 +43,19 @@ AWARE_CRT_PATH = getattr(settings, 'AWARE_CRT_PATH', "/srv/koota/static/server.c
 
 PACKET_CHUNK_SIZE = 1000
 
+# This is a null schedule, that should have no effect in Aware.
+NULL_SCHEDULE = yaml.load("""\
+package: com.aware.phone
+schedule:
+  action:
+    class: NULL
+    intent_action: ACTION_AWARE_QUEUE_ESM
+    extras:
+      esm: [ ]
+    type: NULL
+#  schedule_id: TEMPLATE_ID
+  trigger: TEMPLATE_TRIGGER
+""")
 
 # Aware config forms
 class AwareConfigForm(forms.Form):
