@@ -160,7 +160,7 @@ def group_detail(request, group_name):
         c['is_researcher'] = group.is_researcher(request.user)
         c['is_manager'] = group.is_manager(request.user)
         c['is_admin'] = group.is_admin(request.user)
-        if c['n_subjects'] > 10:
+        if c['n_subjects'] > 100:
             c['show_subject_devices'] = False
         if group.nonanonymous:
             c['group_subjects'] = group.groupsubject_set.order_by('user__username')
