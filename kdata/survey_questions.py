@@ -211,7 +211,7 @@ def convert(data):
     questions]}.
     """
     survey_data = { }
-    if 'title' in survey_data:
+    if 'title' in data:
         survey_data['name'] = data['title']
     survey_data['questions'] = convert_questions(data['questions'],
                                                  survey_id=data.get('id'))
