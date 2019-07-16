@@ -64,6 +64,11 @@ class AwareConfigForm(forms.Form):
     use_default_sensors = forms.BooleanField(initial=True, help_text="Sent some default config when registering?", required=False)
     frequency_update = forms.IntegerField(help_text="Schedule periodically updating config?  (min)", required=False)
 
+class AwareCertVersConfigForm(forms.Form):
+    form_name = "Aware certificate version"
+    cert_version = forms.ChoiceField(choices=[('cert1', 'Android <9'), ('cert2', "Android 9+")], help_text="For setting android 9+")
+
+
 
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -74,9 +79,11 @@ class Aware(devices.BaseDevice):
     """Basic Python class handling Aware devices"""
     desc = 'Aware device'
     AWARE_DOMAIN = AWARE_DOMAIN
+    AWARE_CRT_URL = AWARE_CRT_URL
+    AWARE_CRT_PATH = AWARE_CRT_PATH
     USABLE_QRCODE_METHODS = {'embed', 'url'}
     #USABLE_QRCODE_METHODS = {}
-    config_forms = [{'form':AwareConfigForm, 'key': 'aware_config'}]
+    config_forms = [{'form':AwareConfigForm, 'key': 'aware_config'}, {'form':AwareCertVersConfigForm, 'key': 'aware_cert_vers'}]
     converters = devices.BaseDevice.converters + [
         converter.AwareUploads,
         converter.AwareTimestamps,
@@ -151,13 +158,28 @@ class Aware(devices.BaseDevice):
                        install_url_local=self.install_url_local,
                            )
         return context
+    def get_domain(self):
+        vers = json.loads(self.dbrow.attrs.get('aware_cert_vers', '{}')).get('cert_version')
+        if vers == 'cert2':
+            return 'https://aware2.koota.zgib.net'
+        return self.AWARE_DOMAIN
+    @classmethod
+    def create_hook(cls, instance, *args, **kwargs):
+        super().create_hook(instance, *args, **kwargs)
+        #instance.save()
+        #instance.attrs['aware_cert_vers'] = '{"cert_version":"cert2"}'
+    def get_crt_url_path(self):
+        vers = json.loads(self.dbrow.attrs.get('aware_cert_vers', '{}')).get('cert_version')
+        if vers == 'cert2':
+            return ('https://data.koota.cs.aalto.fi/static/aware2.koota.zgib.net.crt', '/srv/koota/static/aware2.koota.zgib.net.crt')
+        return (self.AWARE_CRT_URL, self.AWARE_CRT_PATH)
     def webservice_url(self):
         """URL for webservice."""
         secret_id = self.dbrow.secret_id
         url_ = reverse('aware-register', kwargs=dict(indexphp='index.php',
                                                     secret_id=secret_id,
                                                     ))
-        url_ = self.AWARE_DOMAIN+url_
+        url_ = self.get_domain()+url_
         return url_
     def qrcode_url(self):
         """Return the data contained in the QRcode.
@@ -166,14 +188,14 @@ class Aware(devices.BaseDevice):
         url_ = self.webservice_url()
         url_ = urlparse.urlparse(url_)
         queryparams = { }
+        crt_url, crt_path = self.get_crt_url_path()
         if AWARE_QRCODE_FORMAT == 'embed' and 'embed' in self.USABLE_QRCODE_METHODS:
-            crt = open(AWARE_CRT_PATH, 'rb').read()
+            crt = open(crt_path, 'rb').read()
             crt_sha256 = sha256(crt).hexdigest()
             queryparams = dict(crt=crt,
                                crt_sha256=crt_sha256)
         elif AWARE_QRCODE_FORMAT == 'url' and 'url' in self.USABLE_QRCODE_METHODS:
-            crt = open(AWARE_CRT_PATH, 'rb').read()
-            crt_url = AWARE_CRT_URL
+            crt = open(crt_path, 'rb').read()
             crt_sha256 = sha256(crt).hexdigest()
             queryparams = dict(crt_url=crt_url,
                                crt_sha256=crt_sha256)
