@@ -528,7 +528,7 @@ def run_config_form(forms, attrs, method, POST, log_func=None):
         # Create the object that will be iterated in the django template.
         custom_forms.append(dict(form=form,
                                  key=form_key,
-                                 name=getattr(form_data, 'name', form_class.__name__),
+                                 name=getattr(form_data, 'name', getattr(form_class, 'form_name', form_class.__name__)),
                                  title=getattr(form_data, 'title', form_class.__name__),
                                  ))
     return custom_forms, all_valid, any_changed
