@@ -183,7 +183,7 @@ class BaseDevice(object):
         database.  It can either be a custom alias, or the importable
         class name.
         """
-        if cls._class_alias is not None:
+        if '_class_alias' in cls.__dict__ and cls._class_alias is not None:
             return cls._class_alias
         return '%s.%s'%(cls.__module__, cls.__name__)
     @classmethod
