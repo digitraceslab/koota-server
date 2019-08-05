@@ -31,6 +31,14 @@
 <li>Latest data point at: {{data_latest}}</li>
 </ul>
 
+{% if config_error %}
+<div class="alert alert-danger">
+  An error was detected while attempting to process your
+  configuration.  Please fix it: the message below may give some hints.
+  <p><pre>{{ config_error }}</pre></p>
+</div>
+{% endif %}
+
 {% if raw_instructions %}
 <h2>Configuration instructions</h2>
 {{ raw_instructions|safe }}

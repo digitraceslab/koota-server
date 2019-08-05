@@ -3,6 +3,7 @@ from hashlib import sha256
 import json
 import operator
 import six
+import sys
 
 from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
@@ -257,9 +258,15 @@ class DeviceConfig(UpdateView):
         context = super(DeviceConfig, self).get_context_data(**kwargs)
         device_class = context['device_class'] = self.object.get_class()
         context['device'] = self.object
-        context.update(device_class.config_context())
-        context.update(device_class.get_raw_instructions(context=context,
-                                                         request=self.request))
+        try:
+            context.update(device_class.config_context())
+            context.update(device_class.get_raw_instructions(context=context,
+                                                            request=self.request))
+            context['config_error'] = None
+        except Exception as e:
+            import traceback
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            context['config_error'] = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
         be = self.object.backend
         data_exists = be.exists()
         if data_exists:
