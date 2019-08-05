@@ -170,7 +170,8 @@ class Aware(devices.BaseDevice):
         #instance.attrs['aware_cert_vers'] = '{"cert_version":"cert2"}'
     def get_crt_url_path(self):
         vers = json.loads(self.dbrow.attrs.get('aware_cert_vers', '{}')).get('cert_version')
-        if vers == 'cert2':
+        first_v2_time = timezone.get_current_timezone().localize(datetime.datetime(2019, 8, 1, 0, 0, 0))
+        if vers == 'cert2' and self.dbrow.ts_create > first_v2_time:
             return ('https://data.koota.cs.aalto.fi/static/aware2.koota.zgib.net.crt', '/srv/koota/static/aware2.koota.zgib.net.crt')
         return (self.AWARE_CRT_URL, self.AWARE_CRT_PATH)
     def webservice_url(self):
