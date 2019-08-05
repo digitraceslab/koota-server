@@ -380,6 +380,10 @@ def process_schedule(sched, schedule_id=None):
     if 'questions' in sched:
         sched = aware_esm.convert(sched, schedule_id=schedule_id)
 
+    if ('schedule' in sched
+            and 'schedule_id' not in sched['schedule']):
+        sched['schedule']['schedule_id'] = schedule_id
+
     # Do we need to make the {'key':x, 'value':y} format ESM settings
     # for schedules?  This automatically converts dicts to this
     # format.  It will be converted to string (dumps) before sending
