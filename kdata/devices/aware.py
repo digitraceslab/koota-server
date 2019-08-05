@@ -160,7 +160,8 @@ class Aware(devices.BaseDevice):
         return context
     def get_domain(self):
         vers = json.loads(self.dbrow.attrs.get('aware_cert_vers', '{}')).get('cert_version')
-        if vers == 'cert2':
+        first_v2_time = timezone.get_current_timezone().localize(datetime.datetime(2019, 8, 1, 0, 0, 0))
+        if vers == 'cert2' and self.dbrow.ts_create > first_v2_time:
             return 'https://aware2.koota.zgib.net'
         return self.AWARE_DOMAIN
     @classmethod
