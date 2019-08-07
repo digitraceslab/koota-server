@@ -167,8 +167,11 @@ class Aware(devices.BaseDevice):
     @classmethod
     def create_hook(cls, instance, *args, **kwargs):
         super().create_hook(instance, *args, **kwargs)
-        #instance.save()
-        #instance.attrs['aware_cert_vers'] = '{"cert_version":"cert2"}'
+        instance.save()
+        # Make the new certificate version true by default.  Eventually this can
+        # be removed and the get_domain and get_crt_url_path functions can be
+        # updated.
+        instance.attrs['aware_cert_vers'] = '{"cert_version":"cert2"}'
     def get_crt_url_path(self):
         vers = json.loads(self.dbrow.attrs.get('aware_cert_vers', '{}')).get('cert_version')
         first_v2_time = timezone.get_current_timezone().localize(datetime.datetime(2019, 8, 1, 0, 0, 0))
