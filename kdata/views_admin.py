@@ -2,7 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, FormView
@@ -189,6 +189,10 @@ class KootaLoginView(auth.views.LoginView):
         # This is default fallthrough from the superclass
         return HttpResponseRedirect(self.get_success_url())
 
+
+class KootaPasswordChangeView(auth.views.PasswordChangeView):
+    success_url = reverse_lazy('main')
+    template_name = 'koota/change_password.html'
 
 
 
