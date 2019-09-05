@@ -159,6 +159,8 @@ class Aware(devices.BaseDevice):
                            )
         return context
     def get_domain(self):
+        if isinstance(self, AwareValidCert):
+            return self.AWARE_DOMAIN
         vers = json.loads(self.dbrow.attrs.get('aware_cert_vers', '{}')).get('cert_version')
         first_v2_time = timezone.get_current_timezone().localize(datetime.datetime(2019, 8, 1, 0, 0, 0))
         if vers == 'cert2' and self.dbrow.ts_create > first_v2_time:
@@ -231,6 +233,14 @@ class AwareValidCert(Aware):
     install_url = 'https://itunes.apple.com/us/app/aware-client-ios/id1065978412'
     # iOS devices only work with
     USABLE_QRCODE_METHODS = { }
+    config_instructions_template = textwrap.dedent("""\
+    <p>Install <a href="{{install_url}}">Aware Client</a> from the iTunes Store.</p>
+
+    <p>Scan the QR code:</p>
+
+    <img src="{{qrcode_img_path}}">
+
+    """)
 
 
 
