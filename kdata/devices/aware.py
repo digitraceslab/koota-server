@@ -275,6 +275,11 @@ BASE_CONFIG = dict(
         status_esm=False,
         #webservice_wifi_only
 
+        location_save_all=True,
+        min_location_gps_accuracy=0,
+        min_location_network_accuracy=0,
+        location_expiration_time=0,
+
     ))
 DEFAULT_SENSORS = dict(
     sensors=dict(
