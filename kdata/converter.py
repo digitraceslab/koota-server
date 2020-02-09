@@ -77,6 +77,7 @@ from __future__ import print_function
 from six import iteritems, itervalues, string_types
 from six.moves import zip
 
+import ast
 from base64 import urlsafe_b64encode
 from calendar import timegm
 import collections
@@ -423,6 +424,9 @@ class MurataBSN(_Converter):
         # If given, only return devices with this network ID.
         only_network_id = self.params.get('network_id', None)
         for ts_packet, data in rows:
+            # Handle some upload quirk, where data is stored as literal bytes
+            if data.startswith("b'") and data.endswith("'"):
+                data = ast.literal_eval(data).decode()
             if not data.startswith('<'):
                 continue
             unixtime_packet = timegm(ts_packet.timetuple())
