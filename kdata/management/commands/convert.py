@@ -36,6 +36,9 @@ class Command(BaseCommand):
         parser.add_argument('--format', '-f', help="Output format")
         parser.add_argument('--no-handle-errors', action='store_false', default=True,
                             help="Use converter error handing framework.")
+        parser.add_argument('--user-as-group', action='store_true',
+                            help="Download a group-like table for a single user.  Adds the "
+                                 "user and device columns with hashes.")
 
     def handle(self, *args, **options):
         #print(options)
@@ -115,10 +118,23 @@ class Command(BaseCommand):
             else:
                 output = sys.stdout
 
+            header = converter.header2()
+
+            if options['user_as_group']:
+                old_table = table
+                def table(table=old_table):
+                    for row in old_table:
+                        yield (converter.safe_hash(str(device.user.id)),
+                               converter.safe_hash(device.public_id),
+                               *row,
+                               )
+                table = table()
+                header = ['user', 'device', ] + header
+
             # Do the conversion.  This is a extremely nested iterator
             # that handles all layers at once.
             self.print_rows(table, converter,
-                            header=converter.header2(),
+                            header=header,
                             options=options, output=output)
 
     def handle_group(self, time_converter, **options):
