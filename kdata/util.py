@@ -195,11 +195,19 @@ def sqlite3dump_iter(table, converter=None, header=None, filename=None):
     yield '-- Easily load to sqlite with:  sqlite3 -cmd ".read FILENAME"\n'
     yield 'BEGIN TRANSACTION;\n'
     yield 'CREATE TABLE IF NOT EXISTS "%s" (%s);\n'%(table_name, ", ".join('"%s"'%x for x in header))
+    def sql_literal_format(x):
+        if isinstance(x, str):
+            return ''.join(("'", x.replace("'","''"), "'"))
+        if x is None or (isinstance(x, float) and isnan(x)):
+            return 'NULL'
+        if isinstance(x, (list,tuple,dict,set)):
+            x = repr(x)
+            return ''.join(("'", x.replace("'","''"), "'"))
+        return repr(x)
     for row in table:
         yield 'INSERT INTO %s VALUES(%s);\n'%(
             table_name,
-            ", ".join(''.join(("'", x.replace("'","''"), "'"))
-                          if isinstance(x, str) else 'NULL' if x is None or isnan(x) else repr(x) for x in row))
+            ", ".join(sql_literal_format(x) for x in row))
     yield 'CREATE VIEW IF NOT EXISTS "data" AS SELECT * from "%s";\n'%(table_name)
     if converter and converter.errors:
         yield 'CREATE TABLE IF NOT EXISTS errors ("table", "name", "count");\n'
