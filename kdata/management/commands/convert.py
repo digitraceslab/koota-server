@@ -3,6 +3,8 @@ import itertools
 import json
 import sys
 
+import dateutil.parser
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
@@ -22,6 +24,8 @@ class Command(BaseCommand):
         parser.add_argument('device_id', nargs=None)
         parser.add_argument('--output', help="Output filename", default=sys.stdout)
         parser.add_argument('--history', help="Number of past days to use for test.", default=14, type=int)
+        parser.add_argument('--start-time', help="Start datetime of conversion.")
+        parser.add_argument('--end-time', help="End datetime of conversion.")
         parser.add_argument('--textdate', help="Convert unix time?", action='store_true')
         parser.add_argument('--group',
                             help="Run a converter on a group? "
@@ -77,6 +81,16 @@ class Command(BaseCommand):
             # Limit to a certain number of days of history.
             if options['history']:
                 rows = rows.filter(ts__gt=(timezone.now()-timedelta(days=options['history'])))
+            if options['start_time']:
+                dt_start = dateutil.parser.parse(options['start_time'])
+                if dt_start.tzinfo is None:
+                    dt_start = TZ.localize(dt_start)
+                rows = rows.filter(ts__gte=dt_start)
+            if options['end_time']:
+                dt_end = dateutil.parser.parse(options['end_time'])
+                if dt_end.tzinfo is None:
+                    dt_end = TZ.localize(dt_end)
+                rows = rows.filter(ts__lt=(dt_end))
 
             # Final transformations
             rows = util.optimized_queryset_iterator(rows)
