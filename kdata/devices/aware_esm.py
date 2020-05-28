@@ -77,7 +77,7 @@ class Question(object):
         if 'type' not in data:
             possible_types = set(data) & set(type_map)
             if len(possible_types) != 1:
-                raise ValueError("ESM yaml question %s has no type specified: If you don't specify title, you must have exactly one key that matches one of the field types (%s)."%(id_, data))
+                raise ValueError("ESM yaml question %s has no type specified: If you don't specify title, you must have exactly one key that matches one of the field types (%s)."%(data.get('id', '<no id>'), data))
             type_ = possible_types.pop()
             if 'title' in data:
                 raise ValueError("ESM {} has type= and <typename>=, giving multiple titles.")
