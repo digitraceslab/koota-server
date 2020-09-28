@@ -1213,7 +1213,7 @@ class LocationDayAggregator(DayAggregator):
         for lat, lon, ts, speed in zip(lats, lons, times, speeds):
             bin = int((ts // bin_width) - bin_start)
             lats_binned[bin].append(lat)
-            lons_binned[bin].append(lat)
+            lons_binned[bin].append(lon)
             speeds_binned[bin].append(speed)
             ts_binned[bin].append(ts)
         n_bins_nonnan = sum(1 for item in lats_binned if item)
