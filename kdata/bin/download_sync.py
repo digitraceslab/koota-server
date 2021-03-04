@@ -75,6 +75,7 @@ def get(url, params={}):
 
 format = args.format
 today = datetime.date.today()
+os.makedirs(args.output_dir, exist_ok=True)
 
 # Get data
 if not args.group:
