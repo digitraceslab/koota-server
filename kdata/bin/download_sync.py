@@ -43,6 +43,7 @@ parser.add_argument("--group", default=None, action='store_true', help="If true,
 parser.add_argument("-v", "--verbose", default=None, action='store_true')
 parser.add_argument("--start", default=None, help="Earliest time to download (expanded to nearest whole day)")
 parser.add_argument("--end", default=None, help="Latest time to download (expanded to nearest whole day)")
+parser.add_argument("--force-recreate", action='store_true', default=None, help="Force-recreate all databases")
 
 args = parser.parse_args()
 
@@ -69,22 +70,25 @@ def get(url, params={}):
         print("session_id invalid or can't log in")
         exit(2)
     if r.status_code != 200:
-        print(url, params)
-        raise Exception("requests failure: %s %s"%(r.status_code, r.reason))
+        raise Exception("requests failure: %s %s (on %s %s)"%(r.status_code, r.reason, url, params))
     return r.text
 
 format = args.format
 today = datetime.date.today()
 os.makedirs(args.output_dir, exist_ok=True)
 
+#for converter in args.converter.split(','):
+
 # Get data
 if not args.group:
     R = get(os.path.join(baseurl, 'json'))
 else:
+    print(os.path.join(baseurl, args.converter, 'json'))
     R = get(os.path.join(baseurl, args.converter, 'json'))
 print(R)
 data = json.loads(R)
 if data['data_exists']:
+    has_new_data = False
     earliest_ts = data['data_earliest']
     latest_ts = data['data_latest']
     if args.start:
@@ -120,6 +124,7 @@ if data['data_exists']:
             continue
 
         # download data
+        has_new_data = True
         print('  '+outfile, end='  ', flush=True)
         t1 = time.time()
         R = get(os.path.join(baseurl, args.converter)+'.'+format,
@@ -132,7 +137,7 @@ if data['data_exists']:
         f.write(R) ; f.close()
         os.rename(outfile+'.tmp', outfile)
 
-    if format == 'sqlite3dump':
+    if (has_new_data or args.force_recreate) and format == 'sqlite3dump':
         current_files = glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump'))
         current_files += glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump.partial'))
         current_files.sort()
@@ -165,6 +170,8 @@ if data['data_exists']:
                 cmd = '.read %s'%filename
                 if VERBOSE: print('  '+cmd)
                 sql_proc.stdin.write(cmd.encode()+b'\n')
+                sql_proc.stdin.flush()
+                time.sleep(1)
             sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
             sql_proc.stdin.close()
             sql_proc.wait()
