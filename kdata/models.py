@@ -423,8 +423,8 @@ class GroupSubject(models.Model):
         for device in Device.objects.filter(user=self.user,
                                             label__analyze=True):
             yield device
-    def allowed_devices_with_hash(self, type=None, hash_seed=None):
-        for device in self.allowed_devices(type=type):
+    def allowed_devices_with_hash(self, device_class=None, hash_seed=None):
+        for device in self.allowed_devices(device_class=device_class):
             yield device, self.group.hash_do(device.public_id, hash_seed=hash_seed)
 
 class GroupSubjectAttr(BaseAttr):
