@@ -21,6 +21,8 @@ by day.  When re-run, only downloads new data.
 
 Required arguments are "base_url", "converter", and "output_dir".  You
 must set the environment variable "session_id" before running this.
+Find your browser cookies, and then run:
+    export session_id=THE_COOKIE_VALUE
 
 Example usage to download one device's data for a certain time period:
     python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3
@@ -29,6 +31,8 @@ Download one's data from several converters (remove Sample.sqlite3 before runnin
     python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3:updateonly
     python3 download_sync.py https://koota.tld/devices/abc123 AwareTimestamps --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3:updateonly
 
+To download group-based data:
+    python3 download_sync.py --group https://koota.tld/group/group_name . [--start/--end/etc] --out-db=Group.sqlite3
 """
 
 parser = argparse.ArgumentParser(description=usage)
