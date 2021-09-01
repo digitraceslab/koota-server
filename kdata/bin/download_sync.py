@@ -25,15 +25,44 @@ must set the environment variable "session_id" before running this.
 Find your browser cookies, and then run:
     export session_id=THE_COOKIE_VALUE
 
-Example usage to download one device's data for a certain time period:
-    python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3
+Example of downloading only csv files, one per day:
+    python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen downloaded_data/ --format=csv --start=2018-07-10 --end=2018-07-15
 
-Download one's data from several converters (remove Sample.sqlite3 before running):
-    python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3:updateonly
-    python3 download_sync.py https://koota.tld/devices/abc123 AwareTimestamps --start=2018-07-10 --end=2018-07-15 . --out-db=Sample.sqlite3:updateonly
+However, perhaps you want all of these files to become one.  In this
+case, you would download database dumps and assemble them (the default
+format is database dumps).  The rest of this information referrs to this.
 
-To download group-based data:
-    python3 download_sync.py --group https://koota.tld/group/group_name . [--start/--end/etc] --out-db=Group.sqlite3
+Example usage to download one device's data for a certain time period,
+and store it in the database Sample.sqlite3.  This also downloads
+per-day data, which you should save to avoid re-downloading existing
+data:
+    python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen tmp_data/ --start=2018-07-10 --end=2018-07-15 --out-db=Sample.sqlite3
+
+Download one's data from several converters (remove Sample.sqlite3
+before running), and update all them into the same one database file:
+    python3 download_sync.py https://koota.tld/devices/abc123 AwareScreen tmp_data/ --start=2018-07-10 --end=2018-07-15 --out-db=Sample.sqlite3:updateonly
+    python3 download_sync.py https://koota.tld/devices/abc123 AwareTimestamps tmp_data/ --start=2018-07-10 --end=2018-07-15 --out-db=Sample.sqlite3:updateonly
+
+To download group-based data, point to the group URL and add --group:
+    python3 download_sync.py --group https://koota.tld/group/group_name tmp_data/ --out-db=Group.sqlite3
+
+When using --out-db there are several options:
+
+  a) By default, each database file is removed and re-created on every
+     run.  This is perhaps good for initial testing, but not big data.
+         --out-db=data.sqlite3
+
+  b) The updateonly option does not delete the database file, but will try to
+     reload all data into the database on every run:
+         --out-db=data.sqlite3:updateonly
+
+  c) The incremental option will only load the newly downloaded data.
+     This is best for massive datasets, but if something goes wrong
+     during the process, there is a chance the database may be left in a
+     corrupt state (e.g. data missing from it) with no way of knowing.
+     To ensure things are consistent, you can run one of the above
+     commands:
+         --out-db=data.sqlite3:incremental
 """
 
 parser = argparse.ArgumentParser(description=usage)
@@ -43,7 +72,7 @@ parser.add_argument("output_dir", help="")
 #parser.add_argument("--session-id")
 #parser.add_argument("--device")
 parser.add_argument("-f", "--format", default='sqlite3dump', help="format to download")
-parser.add_argument("--out-db", default=None, help="if download format is sqlite3dump, location of database to create.  Default: db.sqlite in output_dir.")
+parser.add_argument("--out-db", default=None, help="if download format is sqlite3dump, location of database to create.  Default: db.sqlite in output_dir.  If you use another format (like csv), you should not use --out-db, but you will end up with a lot of csv files")
 parser.add_argument("--group", default=None, action='store_true', help="If true, treate base_url as a group.  Required for group downloads.")
 parser.add_argument("-v", "--verbose", default=None, action='store_true')
 parser.add_argument("--start", default=None, help="Earliest time to download (expanded to nearest whole day)")
