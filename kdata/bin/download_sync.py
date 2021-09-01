@@ -48,6 +48,7 @@ parser.add_argument("-v", "--verbose", default=None, action='store_true')
 parser.add_argument("--start", default=None, help="Earliest time to download (expanded to nearest whole day)")
 parser.add_argument("--end", default=None, help="Latest time to download (expanded to nearest whole day)")
 parser.add_argument("--force-recreate", action='store_true', default=None, help="Force-recreate all databases")
+parser.add_argument("--unsafe", action='store_true', default=None, help="Open database in unsafe mode.  May be slightly faster, but could corrupt the database under certain circumstances.")
 
 args = parser.parse_args()
 
@@ -168,15 +169,17 @@ if data['data_exists']:
             sql_proc = subprocess.Popen(['sqlite3', dbfile_new, '-batch'], stdin=subprocess.PIPE)
             sql_proc.stdin.write(b'.bail ON\n')
             #sql_proc.stdin.write(b'.echo ON\n')
-            sql_proc.stdin.write(b'PRAGMA journal_mode = OFF;\n')
-            sql_proc.stdin.write(b'PRAGMA synchronous = OFF;\n')
+            if args.unsafe:
+                sql_proc.stdin.write(b'PRAGMA journal_mode = OFF;\n')
+                sql_proc.stdin.write(b'PRAGMA synchronous = OFF;\n')
             for filename in current_files:
                 cmd = '.read %s'%filename
                 if VERBOSE: print('  '+cmd)
                 sql_proc.stdin.write(cmd.encode()+b'\n')
                 sql_proc.stdin.flush()
                 time.sleep(1)
-            sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
+            if args.unsafe:
+                sql_proc.stdin.write(b'PRAGMA synchronous = NORMAL;\n')
             sql_proc.stdin.close()
             sql_proc.wait()
             # Make indexes as needed
