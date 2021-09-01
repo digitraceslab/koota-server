@@ -1,4 +1,5 @@
 import argparse
+import atexit
 import datetime
 import glob
 import json
@@ -108,17 +109,24 @@ if data['data_exists']:
     latest = datetime.datetime.fromtimestamp(latest_ts)
     current_day = earliest.date() - datetime.timedelta(days=1)
 
+    new_files = [ ]
+    def cleanup_files(files):
+        for file_ in files:
+            os.unlink(file_)
+    atexit.register(cleanup_files, new_files)
 
     while current_day < latest.date():
         # process [current_date, current_date+1)
         current_day += datetime.timedelta(days=1)
 
+        is_partial = False
         outfile = current_day.strftime(args.converter+'.%Y-%m-%d'+'.'+format)
         outfile = os.path.join(args.output_dir, outfile)
         if os.path.exists(outfile+'.partial') and current_day != today:
             os.unlink(outfile+'.partial')
         if current_day == today:
             outfile = outfile + '.partial'
+            is_partial = True
 
         #print('  '+outfile, end='  ', flush=True)
 
@@ -141,25 +149,32 @@ if data['data_exists']:
         f = open(outfile+'.tmp', 'w')
         f.write(R) ; f.close()
         os.rename(outfile+'.tmp', outfile)
+        if not is_partial:
+            new_files.append(outfile)
 
     if (has_new_data or args.force_recreate) and format == 'sqlite3dump':
-        current_files = glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump'))
-        current_files += glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump.partial'))
-        current_files.sort()
+        all_files = glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump'))
+        all_files += glob.glob(os.path.join(args.output_dir, args.converter+'.*.sqlite3dump.partial'))
+        all_files.sort()
         if args.out_db is None:
             dbfiles = [os.path.join(args.output_dir, 'db.sqlite3')]
         else:
             dbfiles = args.out_db.split(',')
         for dbfile in dbfiles:
-            dbfile, *dbfile_args = dbfile.split(':')
-            recreate_db = 'updateonly' not in dbfile_args
             print("Importing to DB:", dbfile)
-            print("  recreate_db=%s"%recreate_db)
+            dbfile, *dbfile_args = dbfile.split(':')
+            new_db = 'updateonly' not in dbfile_args
+            incremental_update = 'incremental' in dbfile_args
+            if incremental_update:
+                new_db = False
+            print("  new_db=%s"%new_db)
 
             dbfile_new = dbfile
-            if recreate_db:
+            if new_db:
                 dbfile_new = dbfile+'.new'
                 if os.path.exists(dbfile_new): os.unlink(dbfile_new)
+            elif incremental_update:
+                pass
             else:
                 # Delete the existing table
                 subprocess.check_call(['sqlite3', dbfile, 'DROP TABLE IF EXISTS %s;'%args.converter])
@@ -172,7 +187,12 @@ if data['data_exists']:
             if args.unsafe:
                 sql_proc.stdin.write(b'PRAGMA journal_mode = OFF;\n')
                 sql_proc.stdin.write(b'PRAGMA synchronous = OFF;\n')
-            for filename in current_files:
+            # Do we load all files into the database
+            if incremental_update:
+                files = new_files
+            else:
+                files = all_files
+            for filename in files:
                 cmd = '.read %s'%filename
                 if VERBOSE: print('  '+cmd)
                 sql_proc.stdin.write(cmd.encode()+b'\n')
@@ -201,6 +221,10 @@ if data['data_exists']:
             #for idxsql in [('user', ), ('user', 'time', )]:
             #    sql_proc.stdin.write('CREATE INDEX {table}_{idxid} ON {table} ({columns}) ;\n'.format(table=args.converter, idxid='_'.join(idxsql), columns=', '.join(idxsql)).encode())
             dt = time.time() - t1
-            if recreate_db:
+            if new_db:
                 os.rename(dbfile_new, dbfile)
             print('Import done: %12d  %4.1fs'%(os.stat(dbfile).st_size, dt))
+
+    # Commit files, unmark them as pending
+    for file_ in reversed(list(new_files)):
+       new_files.remove(file_)
