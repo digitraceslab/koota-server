@@ -2347,11 +2347,10 @@ if __name__ == "__main__":
         # We have to be a bit convoluted to support both python2 and
         # python3 here.  Maybe there is a better way to do this...
         csv_writer = csv.writer(f_output)
-        csv_writer.writerow([x.encode('utf-8') for x in converter.header2()])
+        csv_writer.writerow(converter.header2())
         for row in table:
             #csv_writer.writerow(row)
-            csv_writer.writerow([x.encode('utf-8') if isinstance(x, string_types) else x
-                                 for x in row])
+            csv_writer.writerow(row)
 
     # Write as JSON
     elif args.format == 'json':
