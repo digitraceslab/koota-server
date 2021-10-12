@@ -2287,20 +2287,22 @@ if __name__ == "__main__":
     description = """\
     Command line utility for converting raw data into other forms.
 
-    This converts raw data using the converters defined in this file.
-    It is a simple command line version of views_data.py:device_data.
-    In the future, the common ground of these two functions should be
-    merged.
+    This converts raw data using the converters defined in this file.  It is a
+    simple command line version of the data downloading which is done in
+    views_data.py:device_data.  In the future, the common ground of these two
+    functions should be merged.
 
-    So far, the input format must be 'json-lines', that is, one JSON
-    object on each line.
+    In order to use this, you must download raw data (for example, from the
+    koota web interface) in the format 'json-lines'.  This file is used as
+    input to this script, and the output is the converted data.
+
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('input', help="Input filename")
-    parser.add_argument('converter', help="Output filename")
+    parser.add_argument('input', help="Input filename, (json-lines download)")
+    parser.add_argument('converter', help="Converter class name, from this file")
     parser.add_argument('-f', '--format', help="Output format [csv,json,py]",
                         default='csv')
-    parser.add_argument('-o', '--output', help="Output filename",
+    parser.add_argument('-o', '--output', help="Output filename (default stdout)",
                         default=None)
     parser.add_argument('--handle-errors', help="Catch errors and continue",
                         action='store_true', default=False)
