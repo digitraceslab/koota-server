@@ -17,6 +17,8 @@ except:
     import urllib2.parse as parse
 
 usage = """\
+download_sync.py https://koota.../devices/abc123 AwareBattery out_dir/ [options]
+
 Koota data download.  Download data, storing in directories organized
 by day.  When re-run, only downloads new data.
 
@@ -44,7 +46,7 @@ before running), and update all them into the same one database file:
     python3 download_sync.py https://koota.tld/devices/abc123 AwareTimestamps tmp_data/ --start=2018-07-10 --end=2018-07-15 --out-db=Sample.sqlite3:updateonly
 
 To download group-based data, point to the group URL and add --group:
-    python3 download_sync.py --group https://koota.tld/group/group_name tmp_data/ --out-db=Group.sqlite3
+    python3 download_sync.py --group https://koota.tld/group/group_name AwareScreen tmp_data/ --out-db=Group.sqlite3
 
 When using --out-db there are several options:
 
@@ -65,7 +67,7 @@ When using --out-db there are several options:
          --out-db=data.sqlite3:incremental
 """
 
-parser = argparse.ArgumentParser(description=usage)
+parser = argparse.ArgumentParser(usage=usage)
 parser.add_argument("base_url", help="URL to the device (e.g. https://domain.tld/devices/abcdef) or group (e.g. https://domain.tld/group/GroupName)")
 parser.add_argument("converter", help="Converter name (e.g. AwareTimestamps)")
 parser.add_argument("output_dir", help="")
