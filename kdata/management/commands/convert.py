@@ -23,7 +23,7 @@ class Command(BaseCommand):
         parser.add_argument('converter', nargs=None)
         parser.add_argument('device_id', nargs=None)
         parser.add_argument('--output', help="Output filename", default=sys.stdout)
-        parser.add_argument('--history', help="Number of past days to use for test.", default=14, type=int)
+        parser.add_argument('--history', help="Number of past days to use for test, default 14.  Use a large number to get all data.", default=14, type=int)
         parser.add_argument('--start-time', help="Start datetime of conversion.")
         parser.add_argument('--end-time', help="End datetime of conversion.")
         parser.add_argument('--textdate', help="Convert unix time?", action='store_true')
