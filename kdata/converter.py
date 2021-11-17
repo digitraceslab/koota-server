@@ -424,9 +424,10 @@ class MurataBSN(_Converter):
         # If given, only return devices with this network ID.
         only_network_id = self.params.get('network_id', None)
         for ts_packet, data in rows:
-            # Handle some upload quirk, where data is stored as literal bytes
             if data.startswith("b'") and data.endswith("'"):
                 data = ast.literal_eval(data).decode()
+            #print(data)
+            #print(data[0])
             if not data.startswith('<'):
                 continue
             unixtime_packet = timegm(ts_packet.timetuple())
@@ -934,7 +935,7 @@ class DayAggregator(_Converter):
                     # If we have iterated far enough in the future,
                     # then we assume that we have all data from the
                     # current day.  Yield this.
-                    if ts > current_day_ts + 172800: # two days
+                    if ts > current_day_ts + 1728000: # two days
                         done_day_bin = min(day_dict)
                         done_day_data = day_dict.pop(done_day_bin)
                         for row in self.process(done_day_bin,
@@ -1879,10 +1880,15 @@ class AwareLocationDay(LocationDayAggregator, AwareDayAggregator):
             ts = row['timestamp']/1000
             yield ts, self.ts_bin_func(ts), row
     def get_lat_lon_times(self, probes):
-        lat = [ probe['double_latitude'] for probe in probes if probe.get('label')!='disabled' ]
-        lon = [ probe['double_longitude'] for probe in probes if probe.get('label')!='disabled' ]
-        times = [ probe['timestamp']/1000 for probe in probes if probe.get('label')!='disabled' ]
-        speeds = [ probe['double_speed'] for probe in probes if probe.get('label')!='disabled' ]
+        # Initial filtering to remove invalid points
+        probes = [ probe for probe in probes
+                   if probe.get('label')!='disabled'
+                 ]
+        #
+        lat = [ probe['double_latitude'] for probe in probes]
+        lon = [ probe['double_longitude'] for probe in probes]
+        times = [ probe['timestamp']/1000 for probe in probes]
+        speeds = [ probe['double_speed'] for probe in probes]
         return lat, lon, times, speeds
 class AwareLocationDayOld(LocationDayAggregatorOld, AwareLocationDay):
     desc = "Location, daily features (old algorithm)"
