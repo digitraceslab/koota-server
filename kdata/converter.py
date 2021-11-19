@@ -1208,10 +1208,14 @@ class LocationDayAggregator(DayAggregator):
         dists_binned = [ [] for _ in range(n_bins) ]
         speeds_binned = [ [] for _ in range(n_bins) ]
         ts_binned = [ [] for _ in range(n_bins) ]
-        n_points = len(lats)
+        n_points = 0
 
         # bin data
         for lat, lon, ts, speed in zip(lats, lons, times, speeds):
+            # points near (0, 0) are outlier and should be excluded
+            if (lat ** 2 + lon ** 2 < 1):
+                continue
+            n_points += 1
             bin = int((ts // bin_width) - bin_start)
             lats_binned[bin].append(lat)
             lons_binned[bin].append(lon)
