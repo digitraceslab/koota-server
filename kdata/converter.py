@@ -1208,14 +1208,10 @@ class LocationDayAggregator(DayAggregator):
         dists_binned = [ [] for _ in range(n_bins) ]
         speeds_binned = [ [] for _ in range(n_bins) ]
         ts_binned = [ [] for _ in range(n_bins) ]
-        n_points = 0
+        n_points = len(lats)
 
         # bin data
         for lat, lon, ts, speed in zip(lats, lons, times, speeds):
-            # points near (0, 0) are outlier and should be excluded
-            if (lat ** 2 + lon ** 2 < 1):
-                continue
-            n_points += 1
             bin = int((ts // bin_width) - bin_start)
             lats_binned[bin].append(lat)
             lons_binned[bin].append(lon)
@@ -1888,12 +1884,22 @@ class AwareLocationDay(LocationDayAggregator, AwareDayAggregator):
         probes = [ probe for probe in probes
                    if probe.get('label')!='disabled'
                  ]
-        #
-        lat = [ probe['double_latitude'] for probe in probes]
-        lon = [ probe['double_longitude'] for probe in probes]
-        times = [ probe['timestamp']/1000 for probe in probes]
-        speeds = [ probe['double_speed'] for probe in probes]
-        return lat, lon, times, speeds
+        # threshold for excluding (0, 0) points
+        eps = 1
+
+        lats, lons, times, speeds = [], [], [], []
+        for probe in probes:
+            lat, lon = probe['double_latitude'], probe['double_longitude']
+            time, speed = probe['timestamp'] / 1000, probe['double_speed']
+            # excluded points near (0, 0)
+            if (lat ** 2 + lon ** 2 < eps ** 2):
+                continue
+
+            lats.append(lat)
+            lons.append(lon)
+            times.append(time)
+            speeds.append(speed)
+        return lats, lons, times, speeds
 class AwareLocationDayOld(LocationDayAggregatorOld, AwareLocationDay):
     desc = "Location, daily features (old algorithm)"
 class AwareAuto(BaseAwareConverter):
