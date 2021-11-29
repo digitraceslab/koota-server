@@ -935,7 +935,7 @@ class DayAggregator(_Converter):
                     # If we have iterated far enough in the future,
                     # then we assume that we have all data from the
                     # current day.  Yield this.
-                    if ts > current_day_ts + 1728000: # two days
+                    if ts > current_day_ts + 60*60*24*20: # days in the future
                         done_day_bin = min(day_dict)
                         done_day_data = day_dict.pop(done_day_bin)
                         for row in self.process(done_day_bin,
