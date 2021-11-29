@@ -1883,6 +1883,7 @@ class AwareLocationDay(LocationDayAggregator, AwareDayAggregator):
         # Initial filtering to remove invalid points
         probes = [ probe for probe in probes
                    if probe.get('label')!='disabled'
+                      and probe['double_latitude']**2 + probe['double_longitude']**2 > .001
                  ]
         #
         lat = [ probe['double_latitude'] for probe in probes]
