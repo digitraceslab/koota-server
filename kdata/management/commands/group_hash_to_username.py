@@ -6,7 +6,7 @@ from kdata import models
 from kdata.models import Device, Data
 
 class Command(BaseCommand):
-    """Look up users based on their group hashes.
+    """Look up users based on their group hashes (from stdin)
 
     User hashes are passed via stdin, one per line.
     """
@@ -23,6 +23,7 @@ class Command(BaseCommand):
             for subject in group_subjects:
                 hash_map[subject.hash()] = subject.user.username
         # For each line in stdin, print the username
+        print("Enter hashes to look up, one per line:", file=sys.stderr)
         for row in sys.stdin:
             row = row.strip('\n')
             print(hash_map.get(row.strip('\n'), '-'))

@@ -10,7 +10,7 @@ from kdata import models
 from kdata.models import Device, Data
 
 class Command(BaseCommand):
-    """List all users in a group, with their hashes.
+    """List all users in a group, with their hashes and devices.
     """
 
     def add_arguments(self, parser):

@@ -11,17 +11,17 @@ from django.utils import timezone
 from ...models import Device, Data
 
 class Command(BaseCommand):
-    help = 'Edit the raw (string value, timestamp)'
+    help = 'Edit the raw (string value, timestamp) of a data row'
 
     def add_arguments(self, parser):
         parser.add_argument('rowid', nargs=None,
                             help="Rowid to edit")
         parser.add_argument('--json', action='store_true',
                             help="Validate new data is valid json.")
-        parser.add_argument('--timestamp', action='store_true',
-                            help="Update timestamp of the data, do not edit data.")
         parser.add_argument('--new-timestamp', type=int,
-                            help="The new timestamp.  Used only with --timestamp. (optional)")
+                            help="Update the timestamp (and no other actions).  Argument provides the new unixtime.")
+        parser.add_argument('--new-device-id',
+                            help="Update device ID to the given device ID (and no other actions)")
         parser.add_argument('--commit', action='store_true',
                             help="Commit the new data (must be given).")
 
@@ -30,7 +30,7 @@ class Command(BaseCommand):
         row = Data.objects.get(id=options['rowid'])
 
         # Update timestamp if --timestamp is given.
-        if options['timestamp']:
+        if options['new_timestamp']:
             old_ts = row.ts.timestamp()
             print('old timestamp is', row.ts)
             print('old timestamp is', row.ts.timestamp())
@@ -48,6 +48,20 @@ class Command(BaseCommand):
                 row.save()
                 open('log.txt', 'a').write("editdata.py: update_ts row_id=%s old_ts=%s new_ts=%s\n"%(row.id, old_ts, new_ts_ut))
                 print("New data committed.")
+            return
+
+        # Update device ID
+        if options['new_device_id']:
+            print(f"Old row_id: {row.id}")
+            print(f"Old device_id: {row.device_id}")
+            print(f"Old data preview: {row.data[:50]}")
+            print()
+            new_device = Device.get_by_id(public_id=options['new_device_id'])
+            print(f"New device ID: {new_device.public_id} / {new_device.device_id}")
+            # Commit if desired
+            if options['commit'] and input('Commit new data? [y/N] > ') == 'y':
+                row.device_id = new_device.device_id
+                row.save()
             return
 
         # Write data to file, let user edit it, then re-read and
