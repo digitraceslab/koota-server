@@ -1888,6 +1888,7 @@ class AwareLocationDay(LocationDayAggregator, AwareDayAggregator):
         probes = [ probe for probe in probes
                    if probe.get('label')!='disabled'
                       and probe['double_latitude']**2 + probe['double_longitude']**2 > .001
+                      and probe['provider'] == 'gps'
                  ]
         #
         lat = [ probe['double_latitude'] for probe in probes]
