@@ -894,6 +894,9 @@ class DayAggregator(_Converter):
     filter_func = staticmethod(lambda data: True)
     # This is subtracted from timestamp when binning.
     midnight_offset = 3600*4  # four hours after midnight, by default.
+    # Look this many seconds forward for extra points, before processing a
+    # given day.
+    buffer_forward = 60*60*24 * 20 # days in the future
     def __init__(self, *args, **kwargs):
         super(DayAggregator, self).__init__(*args, **kwargs)
         self.day_dict = collections.defaultdict(list)
@@ -919,6 +922,7 @@ class DayAggregator(_Converter):
         current_day_ts = self.current_day_ts
         current_i = self.current_i
         midnight_offset = self.midnight_offset
+        buffer_forward = self.buffer_forward
         # Iterate through all the queryset
         for packet_ts, data in queryset:
             ## Allow filter_func to exclude data right away.
@@ -935,7 +939,7 @@ class DayAggregator(_Converter):
                     # If we have iterated far enough in the future,
                     # then we assume that we have all data from the
                     # current day.  Yield this.
-                    if ts > current_day_ts + 60*60*24*20: # days in the future
+                    if ts > current_day_ts + buffer_forward:
                         done_day_bin = min(day_dict)
                         done_day_data = day_dict.pop(done_day_bin)
                         for row in self.process(done_day_bin,
