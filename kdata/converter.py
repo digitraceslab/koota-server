@@ -1226,10 +1226,10 @@ class LocationDayAggregator(DayAggregator):
             if not lats_binned[i]:
                 lats_binned[i] = lons_binned[i] = speeds_binned[i] = np.nan
                 continue
-            lats_binned[i] = np.mean(lats_binned[i])
-            lons_binned[i] = np.mean(lons_binned[i])
-            speeds_binned[i] = np.nanmean(speeds_binned[i])
-            ts_binned[i] = np.mean(speeds_binned[i])
+            lats_binned[i] = np.median(lats_binned[i])
+            lons_binned[i] = np.median(lons_binned[i])
+            speeds_binned[i] = np.nanmedian(speeds_binned[i])
+            ts_binned[i] = np.median(speeds_binned[i])
 
         # Compute the scale factor for latitudes, to convert the
         # coordinate system into something approximately euclidian
