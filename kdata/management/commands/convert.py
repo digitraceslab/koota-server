@@ -31,7 +31,7 @@ class Command(BaseCommand):
                             help="Run a converter on a group? "
                                  "device_id becomes the group name.",
                             action='store_true')
-        parser.add_argument('--full', help="Produce all group data?", action='store_true')
+        parser.add_argument('--full', help="Produce all group data? [only for --group]", action='store_true')
         parser.add_argument('--hash-seed', help="Override hash seed?")
         parser.add_argument('--format', '-f', help="Output format")
         parser.add_argument('--no-handle-errors', action='store_false', default=True,
