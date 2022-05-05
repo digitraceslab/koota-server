@@ -1697,6 +1697,22 @@ class IosScreen(_IosGeneric):
 
 import io
 from dateutil.parser import parse as dateutil_parse
+def actiwatch_find_tzoffset(data):
+    """Find timezone offset and return as a string"""
+    tzoffset = re.search(r'"Time Zone Offset:","([-+\d:.]+)","hours:minutes"', data).group(1)
+    assert 4 <= len(tzoffset) <= 6
+    # Python 3.6 needs no separator in the time offset
+    tzoffset = tzoffset.replace(':', '').replace('.', '')
+    return tzoffset
+def actiwatch_parse_date(a, b, tzoffset, dayfirst):
+    try:
+        return dateutil_parse("%s %s %s"%(a, b, tzoffset), dayfirst=dayfirst)
+    except ValueError:
+        pass
+    return datetime.strptime("%s %s %s"%(a, b, tzoffset.replace('.', ':')), '%d.%m.%Y %H.%M.%S %z')
+def actiwatch_detect_dayfirst(line):
+    dayfirst = ',' in line[5]
+    return dayfirst
 class ActiwatchFull(_Converter):
     device_class = 'kdata.devices.actiwatch.Actiwatch'
     desc = "Actiwatch full data"
@@ -1719,10 +1735,12 @@ class ActiwatchFull(_Converter):
             return x
 
         for ts, data in queryset:
+            if data.startswith("b'") and data.endswith("'"):
+                data = ast.literal_eval(data).decode()
             if '---- Subject Properties------' not in data:
                 continue
 
-            tzoffset = re.search(r'"Time Zone Offset:","([-+\d:]+)","hours:minutes"', data).group(1)
+            tzoffset = actiwatch_find_tzoffset(data)
             m = re.search(r'--- Epoch-by-Epoch Data -+"\s+.*?("Line",.*)',
                           data, re.DOTALL)
             f = io.StringIO(m.group(1))
@@ -1733,7 +1751,7 @@ class ActiwatchFull(_Converter):
                 if line[0] == 'Line': continue
 
                 dayfirst = ',' in line[5]
-                dt = dateutil_parse("%s %s %s"%(line[1], line[2], tzoffset), dayfirst=dayfirst)
+                dt = actiwatch_parse_date(line[1], line[2], tzoffset, dayfirst=dayfirst)
                 time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
                 ts = dt.timestamp()
                 #print(line)
@@ -1772,10 +1790,12 @@ class ActiwatchStatistics(_Converter):
               'percent_invalid_white']
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
+            if data.startswith("b'") and data.endswith("'"):
+                data = ast.literal_eval(data).decode()
             if '---- Subject Properties------' not in data:
                 continue
 
-            tzoffset = re.search(r'"Time Zone Offset:","([-+\d:]+)","hours:minutes"', data).group(1)
+            tzoffset = actiwatch_find_tzoffset(data)
             m = re.search(r'--- Statistics -+"\s+.*?("Interval Type",.*?)\r\n\r\n\r\n',
                           data, re.DOTALL)
             f = io.StringIO(m.group(1))
@@ -1784,13 +1804,15 @@ class ActiwatchStatistics(_Converter):
             for line in reader:
                 if not line: continue
                 if line[0] == 'Interval Type': continue
+                #if line[0] == 'Rest Summary': continue
                 if line[0] == '': continue
+                dayfirst = ',' in line[6]
 
-                if 'Summary' not in line[0]:
-                    start_dt = dateutil_parse("%s %s %s"%(line[2], line[3], tzoffset))
+                if 'Summary' not in line[0] and line[2] != 'NaN':
+                    start_dt = actiwatch_parse_date(line[2], line[3], tzoffset, dayfirst=dayfirst)
                     #start_time_str = start_dt.strftime('%Y-%m-%d %H:%M:%S')
                     start_ts = time(start_dt.timestamp())
-                    end_dt = dateutil_parse("%s %s %s"%(line[4], line[5], tzoffset))
+                    end_dt = actiwatch_parse_date(line[4], line[5], tzoffset, dayfirst=dayfirst)
                     #end_time_str = end_dt.strftime('%Y-%m-%d %H:%M:%S')
                     end_ts = time(end_dt.timestamp())
                 else:
@@ -1810,10 +1832,12 @@ class ActiwatchMarkers(_Converter):
 
     def convert(self, queryset, time=lambda x:x):
         for ts, data in queryset:
+            if data.startswith("b'") and data.endswith("'"):
+                data = ast.literal_eval(data).decode()
             if '---- Subject Properties------' not in data:
                 continue
 
-            tzoffset = re.search(r'"Time Zone Offset:","([-+\d:]+)","hours:minutes"', data).group(1)
+            tzoffset = actiwatch_find_tzoffset(data)
             m = re.search(r'--- Marker/Score List -+"\s+.*?("Line","Date",.*?)\r\n\r\n\r\n',
                           data, re.DOTALL)
             f = io.StringIO(m.group(1))
@@ -1823,7 +1847,7 @@ class ActiwatchMarkers(_Converter):
                 if not line: continue
                 if line[0] == 'Line': continue
                 if line[0] == '': continue
-                dt = dateutil_parse("%s %s %s"%(line[1], line[2], tzoffset))
+                dt = actiwatch_parse_date(line[1], line[2], tzoffset, dayfirst=None)
                 time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
                 ts = dt.timestamp()
 
