@@ -12,7 +12,7 @@ try:
     import requests
     from urllib.request import Request, urlopen
     import urllib.parse as parse
-except:
+except ImportError:
     from urllib2 import Request, urlopen
     import urllib2.parse as parse
 
