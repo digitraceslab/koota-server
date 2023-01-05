@@ -7,9 +7,9 @@ import os
 import subprocess
 import sys
 import time
+#import requests
 try:
     # python3
-    import requests
     from urllib.request import Request, urlopen
     import urllib.parse as parse
 except ImportError:
@@ -100,15 +100,15 @@ if 'session_id' not in os.environ:
 
 
 def get(url, params={}):
-    #R = Request(url, headers={'Cookie': 'sessionid='+os.environ['session_id']})
-
-    r = requests.get(url, params=params, headers={'Cookie': 'sessionid='+os.environ['session_id']})
-    if 'Please login to' in r.text:
-        print("session_id invalid or can't log in")
-        exit(2)
-    if r.status_code != 200:
-        raise Exception("requests failure: %s %s (on %s %s)"%(r.status_code, r.reason, url, params))
-    return r.text
+    #r = requests.get(url, params=params, headers={'Cookie': 'sessionid='+os.environ['session_id']})
+    with urlopen(Request(url, headers={'Cookie': 'sessionid='+os.environ['session_id']})) as response:
+        content = response.read().decode()
+        if 'Please login to' in content:
+            print("session_id invalid or can't log in")
+            exit(2)
+        if response.status != 200:
+            raise Exception("request failure: %s %s (on %s %s)"%(response.status, response.reason, url, params))
+        return content
 
 format = args.format
 today = datetime.date.today()
