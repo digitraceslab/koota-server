@@ -74,13 +74,24 @@ parser.add_argument("output_dir", help="")
 #parser.add_argument("--session-id")
 #parser.add_argument("--device")
 parser.add_argument("-f", "--format", default='sqlite3dump', help="format to download")
-parser.add_argument("--out-db", default=None, help="if download format is sqlite3dump, location of database to create.  Default: db.sqlite in output_dir.  If you use another format (like csv), you should not use --out-db, but you will end up with a lot of csv files")
-parser.add_argument("--group", default=None, action='store_true', help="If true, treate base_url as a group.  Required for group downloads.")
+parser.add_argument("--out-db", default=None,
+                    help="if download format is sqlite3dump, location of database to create.  "
+                         "Default: db.sqlite in output_dir.  If you use another format "
+                         "(like csv), you should not use --out-db, but you will end up "
+                         "with a lot of csv files.")
+parser.add_argument("--group", default=None, action='store_true',
+                    help="If true, treate base_url as a group.  Required for group downloads.")
 parser.add_argument("-v", "--verbose", default=None, action='store_true')
-parser.add_argument("--start", default=None, help="Earliest time to download (expanded to nearest whole day)")
-parser.add_argument("--end", default=None, help="Latest time to download (expanded to nearest whole day)")
-parser.add_argument("--force-recreate", action='store_true', default=None, help="Force-recreate all databases")
-parser.add_argument("--unsafe", action='store_true', default=None, help="Open database in unsafe mode.  May be slightly faster, but could corrupt the database under certain circumstances.")
+parser.add_argument("--start", default=None,
+                    help="Earliest time to download (expanded to nearest whole day)")
+parser.add_argument("--end", default=None,
+                    help="Latest time to download (expanded to nearest whole day)")
+parser.add_argument("--force-recreate", action='store_true', default=None,
+                    help="Force an update of all databases.  By default, this creates *new* "
+                         "databases (re-loading all data).  If :updateonly or :incremental")
+parser.add_argument("--unsafe", action='store_true', default=None,
+                    help="Open database in unsafe mode.  May be slightly faster, but "
+                         "could corrupt the database under certain circumstances.")
 
 args = parser.parse_args()
 
@@ -194,8 +205,15 @@ if data['data_exists']:
         for dbfile in dbfiles:
             print("Importing to DB:", dbfile)
             dbfile, *dbfile_args = dbfile.split(':')
+            # new_db: Creates a new and and moves it.  DANGER: loses
+            # data if multiple datasets loaded!  ':updateonly'
+            # disables *ever* making a new database.
             new_db = 'updateonly' not in dbfile_args
-            incremental_update = 'incremental' in dbfile_args
+            # :incremental causes it to only load the files which were
+            # just downloaded now.  It also turns off new_db.  If
+            # :incremental=FALSE and new_db=FALSE, then it will DROP
+            # TABLE the existing data.
+            incremental_update = 'incremental' in dbfile_args and not args.force_recreate
             if incremental_update:
                 new_db = False
             print("  new_db=%s"%new_db)
@@ -208,7 +226,9 @@ if data['data_exists']:
                 pass
             else:
                 # Delete the existing table
-                subprocess.check_call(['sqlite3', dbfile, 'DROP TABLE IF EXISTS %s;'%args.converter])
+                cmd = 'DROP TABLE IF EXISTS %s;'%args.converter
+                print('  '+cmd)
+                subprocess.check_call(['sqlite3', dbfile, cmd])
 
             t1 = time.time()
             # Import the database
